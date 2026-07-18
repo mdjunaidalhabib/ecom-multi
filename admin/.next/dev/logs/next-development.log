@@ -1,2 +1,9 @@
-[00:00:03.589] Server  LOG      ✓ Ready in 2.6s
-[00:03:51.014] Server  LOG      ○ Compiling / ...
+[00:00:03.956] Server  LOG      ✓ Ready in 3.1s
+[00:00:07.292] Server  LOG      ○ Compiling /super-admin/dashboard ...
+[00:01:21.889] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:27.897] Browser ERROR   Failed to fetch orders: {}
+[00:01:27.897] Browser ERROR   Failed to fetch orders: {}
+[00:01:28.556] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:30.770] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:15:46.948] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:26:15.848] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold

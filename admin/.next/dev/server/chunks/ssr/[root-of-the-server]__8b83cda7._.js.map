@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 34, "column": 0}, "map": {"version":3,"sources":["file:///C:/website/ecom-multi/admin/src/app/super-admin/%28panel%29/page.js"],"sourcesContent":["import { redirect } from \"next/navigation\";\n\nexport default function SuperAdminRootPage() {\n  redirect(\"/super-admin/dashboard\");\n}\n"],"names":[],"mappings":";;;;AAAA;AAAA;;AAEe,SAAS;IACtB,IAAA,0MAAQ,EAAC;AACX"}}]
+}

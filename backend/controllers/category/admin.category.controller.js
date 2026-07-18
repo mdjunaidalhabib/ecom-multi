@@ -120,6 +120,7 @@ export const createCategory = async (req, res) => {
     );
 
     const category = new Category({
+      shopId: req.shopId,
       name,
       image: imageUrl,
       imagePublicId, // ✅

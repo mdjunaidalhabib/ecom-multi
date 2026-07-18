@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 34, "column": 0}, "map": {"version":3,"sources":["file:///C:/website/ecom-multi/admin/src/app/admin/page.js"],"sourcesContent":["// app/page.jsx\nexport default function HomePage() {\n  return <h1>Welcome to Admin Panel</h1>;\n}\n"],"names":[],"mappings":"AAAA,eAAe;;;;;;;AACA,SAAS;IACtB,qBAAO,uPAAC;kBAAG;;;;;;AACb"}}]
+}
