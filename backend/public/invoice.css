@@ -1,0 +1,287 @@
+@page {
+  size: A4;
+  margin: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Hind Siliguri", Arial, sans-serif;
+
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* PAGE */
+.page {
+  width: 210mm;
+  height: 297mm;
+  position: relative;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* HEADER */
+.header {
+  height: 330px;
+  position: relative;
+}
+
+/* ORDER INFO */
+.order-info {
+  position: absolute;
+  top: 230px;
+  right: 60px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 🔥 PAYMENT STATUS — its own line in order-info, right under "Payment:".
+   Only rendered for manual (bKash/Nagad) payments — omitted entirely for
+   COD, since there's no verification status to show. */
+.payment-status {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.payment-status.paid {
+  color: #059669;
+}
+
+.payment-status.pending {
+  color: #b45309;
+}
+
+.payment-status.failed {
+  color: #dc2626;
+}
+
+/* 🔥 BILLING CARD */
+.billing-card {
+  position: absolute;
+  top: 180px;
+  left: 60px;
+  width: 400px;
+  padding: 12px 15px;
+  border-radius: 8px;
+}
+
+.billing-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 20px;
+}
+
+.row-bill {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 6px;
+  margin-bottom: 3px;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.label {
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.label::after {
+  content: ":";
+}
+
+.value {
+  word-break: break-word;
+}
+
+/* ITEMS SECTION WRAPPER */
+.items {
+  margin-top: 30px;
+  padding: 0 50px;
+  font-size: 13px;
+
+  --row-h: 26px;
+  --col-sn: 40px;
+  --col-item: 6fr;
+  --col-price: 1.5fr;
+  --col-qty: 1fr;
+  --col-total: 1fr;
+}
+
+/* TABLE HEADER */
+.table-header {
+  display: grid;
+  grid-template-columns:
+    var(--col-sn) var(--col-item) var(--col-price) var(--col-qty)
+    var(--col-total);
+  align-items: center;
+  height: var(--row-h);
+  font-weight: 700;
+  padding: 0 10px;
+
+  border-bottom: 2px solid #111827;
+  background: #ff36ac;
+
+  color: #ffffff;
+  letter-spacing: 0.3px;
+}
+
+.table-header span {
+  text-align: center;
+}
+
+/* SINGLE ROW */
+.row {
+  display: grid;
+  grid-template-columns:
+    var(--col-sn) var(--col-item) var(--col-price) var(--col-qty)
+    var(--col-total);
+  align-items: center;
+  height: var(--row-h);
+  padding: 0 10px;
+
+  border-bottom: 1px solid #ffc7f3;
+  background: #ffe6f5;
+}
+
+.row:nth-child(even) {
+  background: #ffffff;
+}
+
+.row span {
+  text-align: center;
+  color: #111827;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row.empty span {
+  color: transparent;
+}
+
+/* SUMMARY CARD — ekhon Total eita r bhitorei thakbe */
+.summary {
+  margin-top: 10px;
+  margin-right: 50px;
+  margin-left: auto;
+  width: 190px; /* 160px theke bariye 190px */
+
+  background: #ffffff;
+  border: 1px solid #ff36ac;
+  border-radius: 8px;
+  padding: 9px 12px;
+
+  overflow: hidden;
+}
+
+.summary::before {
+  content: "Order Summary";
+  display: block;
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: #111827;
+  border-bottom: 1px dashed #e5e7eb;
+  padding-bottom: 4px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  font-size: 12px;
+  font-weight: 600; /* age normal chilo, ekhon bold-ish */
+  padding: 2px 0;
+  color: #111827;
+}
+
+.summary-row span:first-child {
+  color: #111827;
+  font-weight: 600;
+}
+
+.summary-row span:last-child {
+  font-weight: 700; /* value ta aro bold */
+  color: #111827;
+}
+
+.summary-row:not(:last-child) {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* Highlight the Total row (always, regardless of its position among the
+   other rows — Advance Payment / COD rows may come after it) */
+.summary-row.total-row {
+  margin-top: 4px;
+  border-radius: 5px;
+  padding: 5px 7px;
+  background: #ffe6f5;
+}
+
+.summary-row.total-row span:first-child,
+.summary-row.total-row span:last-child {
+  font-weight: 800; /* Total row aro besh bold */
+  color: #ff36ac;
+}
+
+/* 🔥 EXTRA SUMMARY ROWS — Advance Payment / COD (shown only when the
+   delivery charge was already paid online via bKash/Nagad) */
+.summary-row.advance {
+  margin-top: 6px;
+}
+
+.summary-row.advance span:last-child {
+  color: #059669;
+}
+
+/* 🔥 COD row highlight — this is the amount still to be collected on
+   delivery, so it gets the same solid-box treatment as the Total row */
+.summary-row.codrow {
+  margin-top: 4px;
+  border-radius: 5px;
+  padding: 5px 7px;
+  background: #ffe6f5;
+  border: 1px solid #ff36ac;
+}
+
+.summary-row.codrow span:first-child,
+.summary-row.codrow span:last-child {
+  font-weight: 800;
+  color: #ff36ac;
+}
+
+/* NOTE BOX */
+.note-box {
+  margin-top: 30px;
+  margin-left: 60px;
+  margin-right: auto;
+  width: 400px;
+  box-sizing: border-box;
+
+  background: #fff6cf;
+  border-left: 4px solid #ff36ac;
+  border-radius: 8px;
+
+  padding: 8px 14px;
+  font-size: 12px;
+  color: #111827;
+
+  display: flex;
+  gap: 6px;
+}
+
+.note-box .note-label {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.note-box .note-label::after {
+  content: ":";
+}
+
+.note-box .note-value {
+  word-break: break-word;
+}
