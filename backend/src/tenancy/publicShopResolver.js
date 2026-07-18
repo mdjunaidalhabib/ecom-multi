@@ -43,7 +43,11 @@ export async function resolveShopByDomain(req, res, next) {
         .json({ message: "এই শপটি বর্তমানে সাসপেন্ড করা আছে" });
     }
 
-    if (shop.domainStatus !== "verified") {
+    // ✅ Local dev-এ .local ডোমেইন (hosts ফাইলে বানানো) কখনো আসল DNS দিয়ে
+    // verify হবে না — তাই প্রোডাকশনের বাইরে এই চেক স্কিপ করা হয়, শুধু তখনই
+    // যখন শপ suspended না। প্রোডাকশনে এই skip কখনো হবে না।
+    const isDev = process.env.NODE_ENV !== "production";
+    if (!isDev && shop.domainStatus !== "verified") {
       return res
         .status(403)
         .json({ message: "এই শপের ডোমেইন এখনো ভেরিফাই হয়নি" });

@@ -21,6 +21,15 @@ function buildBackendUrl(pathSegments = [], search = "") {
 function copyRequestHeaders(req) {
   const headers = new Headers(req.headers);
 
+  // ✅ ব্রাউজার যে Host-এ হিট করেছে (customer-facing domain, যেমন shop1.com
+  // বা লোকালে shop1.local:3000) সেটাই x-shop-domain হিসেবে backend-এ
+  // ফরওয়ার্ড করা হচ্ছে — নাহলে backend কখনো জানতে পারবে না কোন শপের
+  // request এটা (resolveShopByDomain এই header-টাই খুঁজে)।
+  const incomingHost = headers.get("host");
+  if (incomingHost && !headers.get("x-shop-domain")) {
+    headers.set("x-shop-domain", incomingHost);
+  }
+
   headers.delete("host");
   headers.delete("connection");
   headers.delete("content-length");
