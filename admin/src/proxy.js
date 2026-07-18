@@ -46,9 +46,24 @@ export function proxy(req) {
 
   const isAdminLogin = pathname === "/login";
   const isSuperAdminLogin = pathname === "/super-admin/login";
+  const isForcedShopAccessLogin =
+    isAdminLogin && req.nextUrl.searchParams.get("shopAccess") === "blocked";
 
   // Logged-in users should not remain on either login page.
   if (isAdminLogin || isSuperAdminLogin) {
+    // A shop can be deleted/suspended while its old JWT is still present in
+    // the browser. Let the session guard force-open the login page and clear
+    // that stale cookie instead of bouncing back to /admin/dashboard.
+    if (isForcedShopAccessLogin) {
+      const response = NextResponse.next();
+      response.cookies.set("admin_token", "", {
+        path: "/",
+        expires: new Date(0),
+        sameSite: "lax",
+      });
+      return response;
+    }
+
     if (!session) return NextResponse.next();
 
     const home =

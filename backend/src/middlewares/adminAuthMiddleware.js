@@ -1,6 +1,9 @@
 import jwt from "jsonwebtoken";
 import Admin from "../models/Admin.js";
-import Shop from "../models/Shop.js";
+import {
+  buildSuspendedShopResponse,
+  getAdminShopAccess,
+} from "../utils/adminShopAccess.js";
 
 // Protect API route
 export const protect = async (req, res, next) => {
@@ -33,18 +36,27 @@ export const protect = async (req, res, next) => {
     // Re-check shop access on every protected request so an old token cannot
     // keep working after the assigned shop is deleted or suspended.
     if (admin.role !== "superadmin") {
-      const usableShop = await Shop.exists({
-        _id: { $in: admin.shops || [] },
-        status: { $in: ["active", "trial"] },
-      }).setOptions({ skipTenantScope: true });
+      const shopAccess = await getAdminShopAccess(admin);
 
-      if (!usableShop) {
+      if (shopAccess.usableShopIds.length === 0) {
         res.clearCookie("admin_token", { path: "/" });
+
+        if (shopAccess.primarySuspendedShop) {
+          return res
+            .status(403)
+            .json(buildSuspendedShopResponse(shopAccess.primarySuspendedShop));
+        }
+
         return res.status(403).json({
+          success: false,
           message: "No active shop is assigned to this account",
           errorType: "NO_ACTIVE_SHOP",
         });
       }
+
+      // requireShopContext uses this list so a suspended shop can never be
+      // selected as the default when another assigned shop is still active.
+      req.usableShopIds = shopAccess.usableShopIds;
     }
 
     req.admin = admin;

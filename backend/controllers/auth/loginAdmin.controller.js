@@ -1,6 +1,9 @@
 import generateToken from "../../utils/auth/generateToken.js";
 import Admin from "../../src/models/Admin.js";
-import Shop from "../../src/models/Shop.js";
+import {
+  buildSuspendedShopResponse,
+  getAdminShopAccess,
+} from "../../src/utils/adminShopAccess.js";
 import { UAParser } from "ua-parser-js";
 import geoip from "geoip-lite";
 
@@ -102,15 +105,20 @@ async function loginByPortal(req, res, { allowedRoles, wrongPortalMessage, error
     }
 
     // Shop admin/staff must have at least one existing, usable shop.
-    // This also blocks login immediately after their only shop is deleted.
+    // Deleted shops remain blocked, while suspended shops return a generic
+    // notice. The suspension reason is kept private to the Super Admin panel.
     if (admin.role !== "superadmin") {
-      const usableShop = await Shop.exists({
-        _id: { $in: admin.shops || [] },
-        status: { $in: ["active", "trial"] },
-      }).setOptions({ skipTenantScope: true });
+      const shopAccess = await getAdminShopAccess(admin);
 
-      if (!usableShop) {
+      if (shopAccess.usableShopIds.length === 0) {
         res.clearCookie("admin_token", { path: "/" });
+
+        if (shopAccess.primarySuspendedShop) {
+          return res
+            .status(403)
+            .json(buildSuspendedShopResponse(shopAccess.primarySuspendedShop));
+        }
+
         return res.status(403).json({
           success: false,
           message: "এই অ্যাকাউন্টে কোনো সক্রিয় শপ assign করা নেই।",
