@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/website/cartvan-multi/admin/components/pwa-register.jsx"],"sourcesContent":["\"use client\";\nimport { useEffect } from \"react\";\n\nexport default function AdminPWARegister() {\n  useEffect(() => {\n    // 🚫 Dev mode এ SW রেজিস্টার করা হবে না\n    if (process.env.NODE_ENV !== \"production\") return;\n\n    const registerSW = async () => {\n      if (\"serviceWorker\" in navigator) {\n        try {\n          await navigator.serviceWorker.register(\"/admin-sw.js\");\n          console.log(\"✅ Admin SW registered\");\n        } catch (err) {\n          console.log(\"❌ Admin SW failed\", err);\n        }\n      }\n    };\n\n    registerSW();\n  }, []);\n\n  return null;\n}\n"],"names":[],"mappings":";;;;AAMQ;AALR;;AADA;;AAGe,SAAS;;IACtB,IAAA,mLAAS;sCAAC;YACR,wCAAwC;YACxC,wCAA2C;;;YAE3C,MAAM;QAYR;qCAAG,EAAE;IAEL,OAAO;AACT;GApBwB;KAAA"}}]
+}
