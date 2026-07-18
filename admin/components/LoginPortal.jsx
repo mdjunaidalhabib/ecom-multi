@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
-import { Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { CircleAlert, Eye, EyeOff, ShieldCheck } from "lucide-react";
 
 axios.defaults.withCredentials = true;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const NOTICE_STORAGE_KEY = "shop_access_notice";
 
 export default function LoginPortal({
   title,
@@ -19,9 +20,30 @@ export default function LoginPortal({
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
+  const [suspensionNotice, setSuspensionNotice] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const isViolet = accent === "violet";
+
+  useEffect(() => {
+    try {
+      const storedNotice = sessionStorage.getItem(NOTICE_STORAGE_KEY);
+      if (!storedNotice) return;
+
+      const parsedNotice = JSON.parse(storedNotice);
+      if (parsedNotice?.errorType === "SHOP_SUSPENDED") {
+        setSuspensionNotice(parsedNotice);
+      }
+
+      sessionStorage.removeItem(NOTICE_STORAGE_KEY);
+    } catch {
+      try {
+        sessionStorage.removeItem(NOTICE_STORAGE_KEY);
+      } catch {
+        // Ignore unavailable browser storage.
+      }
+    }
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -39,11 +61,19 @@ export default function LoginPortal({
       await sleep(150);
       window.location.replace(successPath);
     } catch (err) {
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "লগইন করা যায়নি। আবার চেষ্টা করুন।",
-      );
+      const responseData = err?.response?.data;
+
+      if (responseData?.errorType === "SHOP_SUSPENDED") {
+        setError("");
+        setSuspensionNotice(responseData);
+      } else {
+        setSuspensionNotice(null);
+        setError(
+          responseData?.message ||
+            err?.message ||
+            "লগইন করা যায়নি। আবার চেষ্টা করুন।",
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -76,6 +106,26 @@ export default function LoginPortal({
         {error && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-center text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {suspensionNotice && (
+          <div className="mb-5 rounded-xl border border-red-300 bg-red-50 p-4 text-red-900 shadow-sm">
+            <div className="flex items-start gap-3">
+              <CircleAlert className="mt-0.5 shrink-0 text-red-600" size={22} />
+              <div className="min-w-0">
+                <h2 className="font-bold text-red-700">Shop Suspended</h2>
+                <p className="mt-1 text-sm font-medium">
+                  {suspensionNotice?.suspension?.shopName || "আপনার শপ"} বর্তমানে
+                  সাসপেন্ড করা হয়েছে।
+                </p>
+
+                <p className="mt-3 text-sm font-semibold text-red-700">
+                  {suspensionNotice?.contactMessage ||
+                    "অনুগ্রহ করে অতি দ্রুত Developer-এর সাথে যোগাযোগ করুন।"}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

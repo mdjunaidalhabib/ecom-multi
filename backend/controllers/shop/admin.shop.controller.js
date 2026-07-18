@@ -257,13 +257,22 @@ export const updateShopStatus = async (req, res) => {
       return res.status(400).json({ message: "অবৈধ status" });
     }
 
+    const normalizedSuspendedReason = suspendedReason?.toString().trim() || "";
+
+    if (status === "suspended" && !normalizedSuspendedReason) {
+      return res.status(400).json({
+        message: "শপ সাসপেন্ড করার কারণ লিখতে হবে।",
+      });
+    }
+
     const shop = await Shop.findById(req.params.id).setOptions({
       skipTenantScope: true,
     });
     if (!shop) return res.status(404).json({ message: "Shop not found" });
 
     shop.status = status;
-    shop.suspendedReason = status === "suspended" ? suspendedReason || "" : "";
+    shop.suspendedReason =
+      status === "suspended" ? normalizedSuspendedReason : "";
     await shop.save();
 
     res.json({

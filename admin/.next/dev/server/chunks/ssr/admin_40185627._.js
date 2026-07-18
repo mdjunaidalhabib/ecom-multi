@@ -111,6 +111,7 @@ function Shops() {
     const [shopErrors, setShopErrors] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])({});
     const [suspendModal, setSuspendModal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null); // shop being suspended
     const [suspendReason, setSuspendReason] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [suspendReasonError, setSuspendReasonError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [deleteModal, setDeleteModal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     const [deletingShop, setDeletingShop] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [verifyingId, setVerifyingId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
@@ -232,9 +233,15 @@ function Shops() {
     const confirmSuspend = (shop)=>{
         setSuspendModal(shop);
         setSuspendReason("");
+        setSuspendReasonError(false);
     };
     const handleSuspend = async ()=>{
         if (!suspendModal) return;
+        const normalizedReason = suspendReason.trim();
+        if (!normalizedReason) {
+            setSuspendReasonError(true);
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/shops/${suspendModal._id}/status`, {
                 method: "PATCH",
@@ -243,7 +250,7 @@ function Shops() {
                 },
                 body: JSON.stringify({
                     status: "suspended",
-                    suspendedReason: suspendReason
+                    suspendedReason: normalizedReason
                 })
             });
             const data = await res.json().catch(()=>({}));
@@ -258,6 +265,8 @@ function Shops() {
                     type: "success"
                 });
                 setSuspendModal(null);
+                setSuspendReason("");
+                setSuspendReasonError(false);
                 loadShops();
             }
         } catch  {
@@ -483,14 +492,14 @@ function Shops() {
                                 size: 24
                             }, void 0, false, {
                                 fileName: "[project]/admin/components/Shops.jsx",
-                                lineNumber: 353,
+                                lineNumber: 367,
                                 columnNumber: 11
                             }, this),
                             " Shops"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 352,
+                        lineNumber: 366,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -504,14 +513,14 @@ function Shops() {
                                         size: 16
                                     }, void 0, false, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 360,
+                                        lineNumber: 374,
                                         columnNumber: 13
                                     }, this),
                                     " Shop Trash"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/admin/components/Shops.jsx",
-                                lineNumber: 356,
+                                lineNumber: 370,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -522,26 +531,26 @@ function Shops() {
                                         size: 16
                                     }, void 0, false, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 366,
+                                        lineNumber: 380,
                                         columnNumber: 13
                                     }, this),
                                     " নতুন শপ তৈরি করুন"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/admin/components/Shops.jsx",
-                                lineNumber: 362,
+                                lineNumber: 376,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 355,
+                        lineNumber: 369,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/admin/components/Shops.jsx",
-                lineNumber: 351,
+                lineNumber: 365,
                 columnNumber: 7
             }, this),
             pageLoading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -549,14 +558,14 @@ function Shops() {
                 children: "লোড হচ্ছে..."
             }, void 0, false, {
                 fileName: "[project]/admin/components/Shops.jsx",
-                lineNumber: 373,
+                lineNumber: 387,
                 columnNumber: 9
             }, this) : shops.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "text-center text-gray-500 py-10",
                 children: 'এখনো কোনো শপ তৈরি হয়নি। "নতুন শপ তৈরি করুন" চাপুন।'
             }, void 0, false, {
                 fileName: "[project]/admin/components/Shops.jsx",
-                lineNumber: 375,
+                lineNumber: 389,
                 columnNumber: 9
             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "grid sm:grid-cols-2 lg:grid-cols-3 gap-4",
@@ -576,7 +585,7 @@ function Shops() {
                                                 children: shop.name
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 392,
+                                                lineNumber: 406,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -586,20 +595,20 @@ function Shops() {
                                                         size: 14
                                                     }, void 0, false, {
                                                         fileName: "[project]/admin/components/Shops.jsx",
-                                                        lineNumber: 394,
+                                                        lineNumber: 408,
                                                         columnNumber: 23
                                                     }, this),
                                                     shop.domain
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 393,
+                                                lineNumber: 407,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 391,
+                                        lineNumber: 405,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -607,13 +616,13 @@ function Shops() {
                                         children: shop.status
                                     }, void 0, false, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 398,
+                                        lineNumber: 412,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/admin/components/Shops.jsx",
-                                lineNumber: 390,
+                                lineNumber: 404,
                                 columnNumber: 17
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -623,7 +632,7 @@ function Shops() {
                                         size: 15
                                     }, void 0, false, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 408,
+                                        lineNumber: 422,
                                         columnNumber: 19
                                     }, this),
                                     shop.domainStatus === "verified" ? "ডোমেইন ভেরিফাইড" : shop.domainStatus === "failed" ? "ডোমেইন ভেরিফিকেশন ব্যর্থ" : "DNS ভেরিফিকেশনের অপেক্ষায়",
@@ -637,19 +646,44 @@ function Shops() {
                                             className: verifyingId === shop._id ? "animate-spin" : ""
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 420,
+                                            lineNumber: 434,
                                             columnNumber: 21
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 414,
+                                        lineNumber: 428,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/admin/components/Shops.jsx",
-                                lineNumber: 407,
+                                lineNumber: 421,
                                 columnNumber: 17
+                            }, this),
+                            shop.status === "suspended" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "text-xs font-semibold uppercase tracking-wide text-red-500",
+                                        children: "Suspension reason"
+                                    }, void 0, false, {
+                                        fileName: "[project]/admin/components/Shops.jsx",
+                                        lineNumber: 443,
+                                        columnNumber: 21
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                        className: "mt-1 whitespace-pre-wrap break-words font-medium",
+                                        children: shop.suspendedReason || "কারণ উল্লেখ করা হয়নি।"
+                                    }, void 0, false, {
+                                        fileName: "[project]/admin/components/Shops.jsx",
+                                        lineNumber: 446,
+                                        columnNumber: 21
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/admin/components/Shops.jsx",
+                                lineNumber: 442,
+                                columnNumber: 19
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "grid grid-cols-3 gap-2 text-center text-xs bg-gray-50 rounded-lg py-2",
@@ -662,14 +696,14 @@ function Shops() {
                                                 className: "text-gray-500"
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 429,
+                                                lineNumber: 454,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("b", {
                                                 children: shop.stats?.products ?? 0
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 430,
+                                                lineNumber: 455,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -677,13 +711,13 @@ function Shops() {
                                                 children: "Products"
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 431,
+                                                lineNumber: 456,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 428,
+                                        lineNumber: 453,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -694,14 +728,14 @@ function Shops() {
                                                 className: "text-gray-500"
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 434,
+                                                lineNumber: 459,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("b", {
                                                 children: shop.stats?.orders ?? 0
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 435,
+                                                lineNumber: 460,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -709,13 +743,13 @@ function Shops() {
                                                 children: "Orders"
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 436,
+                                                lineNumber: 461,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 433,
+                                        lineNumber: 458,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -726,14 +760,14 @@ function Shops() {
                                                 className: "text-gray-500"
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 439,
+                                                lineNumber: 464,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("b", {
                                                 children: shop.stats?.admins ?? 0
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 440,
+                                                lineNumber: 465,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -741,19 +775,19 @@ function Shops() {
                                                 children: "Admins"
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 441,
+                                                lineNumber: 466,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 438,
+                                        lineNumber: 463,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/admin/components/Shops.jsx",
-                                lineNumber: 427,
+                                lineNumber: 452,
                                 columnNumber: 17
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -767,14 +801,14 @@ function Shops() {
                                                 size: 14
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 450,
+                                                lineNumber: 475,
                                                 columnNumber: 21
                                             }, this),
                                             " Admins"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 446,
+                                        lineNumber: 471,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -785,14 +819,14 @@ function Shops() {
                                                 size: 14
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 456,
+                                                lineNumber: 481,
                                                 columnNumber: 21
                                             }, this),
                                             " Edit"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 452,
+                                        lineNumber: 477,
                                         columnNumber: 19
                                     }, this),
                                     shop.status === "suspended" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -803,14 +837,14 @@ function Shops() {
                                                 size: 14
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 463,
+                                                lineNumber: 488,
                                                 columnNumber: 23
                                             }, this),
                                             " Activate"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 459,
+                                        lineNumber: 484,
                                         columnNumber: 21
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                         onClick: ()=>confirmSuspend(shop),
@@ -820,14 +854,14 @@ function Shops() {
                                                 size: 14
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 470,
+                                                lineNumber: 495,
                                                 columnNumber: 23
                                             }, this),
                                             " Suspend"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 466,
+                                        lineNumber: 491,
                                         columnNumber: 21
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -838,32 +872,32 @@ function Shops() {
                                                 size: 14
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 477,
+                                                lineNumber: 502,
                                                 columnNumber: 21
                                             }, this),
                                             " Delete"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/admin/components/Shops.jsx",
-                                        lineNumber: 473,
+                                        lineNumber: 498,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/admin/components/Shops.jsx",
-                                lineNumber: 445,
+                                lineNumber: 470,
                                 columnNumber: 17
                             }, this)
                         ]
                     }, shop._id, true, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 386,
+                        lineNumber: 400,
                         columnNumber: 15
                     }, this);
                 })
             }, void 0, false, {
                 fileName: "[project]/admin/components/Shops.jsx",
-                lineNumber: 379,
+                lineNumber: 393,
                 columnNumber: 9
             }, this),
             showModal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -873,7 +907,7 @@ function Shops() {
                         onClick: closeModal
                     }, void 0, false, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 489,
+                        lineNumber: 514,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -888,7 +922,7 @@ function Shops() {
                                     children: editingShop ? "শপ এডিট করুন" : "নতুন শপ তৈরি করুন"
                                 }, void 0, false, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 496,
+                                    lineNumber: 521,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -902,13 +936,13 @@ function Shops() {
                                                     children: "*"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 501,
+                                                    lineNumber: 526,
                                                     columnNumber: 65
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 501,
+                                            lineNumber: 526,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -928,13 +962,13 @@ function Shops() {
                                             placeholder: "Cartvan Fashion"
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 502,
+                                            lineNumber: 527,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 500,
+                                    lineNumber: 525,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -948,13 +982,13 @@ function Shops() {
                                                     children: "*"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 515,
+                                                    lineNumber: 540,
                                                     columnNumber: 70
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 515,
+                                            lineNumber: 540,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -974,7 +1008,7 @@ function Shops() {
                                             placeholder: "shop1.com"
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 516,
+                                            lineNumber: 541,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -982,13 +1016,13 @@ function Shops() {
                                             children: "https://, www. লাগবে না — শুধু ডোমেইন নেম (যেমন: shop1.com)"
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 526,
+                                            lineNumber: 551,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 514,
+                                    lineNumber: 539,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1001,7 +1035,7 @@ function Shops() {
                                                     children: "Contact Email"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 533,
+                                                    lineNumber: 558,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1022,13 +1056,13 @@ function Shops() {
                                                     className: `w-full border rounded-lg px-3 py-2 mt-1 outline-none ${shopErrors.contactEmail ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 534,
+                                                    lineNumber: 559,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 532,
+                                            lineNumber: 557,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1038,7 +1072,7 @@ function Shops() {
                                                     children: "Contact Phone"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 547,
+                                                    lineNumber: 572,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1050,19 +1084,19 @@ function Shops() {
                                                     className: "w-full border rounded-lg px-3 py-2 mt-1"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 548,
+                                                    lineNumber: 573,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 546,
+                                            lineNumber: 571,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 531,
+                                    lineNumber: 556,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1072,7 +1106,7 @@ function Shops() {
                                             children: "Plan"
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 557,
+                                            lineNumber: 582,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1088,7 +1122,7 @@ function Shops() {
                                                     children: "Free"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 563,
+                                                    lineNumber: 588,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1096,7 +1130,7 @@ function Shops() {
                                                     children: "Starter"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 564,
+                                                    lineNumber: 589,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1104,19 +1138,19 @@ function Shops() {
                                                     children: "Pro"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 565,
+                                                    lineNumber: 590,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 558,
+                                            lineNumber: 583,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 556,
+                                    lineNumber: 581,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1129,7 +1163,7 @@ function Shops() {
                                             children: "বাতিল"
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 570,
+                                            lineNumber: 595,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1139,24 +1173,24 @@ function Shops() {
                                             children: saving ? "সেভ হচ্ছে..." : editingShop ? "আপডেট করুন" : "তৈরি করুন"
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 573,
+                                            lineNumber: 598,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 569,
+                                    lineNumber: 594,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/admin/components/Shops.jsx",
-                            lineNumber: 491,
+                            lineNumber: 516,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 490,
+                        lineNumber: 515,
                         columnNumber: 11
                     }, this)
                 ]
@@ -1167,7 +1201,7 @@ function Shops() {
                         className: "fixed inset-0 bg-white/50 backdrop-blur-sm z-40"
                     }, void 0, false, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 589,
+                        lineNumber: 614,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1180,7 +1214,7 @@ function Shops() {
                                     children: "⚠ শপ সাসপেন্ড করবেন?"
                                 }, void 0, false, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 592,
+                                    lineNumber: 617,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1190,37 +1224,52 @@ function Shops() {
                                             children: suspendModal.name
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 594,
+                                            lineNumber: 619,
                                             columnNumber: 17
                                         }, this),
                                         " সাসপেন্ড করলে এই শপের কাস্টমার-ফেসিং সাইট বন্ধ হয়ে যাবে।"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 593,
+                                    lineNumber: 618,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
                                     value: suspendReason,
-                                    onChange: (e)=>setSuspendReason(e.target.value),
-                                    placeholder: "কারণ (ঐচ্ছিক)",
-                                    className: "w-full border rounded-lg px-3 py-2 mb-4 text-sm",
-                                    rows: 2
+                                    onChange: (e)=>{
+                                        setSuspendReason(e.target.value);
+                                        if (e.target.value.trim()) setSuspendReasonError(false);
+                                    },
+                                    placeholder: "কেন শপটি সাসপেন্ড করা হচ্ছে লিখুন",
+                                    className: `w-full rounded-lg border px-3 py-2 text-sm outline-none ${suspendReasonError ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-red-100"}`,
+                                    rows: 3
                                 }, void 0, false, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 596,
+                                    lineNumber: 621,
                                     columnNumber: 15
+                                }, this),
+                                suspendReasonError && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "mb-4 mt-1 text-xs font-medium text-red-600",
+                                    children: "সাসপেন্ড করার কারণ লিখতে হবে।"
+                                }, void 0, false, {
+                                    fileName: "[project]/admin/components/Shops.jsx",
+                                    lineNumber: 636,
+                                    columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "flex justify-end gap-3",
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                            onClick: ()=>setSuspendModal(null),
+                                            onClick: ()=>{
+                                                setSuspendModal(null);
+                                                setSuspendReason("");
+                                                setSuspendReasonError(false);
+                                            },
                                             className: "px-4 py-2 border rounded-lg",
                                             children: "বাতিল"
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 604,
+                                            lineNumber: 642,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1229,24 +1278,24 @@ function Shops() {
                                             children: "সাসপেন্ড করুন"
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 610,
+                                            lineNumber: 652,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 603,
+                                    lineNumber: 641,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/admin/components/Shops.jsx",
-                            lineNumber: 591,
+                            lineNumber: 616,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 590,
+                        lineNumber: 615,
                         columnNumber: 11
                     }, this)
                 ]
@@ -1257,7 +1306,7 @@ function Shops() {
                         className: "fixed inset-0 bg-white/50 backdrop-blur-sm z-40"
                     }, void 0, false, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 625,
+                        lineNumber: 667,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1270,7 +1319,7 @@ function Shops() {
                                     children: "🗑️ Shop Trash-এ পাঠাবেন?"
                                 }, void 0, false, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 628,
+                                    lineNumber: 670,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1280,14 +1329,14 @@ function Shops() {
                                             children: deleteModal.name
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 632,
+                                            lineNumber: 674,
                                             columnNumber: 17
                                         }, this),
                                         " এখনই active shop list থেকে সরানো হবে।"
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 631,
+                                    lineNumber: 673,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1295,7 +1344,7 @@ function Shops() {
                                     children: "৩ দিনের মধ্যে Shop Trash থেকে Restore করা যাবে। কোনো action না নিলে Shop এবং এর সব data permanently delete হবে।"
                                 }, void 0, false, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 634,
+                                    lineNumber: 676,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1309,7 +1358,7 @@ function Shops() {
                                             children: "বাতিল"
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 638,
+                                            lineNumber: 680,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1320,24 +1369,24 @@ function Shops() {
                                             children: deletingShop ? "Trash-এ পাঠানো হচ্ছে..." : "Trash-এ পাঠান"
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 646,
+                                            lineNumber: 688,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 637,
+                                    lineNumber: 679,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/admin/components/Shops.jsx",
-                            lineNumber: 627,
+                            lineNumber: 669,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 626,
+                        lineNumber: 668,
                         columnNumber: 11
                     }, this)
                 ]
@@ -1349,7 +1398,7 @@ function Shops() {
                         onClick: closeAdminsModal
                     }, void 0, false, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 663,
+                        lineNumber: 705,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1367,7 +1416,7 @@ function Shops() {
                                                     size: 18
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 668,
+                                                    lineNumber: 710,
                                                     columnNumber: 19
                                                 }, this),
                                                 " ",
@@ -1376,7 +1425,7 @@ function Shops() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 667,
+                                            lineNumber: 709,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1386,18 +1435,18 @@ function Shops() {
                                                 size: 20
                                             }, void 0, false, {
                                                 fileName: "[project]/admin/components/Shops.jsx",
-                                                lineNumber: 671,
+                                                lineNumber: 713,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 670,
+                                            lineNumber: 712,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 666,
+                                    lineNumber: 708,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1410,7 +1459,7 @@ function Shops() {
                                                     children: "বর্তমানে assign করা আছে"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 678,
+                                                    lineNumber: 720,
                                                     columnNumber: 19
                                                 }, this),
                                                 adminsLoading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1418,14 +1467,14 @@ function Shops() {
                                                     children: "লোড হচ্ছে..."
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 682,
+                                                    lineNumber: 724,
                                                     columnNumber: 21
                                                 }, this) : shopAdmins.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "text-sm text-gray-500",
                                                     children: "এই শপে এখনো কোনো admin assign করা হয়নি।"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 684,
+                                                    lineNumber: 726,
                                                     columnNumber: 21
                                                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "space-y-2",
@@ -1439,7 +1488,7 @@ function Shops() {
                                                                             children: a.name
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                                            lineNumber: 695,
+                                                                            lineNumber: 737,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1452,19 +1501,19 @@ function Shops() {
                                                                                     children: a.role
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                                    lineNumber: 697,
+                                                                                    lineNumber: 739,
                                                                                     columnNumber: 43
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                                            lineNumber: 696,
+                                                                            lineNumber: 738,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                    lineNumber: 694,
+                                                                    lineNumber: 736,
                                                                     columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1475,29 +1524,29 @@ function Shops() {
                                                                         size: 16
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/admin/components/Shops.jsx",
-                                                                        lineNumber: 705,
+                                                                        lineNumber: 747,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                    lineNumber: 700,
+                                                                    lineNumber: 742,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, a._id, true, {
                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                            lineNumber: 690,
+                                                            lineNumber: 732,
                                                             columnNumber: 25
                                                         }, this))
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 688,
+                                                    lineNumber: 730,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 677,
+                                            lineNumber: 719,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1508,7 +1557,7 @@ function Shops() {
                                                     children: "নতুন Admin যোগ করুন"
                                                 }, void 0, false, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 715,
+                                                    lineNumber: 757,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -1527,13 +1576,13 @@ function Shops() {
                                                                             children: "*"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                                            lineNumber: 720,
+                                                                            lineNumber: 762,
                                                                             columnNumber: 68
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                    lineNumber: 720,
+                                                                    lineNumber: 762,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1552,13 +1601,13 @@ function Shops() {
                                                                     className: `w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none ${adminErrors.email ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                    lineNumber: 721,
+                                                                    lineNumber: 763,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                            lineNumber: 719,
+                                                            lineNumber: 761,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1572,13 +1621,13 @@ function Shops() {
                                                                             children: "*"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                                            lineNumber: 732,
+                                                                            lineNumber: 774,
                                                                             columnNumber: 66
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                    lineNumber: 732,
+                                                                    lineNumber: 774,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1596,13 +1645,13 @@ function Shops() {
                                                                     className: `w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none ${adminErrors.name ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                    lineNumber: 733,
+                                                                    lineNumber: 775,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                            lineNumber: 731,
+                                                            lineNumber: 773,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1616,13 +1665,13 @@ function Shops() {
                                                                             children: "*"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                                            lineNumber: 743,
+                                                                            lineNumber: 785,
                                                                             columnNumber: 73
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                    lineNumber: 743,
+                                                                    lineNumber: 785,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1641,13 +1690,13 @@ function Shops() {
                                                                     className: `w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none ${adminErrors.password ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                    lineNumber: 744,
+                                                                    lineNumber: 786,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                            lineNumber: 742,
+                                                            lineNumber: 784,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1661,13 +1710,13 @@ function Shops() {
                                                                             children: "*"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                                            lineNumber: 755,
+                                                                            lineNumber: 797,
                                                                             columnNumber: 69
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                    lineNumber: 755,
+                                                                    lineNumber: 797,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1683,7 +1732,7 @@ function Shops() {
                                                                             children: "Admin (ফুল অ্যাক্সেস)"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                                            lineNumber: 761,
+                                                                            lineNumber: 803,
                                                                             columnNumber: 23
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1691,19 +1740,19 @@ function Shops() {
                                                                             children: "Staff (সীমিত)"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                                            lineNumber: 762,
+                                                                            lineNumber: 804,
                                                                             columnNumber: 23
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                                    lineNumber: 756,
+                                                                    lineNumber: 798,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                            lineNumber: 754,
+                                                            lineNumber: 796,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$admin$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1713,36 +1762,36 @@ function Shops() {
                                                             children: invitingAdmin ? "যোগ করা হচ্ছে..." : "Assign করুন"
                                                         }, void 0, false, {
                                                             fileName: "[project]/admin/components/Shops.jsx",
-                                                            lineNumber: 765,
+                                                            lineNumber: 807,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/admin/components/Shops.jsx",
-                                                    lineNumber: 718,
+                                                    lineNumber: 760,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/admin/components/Shops.jsx",
-                                            lineNumber: 714,
+                                            lineNumber: 756,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/admin/components/Shops.jsx",
-                                    lineNumber: 675,
+                                    lineNumber: 717,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/admin/components/Shops.jsx",
-                            lineNumber: 665,
+                            lineNumber: 707,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/admin/components/Shops.jsx",
-                        lineNumber: 664,
+                        lineNumber: 706,
                         columnNumber: 11
                     }, this)
                 ]
@@ -1753,13 +1802,13 @@ function Shops() {
                 onClose: ()=>setToast(null)
             }, void 0, false, {
                 fileName: "[project]/admin/components/Shops.jsx",
-                lineNumber: 781,
+                lineNumber: 823,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/admin/components/Shops.jsx",
-        lineNumber: 349,
+        lineNumber: 363,
         columnNumber: 5
     }, this);
 }

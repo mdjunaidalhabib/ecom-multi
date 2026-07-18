@@ -47,6 +47,7 @@ export default function Shops() {
 
   const [suspendModal, setSuspendModal] = useState(null); // shop being suspended
   const [suspendReason, setSuspendReason] = useState("");
+  const [suspendReasonError, setSuspendReasonError] = useState(false);
   const [deleteModal, setDeleteModal] = useState(null);
   const [deletingShop, setDeletingShop] = useState(false);
 
@@ -164,15 +165,26 @@ export default function Shops() {
   const confirmSuspend = (shop) => {
     setSuspendModal(shop);
     setSuspendReason("");
+    setSuspendReasonError(false);
   };
 
   const handleSuspend = async () => {
     if (!suspendModal) return;
+
+    const normalizedReason = suspendReason.trim();
+    if (!normalizedReason) {
+      setSuspendReasonError(true);
+      return;
+    }
+
     try {
       const res = await fetch(`/api/admin/shops/${suspendModal._id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "suspended", suspendedReason: suspendReason }),
+        body: JSON.stringify({
+          status: "suspended",
+          suspendedReason: normalizedReason,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -180,6 +192,8 @@ export default function Shops() {
       } else {
         setToast({ message: "🚫 শপ সাসপেন্ড করা হয়েছে", type: "success" });
         setSuspendModal(null);
+        setSuspendReason("");
+        setSuspendReasonError(false);
         loadShops();
       }
     } catch {
@@ -424,6 +438,17 @@ export default function Shops() {
                   </button>
                 </div>
 
+                {shop.status === "suspended" && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-red-500">
+                      Suspension reason
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap break-words font-medium">
+                      {shop.suspendedReason || "কারণ উল্লেখ করা হয়নি।"}
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-3 gap-2 text-center text-xs bg-gray-50 rounded-lg py-2">
                   <div className="flex flex-col items-center gap-0.5">
                     <Package size={14} className="text-gray-500" />
@@ -595,14 +620,31 @@ export default function Shops() {
               </p>
               <textarea
                 value={suspendReason}
-                onChange={(e) => setSuspendReason(e.target.value)}
-                placeholder="কারণ (ঐচ্ছিক)"
-                className="w-full border rounded-lg px-3 py-2 mb-4 text-sm"
-                rows={2}
+                onChange={(e) => {
+                  setSuspendReason(e.target.value);
+                  if (e.target.value.trim()) setSuspendReasonError(false);
+                }}
+                placeholder="কেন শপটি সাসপেন্ড করা হচ্ছে লিখুন"
+                className={`w-full rounded-lg border px-3 py-2 text-sm outline-none ${
+                  suspendReasonError
+                    ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200"
+                    : "border-gray-300 focus:ring-2 focus:ring-red-100"
+                }`}
+                rows={3}
               />
+              {suspendReasonError && (
+                <p className="mb-4 mt-1 text-xs font-medium text-red-600">
+                  সাসপেন্ড করার কারণ লিখতে হবে।
+                </p>
+              )}
+
               <div className="flex justify-end gap-3">
                 <button
-                  onClick={() => setSuspendModal(null)}
+                  onClick={() => {
+                    setSuspendModal(null);
+                    setSuspendReason("");
+                    setSuspendReasonError(false);
+                  }}
                   className="px-4 py-2 border rounded-lg"
                 >
                   বাতিল

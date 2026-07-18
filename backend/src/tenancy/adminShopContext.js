@@ -35,7 +35,9 @@ export function requireShopContext(req, res, next) {
 
   // admin / staff
   const requestedShopId = req.headers["x-active-shop-id"];
-  const allowedShopIds = (req.admin.shops || []).map(String);
+  const allowedShopIds = Array.isArray(req.usableShopIds)
+    ? req.usableShopIds.map(String)
+    : (req.admin.shops || []).map(String);
 
   if (allowedShopIds.length === 0) {
     return res.status(403).json({
