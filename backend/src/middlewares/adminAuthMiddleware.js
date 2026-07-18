@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import Admin from "../models/Admin.js";
+import Shop from "../models/Shop.js";
 
 // Protect API route
 export const protect = async (req, res, next) => {
@@ -22,6 +23,28 @@ export const protect = async (req, res, next) => {
     const admin = await Admin.findById(decoded.id).select("-password");
     if (!admin) {
       return res.status(401).json({ message: "Admin not found" });
+    }
+
+    if (admin.status !== "active") {
+      res.clearCookie("admin_token", { path: "/" });
+      return res.status(403).json({ message: "Admin account is not active" });
+    }
+
+    // Re-check shop access on every protected request so an old token cannot
+    // keep working after the assigned shop is deleted or suspended.
+    if (admin.role !== "superadmin") {
+      const usableShop = await Shop.exists({
+        _id: { $in: admin.shops || [] },
+        status: { $in: ["active", "trial"] },
+      }).setOptions({ skipTenantScope: true });
+
+      if (!usableShop) {
+        res.clearCookie("admin_token", { path: "/" });
+        return res.status(403).json({
+          message: "No active shop is assigned to this account",
+          errorType: "NO_ACTIVE_SHOP",
+        });
+      }
     }
 
     req.admin = admin;

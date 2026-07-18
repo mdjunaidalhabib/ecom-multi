@@ -37,6 +37,11 @@ const trashSchema = new mongoose.Schema(
 
     // When this trash entry should be auto-purged (permanently deleted)
     expiresAt: { type: Date, required: true, index: true },
+
+    // Optional relationship data needed to fully restore complex records.
+    // Example: Shop trash entries keep the IDs of admins that were assigned
+    // before the shop was moved to Trash.
+    metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   { timestamps: true },
 );

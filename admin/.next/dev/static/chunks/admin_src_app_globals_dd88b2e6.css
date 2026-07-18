@@ -144,6 +144,7 @@
     --color-indigo-700: #432dd7;
     --color-indigo-800: #372aac;
     --color-violet-50: #f5f3ff;
+    --color-violet-100: #ede9fe;
     --color-violet-200: #ddd6ff;
     --color-violet-400: #a685ff;
     --color-violet-500: #8d54ff;
@@ -313,6 +314,7 @@
       --color-indigo-700: lab(32.4486% 49.2217 -84.6695);
       --color-indigo-800: lab(26.6645% 37.9804 -68.6402);
       --color-violet-50: lab(96.2416% 2.28846 -5.51655);
+      --color-violet-100: lab(93.0838% 4.35197 -9.88284);
       --color-violet-200: lab(87.0888% 8.53691 -19.4189);
       --color-violet-400: lab(62.8239% 34.9159 -60.0512);
       --color-violet-500: lab(49.9355% 55.1777 -81.8963);
@@ -2228,6 +2230,10 @@
     background-color: var(--color-violet-50);
   }
 
+  .bg-violet-100 {
+    background-color: var(--color-violet-100);
+  }
+
   .bg-violet-600 {
     background-color: var(--color-violet-600);
   }
@@ -2659,6 +2665,14 @@
 
   .py-10 {
     padding-block: calc(var(--spacing) * 10);
+  }
+
+  .py-12 {
+    padding-block: calc(var(--spacing) * 12);
+  }
+
+  .py-14 {
+    padding-block: calc(var(--spacing) * 14);
   }
 
   .py-16 {
@@ -4435,6 +4449,12 @@
     .lg\:text-sm {
       font-size: var(--text-sm);
       line-height: var(--tw-leading, var(--text-sm--line-height));
+    }
+  }
+
+  @media (min-width: 80rem) {
+    .xl\:grid-cols-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 

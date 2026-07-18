@@ -6,6 +6,7 @@ const TYPE_BADGE_STYLE = {
   Order: "bg-amber-100 border-amber-200 text-amber-700",
   Slider: "bg-rose-100 border-rose-200 text-rose-700",
   PaymentMethod: "bg-emerald-100 border-emerald-200 text-emerald-700",
+  Shop: "bg-violet-100 border-violet-200 text-violet-700",
 };
 
 const TYPE_ICON = {
@@ -14,6 +15,7 @@ const TYPE_ICON = {
   Order: "🧾",
   Slider: "🖼️",
   PaymentMethod: "💳",
+  Shop: "🏪",
 };
 
 function getImage(it) {
@@ -29,6 +31,9 @@ function getImage(it) {
   }
   if (it.collectionName === "Order") {
     return d.items?.[0]?.image || "";
+  }
+  if (it.collectionName === "Shop") {
+    return d.branding?.logo || "";
   }
   return "";
 }
@@ -49,6 +54,9 @@ function getSubtitle(it) {
   }
   if (it.collectionName === "PaymentMethod") {
     return `${d.number || ""} · ${d.accountType || "personal"}`;
+  }
+  if (it.collectionName === "Shop") {
+    return `${d.domain || "No domain"} · ${d.status || "trial"}`;
   }
   return "";
 }

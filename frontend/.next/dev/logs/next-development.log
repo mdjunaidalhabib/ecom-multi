@@ -1,8 +1,2 @@
-[00:00:03.324] Server  WARN     ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-[00:00:04.295] Server  LOG      ✓ Ready in 3.3s
-[00:26:45.318] Server  LOG      ○ Compiling / ...
-[00:26:48.030] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:26:50.282] Browser LOG     Tracking failed: Request failed with status code 404
-[00:26:50.282] Browser ERROR   {}
-[00:26:50.282] Browser ERROR   ❌ Footer Error: {}
-[00:26:50.282] Browser ERROR   Slider load error: {"code":"ERR_BAD_REQUEST","config":{"adapter":["xhr","http","fetch"],"allowAbsoluteUrls":true,"env":{},"headers":{"Accept":"application/json, text/plain, */*"},"maxBodyLength":-1,"maxContentLength":-1,"method":"get","timeout":0,"transformRequest":[null],"transformResponse":[null],"transitional":{"clarifyTimeoutError":false,"forcedJSONParsing":true,"silentJSONParsing":true},"url":"/api/slider-images","xsrfCookieName":"XSRF-TOKEN","xsrfHeaderName":"X-XSRF-TOKEN"},"message":"Request failed with status code 404","name":"AxiosError","stack":"AxiosError: Request failed with status code 404\n    at settle (http://localhost:3000/_next/static/chunks/9e883_d7588d3c._.js:3470:16)\n    at XMLHttpRequest.onloadend (http://localhost:3000/_next/static/chunks/9e883_d7588d3c._.js:3967:186)\n    at Axios.request (http://localhost:3000/_next/static/chunks/9e883_d7588d3c._.js:4686:49)\n    at async ImageSlider.useEffect.loadSlides (http://localhost:3000/_next/static/chunks/frontend_c79c4af4._.js:147:37)","status":404}
+[00:00:05.682] Server  WARN     ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[00:00:06.295] Server  LOG      ✓ Ready in 5s

@@ -1,8 +1,14 @@
-import mongoose from "mongoose";
 import Shop from "../../src/models/Shop.js";
 import Admin from "../../src/models/Admin.js";
 import Product from "../../src/models/Product.js";
 import Order from "../../src/models/Order.js";
+import Trash from "../../src/models/Trash.js";
+import {
+  moveToTrash,
+  restoreFromTrashEntry,
+  cleanupTrashAssets,
+} from "../../utils/trash/trash.helpers.js";
+import { permanentlyDeleteShopData } from "../../utils/shop/shopTrash.helpers.js";
 
 /* -------------------------------------------------------
    Helper: name -> url-safe slug (+ auto-unique suffix)
@@ -60,7 +66,12 @@ export const listShops = async (req, res) => {
         { $group: { _id: "$shopId", count: { $sum: 1 } } },
       ]).option({ skipTenantScope: true }),
       Admin.aggregate([
-        { $match: { shops: { $in: shopIds } } },
+        {
+          $match: {
+            shops: { $in: shopIds },
+            role: { $ne: "superadmin" },
+          },
+        },
         { $unwind: "$shops" },
         { $match: { shops: { $in: shopIds } } },
         { $group: { _id: "$shops", count: { $sum: 1 } } },
@@ -271,6 +282,154 @@ export const updateShopStatus = async (req, res) => {
 };
 
 /* -------------------------------------------------------
+   DELETE /admin/shops/:id — Shop-কে 3 দিনের Trash-এ পাঠায়
+------------------------------------------------------- */
+export const deleteShop = async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id).setOptions({
+      skipTenantScope: true,
+    });
+    if (!shop) return res.status(404).json({ message: "Shop not found" });
+
+    const assignedAdmins = await Admin.find({
+      shops: shop._id,
+      role: { $ne: "superadmin" },
+    })
+      .select("_id")
+      .lean();
+
+    const trashEntry = await moveToTrash("Shop", shop, {
+      shopId: shop._id,
+      metadata: {
+        assignedAdminIds: assignedAdmins.map((admin) => admin._id),
+      },
+    });
+
+    // A deleted shop must not remain accessible from an assigned admin login.
+    await Admin.updateMany(
+      { shops: shop._id },
+      { $pull: { shops: shop._id } },
+    );
+
+    res.json({
+      message: "🗑️ Shop Trash-এ পাঠানো হয়েছে। ৩ দিনের মধ্যে Restore করা যাবে।",
+      trashItem: trashEntry,
+    });
+  } catch (err) {
+    console.error("❌ deleteShop error:", err);
+    res.status(500).json({ message: "Server error deleting shop" });
+  }
+};
+
+/* -------------------------------------------------------
+   GET /admin/shops/trash — Super Admin-এর deleted Shop list
+------------------------------------------------------- */
+export const listShopTrash = async (req, res) => {
+  try {
+    const items = await Trash.find({ collectionName: "Shop" })
+      .setOptions({ skipTenantScope: true })
+      .sort({ deletedAt: -1 });
+
+    res.json(items);
+  } catch (err) {
+    console.error("❌ listShopTrash error:", err);
+    res.status(500).json({ message: "Server error fetching shop trash" });
+  }
+};
+
+/* -------------------------------------------------------
+   POST /admin/shops/trash/:trashId/restore
+------------------------------------------------------- */
+export const restoreDeletedShop = async (req, res) => {
+  try {
+    const entry = await Trash.findOne({
+      _id: req.params.trashId,
+      collectionName: "Shop",
+    }).setOptions({ skipTenantScope: true });
+
+    if (!entry) {
+      return res.status(404).json({ message: "Deleted shop not found" });
+    }
+
+    const assignedAdminIds = entry.metadata?.assignedAdminIds || [];
+    const restoredShop = await restoreFromTrashEntry(entry);
+
+    if (assignedAdminIds.length) {
+      await Admin.updateMany(
+        {
+          _id: { $in: assignedAdminIds },
+          role: { $ne: "superadmin" },
+        },
+        { $addToSet: { shops: restoredShop._id } },
+      );
+    }
+
+    res.json({
+      message: "♻️ Shop সফলভাবে Restore হয়েছে",
+      shop: restoredShop,
+    });
+  } catch (err) {
+    console.error("❌ restoreDeletedShop error:", err);
+    if (err?.code === 11000) {
+      return res.status(409).json({
+        message:
+          "এই Shop-এর domain বা slug বর্তমানে অন্য Shop ব্যবহার করছে, তাই Restore করা যায়নি।",
+      });
+    }
+    res.status(500).json({ message: "Server error restoring shop" });
+  }
+};
+
+/* -------------------------------------------------------
+   DELETE /admin/shops/trash/:trashId — Shop + tenant data forever
+------------------------------------------------------- */
+export const permanentDeleteShop = async (req, res) => {
+  try {
+    const entry = await Trash.findOne({
+      _id: req.params.trashId,
+      collectionName: "Shop",
+    }).setOptions({ skipTenantScope: true });
+
+    if (!entry) {
+      return res.status(404).json({ message: "Deleted shop not found" });
+    }
+
+    await permanentlyDeleteShopData(entry.originalId);
+    await cleanupTrashAssets("Shop", entry.data);
+    await entry.deleteOne();
+
+    res.json({ message: "🗑️ Shop এবং এর সব data permanently deleted" });
+  } catch (err) {
+    console.error("❌ permanentDeleteShop error:", err);
+    res.status(500).json({ message: "Server error permanently deleting shop" });
+  }
+};
+
+/* -------------------------------------------------------
+   DELETE /admin/shops/trash/empty — সব deleted Shop forever
+------------------------------------------------------- */
+export const emptyShopTrash = async (req, res) => {
+  try {
+    const entries = await Trash.find({ collectionName: "Shop" }).setOptions({
+      skipTenantScope: true,
+    });
+
+    for (const entry of entries) {
+      await permanentlyDeleteShopData(entry.originalId);
+      await cleanupTrashAssets("Shop", entry.data);
+      await entry.deleteOne();
+    }
+
+    res.json({
+      message: `🗑️ Shop Trash emptied (${entries.length} item removed)`,
+    });
+  } catch (err) {
+    console.error("❌ emptyShopTrash error:", err);
+    res.status(500).json({ message: "Server error emptying shop trash" });
+  }
+};
+
+/* -------------------------------------------------------
    GET /admin/shops/:id/admins — এই শপে assign করা সব admin/staff
 ------------------------------------------------------- */
 export const listShopAdmins = async (req, res) => {
@@ -308,6 +467,14 @@ export const inviteShopAdmin = async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
     const finalRole = role === "staff" ? "staff" : "admin"; // এই রুট দিয়ে কখনো superadmin বানানো যাবে না
+    const platformSuperAdminEmail = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+
+    if (platformSuperAdminEmail && normalizedEmail === platformSuperAdminEmail) {
+      return res.status(409).json({
+        message:
+          "এই ইমেইলটি Platform Super Admin-এর। Shop Admin হিসেবে ব্যবহার করা যাবে না।",
+      });
+    }
 
     let admin = await Admin.findOne({ email: normalizedEmail });
 

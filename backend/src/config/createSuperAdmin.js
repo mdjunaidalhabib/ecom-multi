@@ -3,123 +3,64 @@ import Admin from "../models/Admin.js";
 
 const createSuperAdmin = async () => {
   try {
-    console.log("========== SUPER ADMIN CHECK ==========");
+    const name = process.env.SUPER_ADMIN_NAME?.trim();
+    const email = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+    const password = process.env.SUPER_ADMIN_PASSWORD;
 
-    console.log(
-      "ENV NAME:",
-      process.env.SUPER_ADMIN_NAME
-    );
-
-    console.log(
-      "ENV EMAIL:",
-      process.env.SUPER_ADMIN_EMAIL
-    );
-
-    console.log(
-      "ENV PASSWORD:",
-      process.env.SUPER_ADMIN_PASSWORD
-    );
-
-    let admin = await Admin.findOne({
-      email: process.env.SUPER_ADMIN_EMAIL,
-    });
-
-    if (!admin) {
-      admin = new Admin({
-        name: process.env.SUPER_ADMIN_NAME,
-        email: process.env.SUPER_ADMIN_EMAIL,
-        password: process.env.SUPER_ADMIN_PASSWORD,
-        role: "superadmin",
-      });
-
-      await admin.save();
-
-      console.log(
-        "🟢 Super Admin created successfully!"
+    if (!name || !email || !password) {
+      console.warn(
+        "⚠️ SUPER_ADMIN_NAME, SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD are required",
       );
-
       return;
     }
 
-    console.log(
-      "🟡 Existing Super Admin Found:",
-      admin.email
-    );
+    let admin = await Admin.findOne({ email });
+
+    if (!admin) {
+      admin = await Admin.create({
+        name,
+        email,
+        password,
+        role: "superadmin",
+        shops: [],
+      });
+
+      console.log(`🟢 Super Admin created: ${admin.email}`);
+      return;
+    }
 
     let updated = false;
 
-    // Name Check
-    if (
-      admin.name !== process.env.SUPER_ADMIN_NAME
-    ) {
-      console.log(
-        "✏️ Updating Name:",
-        admin.name,
-        "=>",
-        process.env.SUPER_ADMIN_NAME
-      );
-
-      admin.name = process.env.SUPER_ADMIN_NAME;
+    if (admin.name !== name) {
+      admin.name = name;
       updated = true;
     }
 
-    // Email Check
-    if (
-      admin.email !== process.env.SUPER_ADMIN_EMAIL
-    ) {
-      console.log(
-        "✏️ Updating Email:",
-        admin.email,
-        "=>",
-        process.env.SUPER_ADMIN_EMAIL
-      );
-
-      admin.email = process.env.SUPER_ADMIN_EMAIL;
+    if (admin.role !== "superadmin") {
+      admin.role = "superadmin";
       updated = true;
     }
 
-    console.log("DB HASH:", admin.password);
+    // A platform Super Admin is never a tenant/shop member.
+    if (admin.shops?.length) {
+      admin.shops = [];
+      updated = true;
+    }
 
-    const passwordMatch = await bcrypt.compare(
-      process.env.SUPER_ADMIN_PASSWORD,
-      admin.password
-    );
-
-    console.log(
-      "PASSWORD MATCH WITH ENV:",
-      passwordMatch
-    );
-
-    // Password Check
+    const passwordMatch = await bcrypt.compare(password, admin.password);
     if (!passwordMatch) {
-      console.log(
-        "🔐 Password mismatch detected. Updating password..."
-      );
-
-      admin.password =
-        process.env.SUPER_ADMIN_PASSWORD;
-
+      admin.password = password;
       updated = true;
     }
 
     if (updated) {
       await admin.save();
-
-      console.log(
-        "🟢 Super Admin updated from ENV successfully!"
-      );
+      console.log(`🟢 Super Admin synchronized: ${admin.email}`);
     } else {
-      console.log(
-        "🟡 Super Admin already exists and is up to date."
-      );
+      console.log(`🟡 Super Admin is up to date: ${admin.email}`);
     }
-
-    console.log("=======================================");
   } catch (err) {
-    console.error(
-      "❌ Super Admin setup failed:",
-      err
-    );
+    console.error("❌ Super Admin setup failed:", err);
   }
 };
 
