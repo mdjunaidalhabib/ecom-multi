@@ -111,12 +111,8 @@ app.use(express.urlencoded({ extended: true }));
 configurePassport();
 app.use(passport.initialize());
 
-app.use("/", publicRoutes);
-app.use("/admin", adminRoutes);
-
+// ✅ Infrastructure routes must bypass tenant/domain resolution.
 app.get("/", (req, res) => res.send("✅ API is running..."));
-app.use("/uploads", express.static("uploads"));
-
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "ok",
@@ -124,6 +120,22 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+app.use("/uploads", express.static("uploads"));
+app.use(express.static("public"));
+
+// ✅ Admin APIs are global platform APIs. They must be mounted BEFORE the
+// public tenant router, otherwise publicShopResolver tries to find a shop for
+// /admin/super-login and blocks Super Admin login on non-shop domains.
+app.use("/admin", adminRoutes);
+
+// Prevent an unknown /admin/* request from falling through to the public
+// domain resolver and returning a misleading "shop not found" response.
+app.use("/admin", (req, res) => {
+  res.status(404).json({ message: "Admin route not found" });
+});
+
+// ✅ Customer-facing APIs are tenant scoped and resolve the shop by domain.
+app.use("/", publicRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -138,7 +150,6 @@ app.use((err, req, res, next) => {
     details: isProd ? undefined : String(err),
   });
 });
-app.use(express.static("public"));
 
 const startServer = async () => {
   try {

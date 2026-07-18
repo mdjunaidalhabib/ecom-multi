@@ -49,13 +49,19 @@ export default function tenantPlugin(schema, options = {}) {
     });
   });
 
-  schema.pre("save", function (next) {
+  const applyTenantIdToDocument = function (next) {
     if (!this[pathName]) {
       const contextShopId = getCurrentShopId();
       if (contextShopId) this[pathName] = contextShopId;
     }
     next();
-  });
+  };
+
+  // Mongoose validation runs before normal pre("save") hooks. Because shopId is
+  // required on tenant models, it must be injected during pre("validate") or a
+  // newly created document fails with: "Path `shopId` is required".
+  schema.pre("validate", applyTenantIdToDocument);
+  schema.pre("save", applyTenantIdToDocument);
 
   schema.pre("aggregate", function () {
     if (this.options.skipTenantScope) return;

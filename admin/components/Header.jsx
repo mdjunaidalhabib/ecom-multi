@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
-import axios from "axios";
 import { Button } from "./button";
 import { Menu, X } from "lucide-react";
 import MenuBar from "./MenuBar";
@@ -10,30 +9,14 @@ import LogoutButton from "./LogoutButton";
 import LiveDateTime from "./LiveDateTime";
 import { navItems, settingsChildren, superAdminNavItems } from "./menuConfig";
 import { motion, AnimatePresence } from "framer-motion";
+import useAdminMe from "../hooks/useAdminMe";
 
 export default function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [adminName, setAdminName] = useState("");
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const { admin, loading: adminLoading, isSuperAdmin } = useAdminMe();
 
-  useEffect(() => {
-    const loadAdmin = async () => {
-      try {
-        const res = await axios.get("/api/admin/verify", {
-          withCredentials: true,
-        });
-        setAdminName(res.data?.admin?.name || "");
-        setIsSuperAdmin(res.data?.admin?.role === "superadmin");
-      } catch (err) {
-        console.error("Failed to load admin info:", err);
-      }
-    };
-
-    loadAdmin();
-  }, []);
-
-  const displayName = adminName || "Admin";
+  const displayName = adminLoading ? "..." : admin?.name || "Admin";
   const panelTitle = pathname?.startsWith("/super-admin")
     ? "Super Admin Panel"
     : "Admin Panel";
@@ -69,7 +52,9 @@ export default function Header() {
             variant="ghost"
             size="icon"
             onClick={() => setMenuOpen(!menuOpen)}
-            className="!rounded-full !h-9 !w-9 bg-gray-50 border border-gray-200"
+            disabled={adminLoading}
+            aria-label="Open navigation menu"
+            className="!rounded-full !h-9 !w-9 bg-gray-50 border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {menuOpen ? (
               <X className="text-rose-600" size={20} />
@@ -82,7 +67,7 @@ export default function Header() {
 
       {/* মোবাইল মেনু */}
       <AnimatePresence>
-        {menuOpen && (
+        {menuOpen && !adminLoading && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
