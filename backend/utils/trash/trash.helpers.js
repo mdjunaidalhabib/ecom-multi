@@ -4,6 +4,8 @@ import Category from "../../src/models/Category.js";
 import Slider from "../../src/models/Slider.js";
 import Order from "../../src/models/Order.js";
 import PaymentMethod from "../../src/models/PaymentMethod.js";
+import Shop from "../../src/models/Shop.js";
+import { permanentlyDeleteShopData } from "../shop/shopTrash.helpers.js";
 import {
   deleteFromCloudinary,
   deleteByPublicId,
@@ -19,6 +21,7 @@ const MODEL_MAP = {
   Slider,
   Order,
   PaymentMethod,
+  Shop,
 };
 
 // ✅ Trash list এ দেখানোর জন্য একটা readable label বানানো
@@ -36,6 +39,8 @@ const getLabel = (collectionName, data) => {
         : `Order #${String(data?._id || "").slice(-6)}`;
     case "PaymentMethod":
       return data?.name ? `Payment Method - ${data.name}` : "Unnamed payment method";
+    case "Shop":
+      return data?.name ? `${data.name} (${data.domain || "no domain"})` : "Unnamed shop";
     default:
       return data?.name || data?.title || String(data?._id || "Item");
   }
@@ -50,16 +55,22 @@ const getLabel = (collectionName, data) => {
  * @param {string} collectionName - "Product" | "Category" | "Slider" | "Order"
  * @param {import("mongoose").Document} doc - already-fetched mongoose document
  */
-export const moveToTrash = async (collectionName, doc) => {
+export const moveToTrash = async (
+  collectionName,
+  doc,
+  { shopId, metadata = {} } = {},
+) => {
   const data = doc.toObject({ depopulate: true });
 
   const trashEntry = await Trash.create({
+    shopId: shopId || data.shopId,
     collectionName,
     originalId: doc._id,
     label: getLabel(collectionName, data),
     data,
     deletedAt: new Date(),
     expiresAt: new Date(Date.now() + TRASH_TTL_DAYS * 24 * 60 * 60 * 1000),
+    metadata,
   });
 
   await doc.deleteOne();
@@ -85,6 +96,12 @@ export const cleanupTrashAssets = async (collectionName, data) => {
       else if (data.image) await deleteFromCloudinary(data.image);
     } else if (collectionName === "Slider") {
       if (data.srcPublicId) await deleteByPublicId(data.srcPublicId);
+    } else if (collectionName === "Shop") {
+      if (data?.branding?.logoPublicId) {
+        await deleteByPublicId(data.branding.logoPublicId);
+      } else if (data?.branding?.logo) {
+        await deleteFromCloudinary(data.branding.logo);
+      }
     }
     // Order ইত্যাদির কোনো external asset নেই
   } catch (err) {
@@ -121,6 +138,9 @@ export const purgeExpiredTrash = async () => {
     const expired = await Trash.find({ expiresAt: { $lte: new Date() } });
 
     for (const entry of expired) {
+      if (entry.collectionName === "Shop") {
+        await permanentlyDeleteShopData(entry.originalId);
+      }
       await cleanupTrashAssets(entry.collectionName, entry.data);
       await entry.deleteOne();
     }

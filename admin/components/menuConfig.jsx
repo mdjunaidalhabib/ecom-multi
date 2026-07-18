@@ -65,7 +65,7 @@ export const superAdminOnlyNavItems = [
 // ✅ Superadmin-এর কাজ শুধু শপ তৈরি/ম্যানেজ করা — কোনো শপের
 // Products/Orders/Users/Settings ইত্যাদি shop-scoped ডেটাতে তার এক্সেস
 // নেই (backend-এও ব্লক করা আছে, দেখুন tenancy/adminShopContext.js), তাই
-// মেনুতেও শুধু প্রাসঙ্গিক আইটেমগুলোই দেখানো হয়
+// মেনুতেও শুধু প্রাসঙ্গিক platform-level আইটেমগুলোই দেখানো হয়
 export const superAdminNavItems = [
   {
     icon: <CircleGauge size={18} />,
@@ -76,6 +76,11 @@ export const superAdminNavItems = [
     icon: <Store size={18} />,
     label: "Shops",
     href: "/super-admin/shops",
+  },
+  {
+    icon: <Trash2 size={18} />,
+    label: "Shop Trash",
+    href: "/super-admin/trash",
   },
   {
     icon: <User size={18} />,

@@ -1,5 +1,6 @@
 import generateToken from "../../utils/auth/generateToken.js";
 import Admin from "../../src/models/Admin.js";
+import Shop from "../../src/models/Shop.js";
 import { UAParser } from "ua-parser-js";
 import geoip from "geoip-lite";
 
@@ -89,6 +90,33 @@ async function loginByPortal(req, res, { allowedRoles, wrongPortalMessage, error
         message: wrongPortalMessage,
         errorType,
       });
+    }
+
+    if (admin.status !== "active") {
+      res.clearCookie("admin_token", { path: "/" });
+      return res.status(403).json({
+        success: false,
+        message: "এই Admin অ্যাকাউন্টটি বর্তমানে সক্রিয় নয়।",
+        errorType: "ADMIN_SUSPENDED",
+      });
+    }
+
+    // Shop admin/staff must have at least one existing, usable shop.
+    // This also blocks login immediately after their only shop is deleted.
+    if (admin.role !== "superadmin") {
+      const usableShop = await Shop.exists({
+        _id: { $in: admin.shops || [] },
+        status: { $in: ["active", "trial"] },
+      }).setOptions({ skipTenantScope: true });
+
+      if (!usableShop) {
+        res.clearCookie("admin_token", { path: "/" });
+        return res.status(403).json({
+          success: false,
+          message: "এই অ্যাকাউন্টে কোনো সক্রিয় শপ assign করা নেই।",
+          errorType: "NO_ACTIVE_SHOP",
+        });
+      }
     }
 
     const token = generateToken(admin);

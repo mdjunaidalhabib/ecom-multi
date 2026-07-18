@@ -63,7 +63,8 @@ export default function Sidebar() {
     );
   }
 
-  // Superadmin শুধু Dashboard/Shops/Profile দেখবে; shop-specific menu নয়।
+  // Superadmin শুধু platform-level Dashboard/Shops/Shop Trash/Profile দেখবে;
+  // shop-specific menu নয়।
   const items = isSuperAdmin ? superAdminNavItems : navItems;
   const showSettings = !isSuperAdmin;
 

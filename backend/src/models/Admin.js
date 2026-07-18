@@ -55,6 +55,11 @@ const adminSchema = new mongoose.Schema(
 
 // Hash password before save
 adminSchema.pre("save", async function (next) {
+  // Platform-level Super Admin must never be attached to an individual shop.
+  if (this.role === "superadmin" && this.shops?.length) {
+    this.shops = [];
+  }
+
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);

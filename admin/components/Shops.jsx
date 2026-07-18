@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Store,
   Plus,
@@ -42,9 +43,12 @@ export default function Shops() {
   const [editingShop, setEditingShop] = useState(null); // null = creating new
   const [form, setForm] = useState({ name: "", domain: "", contactEmail: "", contactPhone: "", plan: "free" });
   const [saving, setSaving] = useState(false);
+  const [shopErrors, setShopErrors] = useState({});
 
   const [suspendModal, setSuspendModal] = useState(null); // shop being suspended
   const [suspendReason, setSuspendReason] = useState("");
+  const [deleteModal, setDeleteModal] = useState(null);
+  const [deletingShop, setDeletingShop] = useState(false);
 
   const [verifyingId, setVerifyingId] = useState(null);
 
@@ -54,6 +58,7 @@ export default function Shops() {
   const [adminsLoading, setAdminsLoading] = useState(false);
   const [adminForm, setAdminForm] = useState({ name: "", email: "", password: "", role: "admin" });
   const [invitingAdmin, setInvitingAdmin] = useState(false);
+  const [adminErrors, setAdminErrors] = useState({});
 
   // ================== LOAD ==================
   const loadShops = async () => {
@@ -78,11 +83,13 @@ export default function Shops() {
   const openCreateModal = () => {
     setEditingShop(null);
     setForm({ name: "", domain: "", contactEmail: "", contactPhone: "", plan: "free" });
+    setShopErrors({});
     setShowModal(true);
   };
 
   const openEditModal = (shop) => {
     setEditingShop(shop);
+    setShopErrors({});
     setForm({
       name: shop.name || "",
       domain: shop.domain || "",
@@ -97,11 +104,25 @@ export default function Shops() {
     setShowModal(false);
     setEditingShop(null);
     setSaving(false);
+    setShopErrors({});
   };
 
   // ================== CREATE / UPDATE ==================
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const errors = {};
+    if (!form.name.trim()) errors.name = true;
+    if (!form.domain.trim()) errors.domain = true;
+    if (
+      form.contactEmail.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail.trim())
+    ) {
+      errors.contactEmail = true;
+    }
+    setShopErrors(errors);
+    if (Object.keys(errors).length) return;
+
     setSaving(true);
 
     try {
@@ -117,8 +138,14 @@ export default function Shops() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setToast({ message: data?.message || "❌ সমস্যা হয়েছে", type: "error" });
+        const message = data?.message || "❌ সমস্যা হয়েছে";
+        const nextErrors = {};
+        if (message.includes("নাম")) nextErrors.name = true;
+        if (message.includes("ডোমেইন")) nextErrors.domain = true;
+        setShopErrors(nextErrors);
+        setToast({ message, type: "error" });
       } else {
+        setShopErrors({});
         setToast({
           message: editingShop ? "✅ শপ আপডেট হয়েছে" : "✅ নতুন শপ তৈরি হয়েছে",
           type: "success",
@@ -179,6 +206,34 @@ export default function Shops() {
     }
   };
 
+  // ================== MOVE SHOP TO TRASH ==================
+  const handleDeleteShop = async () => {
+    if (!deleteModal) return;
+    setDeletingShop(true);
+
+    try {
+      const res = await fetch(`/api/admin/shops/${deleteModal._id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setToast({ message: data?.message || "❌ Shop delete failed", type: "error" });
+      } else {
+        setToast({
+          message: data?.message || "🗑️ Shop Trash-এ পাঠানো হয়েছে",
+          type: "success",
+        });
+        setDeleteModal(null);
+        loadShops();
+      }
+    } catch {
+      setToast({ message: "❌ Server error", type: "error" });
+    } finally {
+      setDeletingShop(false);
+    }
+  };
+
   // ================== VERIFY DOMAIN ==================
   const handleVerifyDomain = async (shop) => {
     setVerifyingId(shop._id);
@@ -216,17 +271,29 @@ export default function Shops() {
   const openAdminsModal = (shop) => {
     setAdminsModal(shop);
     setAdminForm({ name: "", email: "", password: "", role: "admin" });
+    setAdminErrors({});
     loadShopAdmins(shop);
   };
 
   const closeAdminsModal = () => {
     setAdminsModal(null);
     setShopAdmins([]);
+    setAdminErrors({});
   };
 
   const handleInviteAdmin = async (e) => {
     e.preventDefault();
     if (!adminsModal) return;
+
+    const normalizedEmail = adminForm.email.trim();
+    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+    if (!emailIsValid) {
+      setAdminErrors({ email: true });
+      setToast({ message: "সঠিক ইমেইল দিন", type: "error" });
+      return;
+    }
+
+    setAdminErrors({});
     setInvitingAdmin(true);
 
     try {
@@ -238,8 +305,15 @@ export default function Shops() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setToast({ message: data?.message || "❌ সমস্যা হয়েছে", type: "error" });
+        const message = data?.message || "❌ সমস্যা হয়েছে";
+        const nextErrors = {};
+        if (message.includes("ইমেইল")) nextErrors.email = true;
+        if (message.includes("নাম")) nextErrors.name = true;
+        if (message.includes("পাসওয়ার্ড")) nextErrors.password = true;
+        setAdminErrors(nextErrors);
+        setToast({ message, type: "error" });
       } else {
+        setAdminErrors({});
         setToast({ message: data?.message || "✅ Assign করা হয়েছে", type: "success" });
         setAdminForm({ name: "", email: "", password: "", role: "admin" });
         loadShopAdmins(adminsModal);
@@ -278,12 +352,20 @@ export default function Shops() {
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Store size={24} /> Shops
         </h1>
-        <button
-          onClick={openCreateModal}
-          className="lg:ml-auto flex items-center gap-1.5 bg-indigo-600 text-white shadow font-semibold px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 active:scale-[0.98]"
-        >
-          <Plus size={16} /> নতুন শপ তৈরি করুন
-        </button>
+        <div className="lg:ml-auto flex flex-wrap gap-2">
+          <Link
+            href="/super-admin/trash"
+            className="flex items-center gap-1.5 border border-red-200 bg-red-50 text-red-700 shadow-sm font-semibold px-4 py-2 rounded-lg text-sm hover:bg-red-100 active:scale-[0.98]"
+          >
+            <Trash2 size={16} /> Shop Trash
+          </Link>
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-1.5 bg-indigo-600 text-white shadow font-semibold px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 active:scale-[0.98]"
+          >
+            <Plus size={16} /> নতুন শপ তৈরি করুন
+          </button>
+        </div>
       </div>
 
       {/* LIST */}
@@ -360,7 +442,7 @@ export default function Shops() {
                   </div>
                 </div>
 
-                <div className="flex gap-2 mt-1">
+                <div className="grid grid-cols-2 gap-2 mt-1">
                   <button
                     onClick={() => openAdminsModal(shop)}
                     className="flex-1 flex items-center justify-center gap-1 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded text-sm hover:bg-indigo-200"
@@ -388,6 +470,12 @@ export default function Shops() {
                       <ShieldBan size={14} /> Suspend
                     </button>
                   )}
+                  <button
+                    onClick={() => setDeleteModal(shop)}
+                    className="flex items-center justify-center gap-1 bg-red-50 border border-red-200 text-red-700 px-3 py-1.5 rounded text-sm hover:bg-red-100"
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
                 </div>
               </div>
             );
@@ -402,6 +490,7 @@ export default function Shops() {
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
             <form
               onSubmit={handleSubmit}
+              noValidate
               className="bg-white p-6 rounded-xl shadow-xl border w-full max-w-md space-y-4"
             >
               <h2 className="text-xl font-bold">
@@ -409,23 +498,29 @@ export default function Shops() {
               </h2>
 
               <div>
-                <label className="text-sm font-medium">শপের নাম</label>
+                <label className="text-sm font-medium">শপের নাম <span className="text-red-600">*</span></label>
                 <input
                   required
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 mt-1"
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, name: e.target.value }));
+                    if (e.target.value.trim()) setShopErrors((prev) => ({ ...prev, name: false }));
+                  }}
+                  className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none ${shopErrors.name ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
                   placeholder="Cartvan Fashion"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium">কাস্টম ডোমেইন</label>
+                <label className="text-sm font-medium">কাস্টম ডোমেইন <span className="text-red-600">*</span></label>
                 <input
                   required
                   value={form.domain}
-                  onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 mt-1"
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, domain: e.target.value }));
+                    if (e.target.value.trim()) setShopErrors((prev) => ({ ...prev, domain: false }));
+                  }}
+                  className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none ${shopErrors.domain ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
                   placeholder="shop1.com"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -439,8 +534,13 @@ export default function Shops() {
                   <input
                     type="email"
                     value={form.contactEmail}
-                    onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 mt-1"
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, contactEmail: e.target.value }));
+                      if (!e.target.value.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value.trim())) {
+                        setShopErrors((prev) => ({ ...prev, contactEmail: false }));
+                      }
+                    }}
+                    className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none ${shopErrors.contactEmail ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
                   />
                 </div>
                 <div>
@@ -519,6 +619,44 @@ export default function Shops() {
         </>
       )}
 
+      {/* DELETE SHOP CONFIRM MODAL */}
+      {deleteModal && (
+        <>
+          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-40" />
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-6 rounded-xl shadow-xl border w-full max-w-sm">
+              <h2 className="text-xl font-bold text-red-600 mb-3">
+                🗑️ Shop Trash-এ পাঠাবেন?
+              </h2>
+              <p className="text-gray-700 mb-3">
+                <b>{deleteModal.name}</b> এখনই active shop list থেকে সরানো হবে।
+              </p>
+              <p className="text-sm text-gray-500 mb-5">
+                ৩ দিনের মধ্যে Shop Trash থেকে Restore করা যাবে। কোনো action না নিলে Shop এবং এর সব data permanently delete হবে।
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={deletingShop}
+                  onClick={() => setDeleteModal(null)}
+                  className="px-4 py-2 border rounded-lg disabled:opacity-60"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingShop}
+                  onClick={handleDeleteShop}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg disabled:opacity-60"
+                >
+                  {deletingShop ? "Trash-এ পাঠানো হচ্ছে..." : "Trash-এ পাঠান"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ADMINS MANAGEMENT MODAL */}
       {adminsModal && (
         <>
@@ -577,40 +715,53 @@ export default function Shops() {
                   <h3 className="text-sm font-semibold text-gray-600 mb-2">
                     নতুন Admin যোগ করুন
                   </h3>
-                  <p className="text-xs text-gray-500 mb-3">
-                    আগে থেকে থাকা admin-এর ইমেইল দিলে সেই অ্যাকাউন্টই এই শপে assign হয়ে যাবে —
-                    না থাকলে নাম ও পাসওয়ার্ড দিয়ে নতুন অ্যাকাউন্ট তৈরি হবে।
-                  </p>
-                  <form onSubmit={handleInviteAdmin} className="space-y-3">
-                    <input
-                      type="email"
-                      required
-                      placeholder="Email"
-                      value={adminForm.email}
-                      onChange={(e) => setAdminForm((f) => ({ ...f, email: e.target.value }))}
-                      className="w-full border rounded-lg px-3 py-2 text-sm"
-                    />
-                    <input
-                      placeholder="নাম (নতুন হলে আবশ্যক)"
-                      value={adminForm.name}
-                      onChange={(e) => setAdminForm((f) => ({ ...f, name: e.target.value }))}
-                      className="w-full border rounded-lg px-3 py-2 text-sm"
-                    />
-                    <input
-                      type="password"
-                      placeholder="পাসওয়ার্ড (নতুন হলে আবশ্যক, কমপক্ষে ৬ ক্যারেক্টার)"
-                      value={adminForm.password}
-                      onChange={(e) => setAdminForm((f) => ({ ...f, password: e.target.value }))}
-                      className="w-full border rounded-lg px-3 py-2 text-sm"
-                    />
-                    <select
-                      value={adminForm.role}
-                      onChange={(e) => setAdminForm((f) => ({ ...f, role: e.target.value }))}
-                      className="w-full border rounded-lg px-3 py-2 text-sm"
-                    >
+                  <form onSubmit={handleInviteAdmin} className="space-y-3" noValidate>
+                    <div>
+                      <label className="text-sm font-medium">ইমেইল <span className="text-red-600">*</span></label>
+                      <input
+                        type="email"
+                        value={adminForm.email}
+                        onChange={(e) => {
+                          setAdminForm((f) => ({ ...f, email: e.target.value }));
+                          if (e.target.value.trim()) setAdminErrors((prev) => ({ ...prev, email: false }));
+                        }}
+                        className={`w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none ${adminErrors.email ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">নাম <span className="text-red-600">*</span></label>
+                      <input
+                        value={adminForm.name}
+                        onChange={(e) => {
+                          setAdminForm((f) => ({ ...f, name: e.target.value }));
+                          if (e.target.value.trim()) setAdminErrors((prev) => ({ ...prev, name: false }));
+                        }}
+                        className={`w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none ${adminErrors.name ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">পাসওয়ার্ড <span className="text-red-600">*</span></label>
+                      <input
+                        type="password"
+                        value={adminForm.password}
+                        onChange={(e) => {
+                          setAdminForm((f) => ({ ...f, password: e.target.value }));
+                          if (e.target.value.length >= 6) setAdminErrors((prev) => ({ ...prev, password: false }));
+                        }}
+                        className={`w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none ${adminErrors.password ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">ভূমিকা <span className="text-red-600">*</span></label>
+                      <select
+                        value={adminForm.role}
+                        onChange={(e) => setAdminForm((f) => ({ ...f, role: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 mt-1 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                      >
                       <option value="admin">Admin (ফুল অ্যাক্সেস)</option>
                       <option value="staff">Staff (সীমিত)</option>
-                    </select>
+                      </select>
+                    </div>
                     <button
                       type="submit"
                       disabled={invitingAdmin}

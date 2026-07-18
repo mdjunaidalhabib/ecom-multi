@@ -10,6 +10,11 @@ import {
   updateShop,
   updateShopStatus,
   verifyShopDomain,
+  deleteShop,
+  listShopTrash,
+  restoreDeletedShop,
+  permanentDeleteShop,
+  emptyShopTrash,
 } from "../../../controllers/shop/admin.shop.controller.js";
 import {
   listShopAdmins,
@@ -26,10 +31,18 @@ router.use(protect, superAdminOnly);
 
 router.get("/", listShops);
 router.post("/", createShop);
+
+// Shop recycle bin routes must be declared before the generic /:id route.
+router.get("/trash", listShopTrash);
+router.post("/trash/:trashId/restore", restoreDeletedShop);
+router.delete("/trash/empty", emptyShopTrash);
+router.delete("/trash/:trashId", permanentDeleteShop);
+
 router.get("/:id", getShopById);
 router.patch("/:id", updateShop);
 router.patch("/:id/status", updateShopStatus);
 router.post("/:id/verify-domain", verifyShopDomain);
+router.delete("/:id", deleteShop);
 
 // ✅ Shop-এ Admin/Staff assign করা
 router.get("/:id/admins", listShopAdmins);
