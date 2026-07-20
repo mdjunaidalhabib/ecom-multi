@@ -1,11 +1,12 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/admin/category/page": "app/admin/category/page.js",
   "/admin/dashboard/page": "app/admin/dashboard/page.js",
-  "/admin/orders/page": "app/admin/orders/page.js",
-  "/admin/products/page": "app/admin/products/page.js",
   "/api/[...path]/route": "app/api/[...path]/route.js",
   "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/super-admin/(panel)/dashboard/page": "app/super-admin/(panel)/dashboard/page.js",
+  "/super-admin/(panel)/profile/page": "app/super-admin/(panel)/profile/page.js",
   "/super-admin/(panel)/shops/page": "app/super-admin/(panel)/shops/page.js",
-  "/super-admin/(panel)/trash/page": "app/super-admin/(panel)/trash/page.js"
+  "/super-admin/(panel)/trash/page": "app/super-admin/(panel)/trash/page.js",
+  "/super-admin/login/page": "app/super-admin/login/page.js"
 }

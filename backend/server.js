@@ -28,8 +28,25 @@ if (missingEnv.length) {
 }
 
 // ✅ Small built-in rate limiter, avoids adding another runtime dependency
+//
+// 🔥 FIX (memory leak): আগে rateLimitStore Map-এ প্রতিটা নতুন IP-এর entry
+// যোগ হতো কিন্তু কখনো মুছত না — সময়ের সাথে এই Map অসীম বড় হতে থাকতো এবং
+// সার্ভারের RAM শেষ করে ফেলতো (বিশেষ করে অনেক শপ/ভিজিটর একসাথে চললে)।
+// এখন প্রতি ৫ মিনিটে expired entry গুলো (যাদের resetAt সময় পার হয়ে গেছে)
+// clean up করা হয়, তাই Map-এর সাইজ সবসময় "গত windowMs সময়ে সক্রিয় IP"
+// সংখ্যার কাছাকাছি বাউন্ডেড থাকে।
 const rateLimitStore = new Map();
+const RATE_LIMIT_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
 const rateLimit = ({ windowMs = 15 * 60 * 1000, limit = 300 } = {}) => {
+  const cleanupTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of rateLimitStore.entries()) {
+      if (entry.resetAt <= now) rateLimitStore.delete(key);
+    }
+  }, RATE_LIMIT_CLEANUP_INTERVAL_MS);
+  cleanupTimer.unref?.(); // process বন্ধ হতে বাধা দেবে না
+
   return (req, res, next) => {
     const key = req.ip || req.headers["x-forwarded-for"] || "unknown";
     const now = Date.now();
@@ -151,6 +168,8 @@ app.use((err, req, res, next) => {
   });
 });
 
+let server;
+
 const startServer = async () => {
   try {
     await dbConnect(process.env.MONGO_URI);
@@ -161,7 +180,7 @@ const startServer = async () => {
     purgeExpiredTrash();
     setInterval(purgeExpiredTrash, 60 * 60 * 1000);
 
-    app.listen(PORT, "0.0.0.0", () =>
+    server = app.listen(PORT, "0.0.0.0", () =>
       console.log(`🚀 Backend running on port ${PORT}`)
     );
   } catch (err) {
@@ -171,4 +190,56 @@ const startServer = async () => {
 };
 
 startServer();
+
+/**
+ * 🔥 FIX (graceful shutdown): PM2 দিয়ে restart/deploy/scale করার সময় বা
+ * সার্ভার crash হলে, আগে process সাথে সাথে kill হয়ে যেত — যেসব request
+ * তখন চলছিল সেগুলো mid-air-এ drop হতো, আর MongoDB connection ও নোংরাভাবে
+ * বন্ধ হতো। এখন SIGTERM/SIGINT পেলে প্রথমে নতুন connection নেওয়া বন্ধ করে,
+ * চলমান request গুলো শেষ হওয়া পর্যন্ত অপেক্ষা করে, তারপর DB connection
+ * বন্ধ করে exit করে। PM2 cluster mode-এ প্রতিটা worker-কে এভাবেই
+ * gracefully restart করা হয় বলে zero-downtime deploy সম্ভব হয়।
+ */
+const shutdown = (signal) => {
+  console.log(`\n🛑 ${signal} received, shutting down gracefully...`);
+
+  if (!server) process.exit(0);
+
+  // নতুন কানেকশন আর নেবে না, কিন্তু চলমান request শেষ হতে দেবে
+  server.close(async (err) => {
+    if (err) {
+      console.error("❌ Error while closing HTTP server:", err);
+    }
+    try {
+      const mongoose = (await import("mongoose")).default;
+      await mongoose.connection.close(false);
+      console.log("✅ MongoDB connection closed. Bye 👋");
+    } catch (closeErr) {
+      console.error("❌ Error while closing MongoDB connection:", closeErr);
+    } finally {
+      process.exit(err ? 1 : 0);
+    }
+  });
+
+  // কোনো request যদি আটকে থেকে যায় (hang), ১০ সেকেন্ড পর জোর করে exit —
+  // নাহলে PM2/Docker অনন্তকাল অপেক্ষা করতে থাকবে
+  setTimeout(() => {
+    console.error("⚠️ Forced shutdown after 10s timeout");
+    process.exit(1);
+  }, 10_000).unref();
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
+// অপ্রত্যাশিত error-এ process চুপচাপ hang বা করাপ্ট state-এ থাকার বদলে
+// লগ করে গ্রেসফুলভাবে বন্ধ হবে — PM2 সাথে সাথে fresh process চালু করবে
+process.on("unhandledRejection", (reason) => {
+  console.error("❌ Unhandled Promise Rejection:", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err);
+  shutdown("uncaughtException");
+});
+
 export default app;

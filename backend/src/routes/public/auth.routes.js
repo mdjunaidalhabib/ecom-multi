@@ -25,6 +25,13 @@ function authenticateJWT(req, res, next) {
 // শপ domain resolve করার জন্য Host header এর বদলে frontend থেকে পাঠানো
 // ?shopDomain= query param ব্যবহার করা হচ্ছে।
 router.get("/google", (req, res, next) => {
+  if (!passport._strategy("google")) {
+    return res.status(503).json({
+      error:
+        "Google login এই সার্ভারে কনফিগার করা নেই (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET/AUTH_API_URL সেট করুন)।",
+    });
+  }
+
   const redirect = req.query.redirect || "/";
   const shopDomain = (req.query.shopDomain || "")
     .toString()

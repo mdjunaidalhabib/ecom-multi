@@ -1,5 +1,19 @@
 import Shop from "../models/Shop.js";
 import { runWithShopId } from "./shopContext.js";
+import { cacheGet, cacheSet, cacheDelete } from "../lib/simpleCache.js";
+
+const CACHE_PREFIX = "shop-by-domain:";
+const SHOP_CACHE_TTL_MS = 60 * 1000; // 60s — শপের status/domain বদলালে admin controller নিজেই invalidate করবে (নিচে দেখুন), তাই এই TTL মূলত extra safety
+const NOT_FOUND_CACHE_TTL_MS = 30 * 1000; // ভুল/অচেনা ডোমেইনে বারবার হিট হলে (bot/scan) সেটাও অল্প সময়ের জন্য cache করে DB বাঁচানো হয়
+
+/**
+ * শপের admin panel থেকে domain/status বদলালে (controllers/shop/admin.shop.controller.js)
+ * পুরনো cache entry সাথে সাথে বাতিল করার জন্য এই ফাংশন কল করা হয়।
+ */
+export function invalidateShopDomainCache(domain) {
+  if (!domain) return;
+  cacheDelete(CACHE_PREFIX + domain.toString().toLowerCase().replace(/^www\./, ""));
+}
 
 /**
  * ✅ resolveShopByDomain
@@ -12,6 +26,11 @@ import { runWithShopId } from "./shopContext.js";
  * request lifecycle-এ AsyncLocalStorage context-এ shopId সেট থাকবে বলে
  * tenantPlugin (models-এ বসানো) সব query automatically scope করে দেবে —
  * তাই বেশিরভাগ controller-এ আলাদা করে shopId filter বসানোর প্রয়োজন নেই।
+ *
+ * 🔥 FIX (caching): আগে এই query প্রতিটা public request-এ MongoDB-তে যেত —
+ * শপ/ট্রাফিক বাড়লে এটাই DB-র সবচেয়ে বড় লোড হতো। এখন ডোমেইন অনুযায়ী শপ
+ * ৬০ সেকেন্ডের জন্য in-memory cache হয় (simpleCache.js দেখুন), তাই একই
+ * ডোমেইনে বারবার হিট হলে DB-তে যেতে হয় না।
  */
 export async function resolveShopByDomain(req, res, next) {
   try {
@@ -29,7 +48,15 @@ export async function resolveShopByDomain(req, res, next) {
         .json({ message: "শপ শনাক্ত করা যায়নি (missing host/domain)" });
     }
 
-    const shop = await Shop.findOne({ domain });
+    const cacheKey = CACHE_PREFIX + domain;
+    let shop = cacheGet(cacheKey);
+
+    if (shop === undefined) {
+      shop = await Shop.findOne({ domain });
+      // null-ও cache করা হয় (negative caching) যাতে অচেনা ডোমেইনে বারবার
+      // হিট হলেও (bot/misconfigured DNS) DB-তে বারবার query না যায়
+      cacheSet(cacheKey, shop, shop ? SHOP_CACHE_TTL_MS : NOT_FOUND_CACHE_TTL_MS);
+    }
 
     if (!shop) {
       return res

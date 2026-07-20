@@ -1,5 +1,26 @@
 import nodemailer from "nodemailer";
 
+// 🔥 FIX: আগে প্রতিটা ইমেইল পাঠানোর সময় নতুন `createTransport` কল হতো,
+// যেটা প্রতিবার একটা নতুন SMTP connection/handshake তৈরি করতো — অপ্রয়োজনীয়
+// ওভারহেড, বিশেষ করে একসাথে অনেক অর্ডার এলে। একটাই transporter module-স্কোপে
+// বানিয়ে reuse করা হচ্ছে (nodemailer নিজে থেকেই connection pooling/keep-alive
+// handle করে)।
+let transporter = null;
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      pool: true, // connection pooling — বারবার নতুন কানেকশন খুলতে হবে না
+      maxConnections: 3,
+    });
+  }
+  return transporter;
+}
+
 export async function sendAdminOrderEmail({
   to,
   orderId,
@@ -94,10 +115,25 @@ export async function sendAdminOrderEmail({
   </div>
   `;
 
-  await transporter.sendMail({
+  await getTransporter().sendMail({
     from: `"Order Notification" <${process.env.EMAIL_USER}>`,
     to,
     subject: `🛒 New Order: ${orderId}`,
     html,
+  });
+}
+
+/**
+ * 🔥 FIX (background email): আগে order create request-এর মধ্যেই
+ * `await sendAdminOrderEmail(...)` কল হতো — Gmail SMTP-তে connect/handshake
+ * করতে ১-৩+ সেকেন্ড লাগতে পারে, ততক্ষণ কাস্টমার "Order Placed" রেসপন্স
+ * পেত না। এখন এই wrapper fire-and-forget ভাবে কল করা হবে (invoice
+ * generation যেভাবে regenerateInvoiceInBackground দিয়ে হয়, একই প্যাটার্ন) —
+ * response সাথে সাথে চলে যাবে, ইমেইল ব্যাকগ্রাউন্ডে পাঠানো হবে। ইমেইল
+ * পাঠাতে ব্যর্থ হলেও অর্ডার তৈরিতে কোনো প্রভাব পড়বে না, শুধু error লগ হবে।
+ */
+export function sendAdminOrderEmailInBackground(payload) {
+  sendAdminOrderEmail(payload).catch((err) => {
+    console.error("❌ Admin Email Send Failed (background):", err);
   });
 }

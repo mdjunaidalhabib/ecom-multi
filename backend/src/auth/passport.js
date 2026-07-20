@@ -3,14 +3,36 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
+/**
+ * 🔥 FIX (server crash on boot): আগে GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET
+ * env var না থাকলে `new GoogleStrategy(...)` সাথে সাথে throw করতো, আর
+ * যেহেতু configurePassport() server.js-এর top-level-এ (কোনো try/catch
+ * ছাড়া) কল হতো, পুরো Node process crash করে exit হয়ে যেত — মানে
+ * সার্ভারই বুট হতো না, super-admin/shop-admin login (যেটা Google OAuth-এর
+ * সাথে সম্পর্কহীন, শুধু email+password+JWT) সহ *কোনো* রুটই কাজ করতো না।
+ *
+ * এখন Google credentials না থাকলে শুধু Google login feature-টা বন্ধ থাকবে
+ * (warning log হবে), বাকি সব রুট/লগইন স্বাভাবিকভাবে কাজ করবে।
+ */
 export function configurePassport() {
-  const callbackURL = `${process.env.AUTH_API_URL}/auth/google/callback`;
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, AUTH_API_URL } = process.env;
+
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !AUTH_API_URL) {
+    console.warn(
+      "⚠️ GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / AUTH_API_URL সেট নেই — " +
+        "Google login বন্ধ থাকবে (super-admin/shop-admin login-এ কোনো প্রভাব নেই, " +
+        "সেটা আলাদা JWT-based auth ব্যবহার করে)."
+    );
+    return;
+  }
+
+  const callbackURL = `${AUTH_API_URL}/auth/google/callback`;
 
   passport.use(
     new GoogleStrategy(
       {
-        clientID: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
         callbackURL,
         passReqToCallback: true,
       },
