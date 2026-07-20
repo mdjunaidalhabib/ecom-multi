@@ -6,7 +6,7 @@ import PaymentMethod from "../../models/PaymentMethod.js";
 
 // ✅ correct relative path
 import { getOrderMailSendSettings } from "../../../utils/mail/index.js";
-import { sendAdminOrderEmail } from "../../../utils/mail/index.js";
+import { sendAdminOrderEmailInBackground } from "../../../utils/mail/index.js";
 import {
   regenerateInvoiceInBackground,
   invalidateInvoiceCache,
@@ -367,35 +367,38 @@ router.post("/", async (req, res) => {
     regenerateInvoiceInBackground(savedOrder._id);
 
     // ✅ Admin Email Notify (DB settings)
-    // Admin Email Notify (DB settings)
-    try {
-      const settings = await getOrderMailSendSettings();
+    // 🔥 FIX: এখন এই পুরো ব্লক আর await করা হচ্ছে না — settings lookup +
+    // SMTP send দুটোই ব্যাকগ্রাউন্ডে চলবে, কাস্টমারের response আটকাবে না।
+    (async () => {
+      try {
+        const settings = await getOrderMailSendSettings();
 
-      // DB তে active email খুঁজে বের করা
-      const activeEmailObj = settings.emails.find((e) => e.active);
-      const adminEmail = activeEmailObj?.email?.trim();
+        // DB তে active email খুঁজে বের করা
+        const activeEmailObj = settings.emails.find((e) => e.active);
+        const adminEmail = activeEmailObj?.email?.trim();
 
-      if (adminEmail) {
-        await sendAdminOrderEmail({
-          to: adminEmail,
-          orderId: savedOrder._id,
-          customerName: savedOrder?.billing?.name,
-          customerPhone: savedOrder?.billing?.phone,
-          address: savedOrder?.billing?.address,
-          note: savedOrder?.billing?.note,
-          items: savedOrder?.items,
-          subtotal: savedOrder?.subtotal,
-          deliveryCharge: savedOrder?.deliveryCharge,
-          discount: savedOrder?.discount,
-          total: savedOrder?.total,
-          paymentMethod: savedOrder?.paymentMethod,
-        });
-      } else {
-        console.warn("⚠️ No active admin email set in DB");
+        if (adminEmail) {
+          sendAdminOrderEmailInBackground({
+            to: adminEmail,
+            orderId: savedOrder._id,
+            customerName: savedOrder?.billing?.name,
+            customerPhone: savedOrder?.billing?.phone,
+            address: savedOrder?.billing?.address,
+            note: savedOrder?.billing?.note,
+            items: savedOrder?.items,
+            subtotal: savedOrder?.subtotal,
+            deliveryCharge: savedOrder?.deliveryCharge,
+            discount: savedOrder?.discount,
+            total: savedOrder?.total,
+            paymentMethod: savedOrder?.paymentMethod,
+          });
+        } else {
+          console.warn("⚠️ No active admin email set in DB");
+        }
+      } catch (mailErr) {
+        console.error("❌ Admin Email Send Failed:", mailErr);
       }
-    } catch (mailErr) {
-      console.error("❌ Admin Email Send Failed:", mailErr);
-    }
+    })();
 
     return res.status(201).json(savedOrder);
   } catch (err) {

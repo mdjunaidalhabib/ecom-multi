@@ -9,6 +9,7 @@ import {
   cleanupTrashAssets,
 } from "../../utils/trash/trash.helpers.js";
 import { permanentlyDeleteShopData } from "../../utils/shop/shopTrash.helpers.js";
+import { invalidateShopDomainCache } from "../../src/tenancy/publicShopResolver.js";
 
 /* -------------------------------------------------------
    Helper: name -> url-safe slug (+ auto-unique suffix)
@@ -189,6 +190,8 @@ export const updateShop = async (req, res) => {
     });
     if (!shop) return res.status(404).json({ message: "Shop not found" });
 
+    const originalDomain = shop.domain; // cache invalidate করার জন্য আগের ডোমেইনটা রাখা হলো
+
     const {
       name,
       domain,
@@ -236,6 +239,11 @@ export const updateShop = async (req, res) => {
 
     await shop.save();
 
+    // 🔥 FIX: shop cache invalidate — নাহলে ডোমেইন/স্ট্যাটাস বদলানোর পরও
+    // পুরনো cached ডেটা দিয়ে (৬০ সেকেন্ড পর্যন্ত) request সার্ভ হতে পারতো
+    invalidateShopDomainCache(originalDomain);
+    invalidateShopDomainCache(shop.domain);
+
     res.json({ message: "✅ শপ আপডেট হয়েছে", shop });
   } catch (err) {
     console.error("❌ updateShop error:", err);
@@ -274,6 +282,11 @@ export const updateShopStatus = async (req, res) => {
     shop.suspendedReason =
       status === "suspended" ? normalizedSuspendedReason : "";
     await shop.save();
+
+    // 🔥 FIX: সাসপেন্ড/একটিভ করার সাথে সাথেই effect হওয়া উচিত — cache-এর
+    // TTL (৬০ সেকেন্ড) শেষ হওয়া পর্যন্ত অপেক্ষা করা ঠিক না, বিশেষ করে
+    // সাসপেনশনের ক্ষেত্রে।
+    invalidateShopDomainCache(shop.domain);
 
     res.json({
       message:
@@ -319,6 +332,10 @@ export const deleteShop = async (req, res) => {
       { shops: shop._id },
       { $pull: { shops: shop._id } },
     );
+
+    // 🔥 FIX: শপ trash-এ যাওয়ার পরও পুরনো cache-এর কারণে ৬০ সেকেন্ড পর্যন্ত
+    // ডোমেইনে হিট হলে শপ "পাওয়া যাচ্ছে" বলে দেখাতে পারতো
+    invalidateShopDomainCache(shop.domain);
 
     res.json({
       message: "🗑️ Shop Trash-এ পাঠানো হয়েছে। ৩ দিনের মধ্যে Restore করা যাবে।",
@@ -618,6 +635,7 @@ export const verifyShopDomain = async (req, res) => {
       shop.domainStatus = "failed";
       shop.domainLastCheckedAt = new Date();
       await shop.save();
+      invalidateShopDomainCache(shop.domain);
       return res.status(200).json({
         verified: false,
         message: `"${shop.domain}" এর জন্য DNS resolve করা যায়নি`,
@@ -631,6 +649,7 @@ export const verifyShopDomain = async (req, res) => {
     shop.domainLastCheckedAt = new Date();
     if (verified) shop.domainVerifiedAt = new Date();
     await shop.save();
+    invalidateShopDomainCache(shop.domain);
 
     res.json({
       verified,
