@@ -14,7 +14,7 @@ export default function AccountMenuDesktop() {
   const menuRef = useRef(null);
   const { base, subPath } = useShopPath();
 
-  // বাইরে ক্লিক করলে বন্ধ হবে
+  //বাইরে ক্লিক করলে বন্ধ হবে
   useEffect(() => {
     const handler = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
