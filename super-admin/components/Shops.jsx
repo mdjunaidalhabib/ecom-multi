@@ -41,7 +41,7 @@ export default function Shops() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingShop, setEditingShop] = useState(null); // null = creating new
-  const [form, setForm] = useState({ name: "", slug: "", domain: "", contactEmail: "", contactPhone: "", plan: "free" });
+  const [form, setForm] = useState({ name: "", slug: "", domain: "", contactEmail: "", contactPhone: "", plan: "free", theme: "" });
   const [slugEdited, setSlugEdited] = useState(false); // ইউজার নিজে হাতে slug বদলেছে কিনা — বদলালে আর নাম থেকে অটো-সাজেস্ট হবে না
   const [saving, setSaving] = useState(false);
   const [shopErrors, setShopErrors] = useState({});
@@ -94,7 +94,7 @@ export default function Shops() {
 
   const openCreateModal = () => {
     setEditingShop(null);
-    setForm({ name: "", slug: "", domain: "", contactEmail: "", contactPhone: "", plan: "free" });
+    setForm({ name: "", slug: "", domain: "", contactEmail: "", contactPhone: "", plan: "free", theme: "" });
     setSlugEdited(false);
     setShopErrors({});
     setShowModal(true);
@@ -111,6 +111,7 @@ export default function Shops() {
       contactEmail: shop.contactEmail || "",
       contactPhone: shop.contactPhone || "",
       plan: shop.plan || "free",
+      theme: shop.branding?.theme || "",
     });
     setShowModal(true);
   };
@@ -638,6 +639,23 @@ export default function Shops() {
                   <option value="starter">Starter</option>
                   <option value="pro">Pro</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Theme override</label>
+                <select
+                  value={form.theme}
+                  onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))}
+                  className="w-full border rounded-lg px-3 py-2 mt-1"
+                >
+                  <option value="">Plan অনুযায়ী default</option>
+                  <option value="classic">Classic</option>
+                  <option value="aurora">Aurora</option>
+                  <option value="terra">Terra</option>
+                </select>
+                <p className="text-xs text-gray-400 mt-1">
+                  খালি রাখলে Settings → Themes-এ ঠিক করা plan-এর default theme ব্যবহার হবে।
+                </p>
               </div>
 
               <div className="flex justify-end gap-3 pt-2">

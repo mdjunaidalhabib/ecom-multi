@@ -248,6 +248,7 @@ export const updateShop = async (req, res) => {
       contactPhone,
       plan,
       themeColor,
+      theme,
       maxProducts,
       maxAdmins,
     } = req.body || {};
@@ -303,6 +304,12 @@ export const updateShop = async (req, res) => {
       shop.plan = plan;
     }
     if (themeColor !== undefined) shop.branding.themeColor = themeColor;
+    if (theme !== undefined) {
+      // খালি স্ট্রিং/"" মানে override সরিয়ে plan-এর default theme ব্যবহার করা
+      if (["", "classic", "aurora", "terra"].includes(theme)) {
+        shop.branding.theme = theme;
+      }
+    }
     if (maxProducts !== undefined) {
       shop.limits.maxProducts = Number(maxProducts) || shop.limits.maxProducts;
     }

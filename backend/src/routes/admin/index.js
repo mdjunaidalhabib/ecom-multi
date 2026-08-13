@@ -21,6 +21,7 @@ import trashAdminRoutes from "./trash.admin.routes.js";
 import aboutAdminRoutes from "./about.admin.routes.js";
 import paymentsAdminRoutes from "./payments.admin.routes.js";
 import shopAdminRoutes from "./shop.admin.routes.js";
+import themeSettingsAdminRoutes from "./themeSettings.admin.routes.js";
 import orderCounterAdmin from "./orderCounter.admin.js";
 import promoAdminRoutes from "./promo.admin.routes.js";
 import homepagePopupAdminRoutes from "./homepagePopup.admin.routes.js";
@@ -43,6 +44,10 @@ router.use("/", adminAuthRoutes);
 // কোনো "active shop" select করা ছাড়াই কাজ করতে হবে, তাই এটাও
 // global requireShopContext এর আগেই বসানো (নিজস্ব protect+superAdminOnly আছে)
 router.use("/shops", shopAdminRoutes);
+
+// ✅ Plan → theme mapping — platform-wide, শপ-admin routes এর মতোই কোনো
+// "active shop" ছাড়া কাজ করতে হয়, তাই global requireShopContext এর আগে বসানো
+router.use("/theme-settings", themeSettingsAdminRoutes);
 
 // ✅ এখান থেকে নিচের সব admin route এর জন্য valid admin session +
 // active shop context বাধ্যতামূলক (আগে অনেক রুটে কোনো auth check-ই ছিল না —

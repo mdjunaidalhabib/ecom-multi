@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import MenuBar from "./MenuBar";
-import { superAdminNavItems } from "./menuConfig";
+import { superAdminNavItems, superAdminSettingsChildren } from "./menuConfig";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -40,7 +40,7 @@ export default function Sidebar() {
       <div className="flex-1 flex flex-col min-h-0">
         <MenuBar
           items={superAdminNavItems}
-          settingsChildren={[]}
+          settingsChildren={superAdminSettingsChildren}
           vertical={true}
           collapsed={collapsed}
         />

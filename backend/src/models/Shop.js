@@ -52,6 +52,13 @@ const shopSchema = new mongoose.Schema(
       logo: { type: String, default: "" },
       logoPublicId: { type: String, default: "" },
       themeColor: { type: String, default: "#0ea5e9" },
+      // Storefront theme override — খালি থাকলে plan অনুযায়ী default theme
+      // ব্যবহার হয় (দেখুন PlatformSettings.planThemeMap)
+      theme: {
+        type: String,
+        enum: ["", "classic", "aurora", "terra"],
+        default: "",
+      },
     },
 
     // যে Admin এই শপের মালিক/প্রথম তৈরি করেছে

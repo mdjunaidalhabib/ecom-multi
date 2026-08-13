@@ -7,7 +7,7 @@ import { Menu, X } from "lucide-react";
 import MenuBar from "./MenuBar";
 import LogoutButton from "./LogoutButton";
 import LiveDateTime from "./LiveDateTime";
-import { superAdminNavItems } from "./menuConfig";
+import { superAdminNavItems, superAdminSettingsChildren } from "./menuConfig";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Header() {
@@ -95,7 +95,7 @@ export default function Header() {
             >
               <MenuBar
                 items={superAdminNavItems}
-                settingsChildren={[]}
+                settingsChildren={superAdminSettingsChildren}
                 onItemClick={() => setMenuOpen(false)}
                 vertical={true}
               />

@@ -48,3 +48,11 @@ export async function serverFetch(path, { revalidate = 30, ...options } = {}) {
 
   return res.json();
 }
+
+// Shop identity + which storefront theme to render (see backend
+// controllers/shop/public.shop.controller.js). Called from both
+// shop/[shopSlug]/layout.js and page.js — Next's per-request fetch cache
+// dedupes the two calls into one actual backend hit.
+export async function getShopInfo() {
+  return serverFetch("/shop-info");
+}

@@ -24,6 +24,7 @@ import privacyPolicyRoutes from "./privacyPolicy.routes.js";
 import supportRoutes from "./support.routes.js";
 import refundPolicyRoutes from "./refundPolicy.routes.js";
 import faqRoutes from "./faq.routes.js";
+import shopInfoRoutes from "./shopInfo.routes.js";
 import { resolveShopByDomain } from "../../tenancy/publicShopResolver.js";
 
 const router = express.Router();
@@ -59,5 +60,6 @@ router.use("/privacy-policy", privacyPolicyRoutes);
 router.use("/support", supportRoutes);
 router.use("/refund-policy", refundPolicyRoutes);
 router.use("/faq", faqRoutes);
+router.use("/shop-info", shopInfoRoutes);
 
 export default router;

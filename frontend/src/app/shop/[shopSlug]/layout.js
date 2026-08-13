@@ -1,28 +1,28 @@
 import { CartProvider } from "../../../../context/CartContext";
 import { UserProvider } from "../../../../context/UserContext";
-import Navbar from "../../../../components/navbar/Navbar";
-import Footer from "../../../../components/home/footer";
 import FloatingActionButton from "../../../../components/home/FloatingActionButton";
-import { serverFetch } from "../../../../lib/serverApi";
+import { getShopInfo } from "../../../../lib/serverApi";
+import { getTheme } from "../../../../lib/themeRegistry";
 
 // Both custom-domain visitors (rewritten to /shop/__domain__/... by
 // frontend/src/middleware.js) and real path-based visitors (/shop/<slug>/...)
 // render through this layout — the backend's resolveShopByDomain
 // (backend/src/tenancy/publicShopResolver.js) already 404s any public
-// endpoint when the shop can't be resolved, so a cheap existing call is
+// endpoint when the shop can't be resolved, so getShopInfo() failing is
 // enough to turn an unknown slug/domain into a real not-found page instead
-// of a silently-empty storefront.
-async function shopExists() {
+// of a silently-empty storefront. It also carries effectiveTheme, which
+// picks which Navbar/Footer to render for this shop's plan.
+async function getShop() {
   try {
-    await serverFetch("/navbar");
-    return true;
+    return await getShopInfo();
   } catch {
-    return false;
+    return null;
   }
 }
 
 export default async function ShopLayout({ children }) {
-  if (!(await shopExists())) {
+  const shop = await getShop();
+  if (!shop) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-center p-4">
         <h1 className="text-9xl font-bold text-gray-800">404</h1>
@@ -39,11 +39,13 @@ export default async function ShopLayout({ children }) {
     );
   }
 
+  const { Navbar, Footer, mainClassName = "bg-white" } = getTheme(shop.effectiveTheme);
+
   return (
     <UserProvider>
       <CartProvider>
         <Navbar />
-        <main className="flex-grow bg-pink-50">
+        <main className={`flex-grow ${mainClassName}`}>
           <div className="mx-auto w-full">{children}</div>
         </main>
         <Footer />

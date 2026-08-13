@@ -1,9 +1,8 @@
-import ImageSlider from "../../../../components/home/ImageSlider";
-import HomeAllProduct from "../../../../components/home/HomeAllProduct";
 import HomeSEO from "../../../../components/seo/HomeSEO";
 import VisitorTracker from "../../../../components/VisitorTracker";
 import HomepagePopup from "../../../../components/home/HomepagePopup";
-import { serverFetch } from "../../../../lib/serverApi";
+import { serverFetch, getShopInfo } from "../../../../lib/serverApi";
+import { getTheme } from "../../../../lib/themeRegistry";
 
 async function getHomeData() {
   const [productsRes, categoriesRes, badgesRes, sliderRes] =
@@ -26,22 +25,26 @@ async function getHomeData() {
 }
 
 export default async function HomePage() {
-  const { products, categories, badges, slides } = await getHomeData();
+  const [{ products, categories, badges, slides }, shop] = await Promise.all([
+    getHomeData(),
+    // Same call layout.js already makes for this request — Next's fetch
+    // cache dedupes it, so this doesn't add a second backend round trip.
+    getShopInfo().catch(() => null),
+  ]);
+  const { HomeLayout } = getTheme(shop?.effectiveTheme);
 
   return (
-    <section className="bg-pink-50">
+    <>
       <HomeSEO />
-      <div>
-        <VisitorTracker />
-        <HomepagePopup />
-        <ImageSlider images={slides} />
-        <HomeAllProduct
-          initialProducts={products}
-          initialCategories={categories}
-          initialBadges={badges}
-        />
-      </div>
-    </section>
+      <VisitorTracker />
+      <HomepagePopup />
+      <HomeLayout
+        products={products}
+        categories={categories}
+        badges={badges}
+        slides={slides}
+      />
+    </>
   );
 }
  
