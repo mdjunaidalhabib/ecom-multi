@@ -81,5 +81,20 @@ module.exports = {
       error_file: path.join(__dirname, "logs/frontend-error.log"),
       time: true,
     },
+    {
+      name: "cartvan-super-admin",
+      cwd: path.join(__dirname, "super-admin"),
+      script: "node_modules/next/dist/bin/next",
+      args: "start -H 0.0.0.0 -p 3009",
+      exec_mode: "cluster",
+      instances: 2, // Next.js app — ২টা worker সাধারণত যথেষ্ট, দরকার হলে বাড়ান
+      max_memory_restart: "500M",
+      env: {
+        NODE_ENV: "production",
+      },
+      out_file: path.join(__dirname, "logs/super-admin-out.log"),
+      error_file: path.join(__dirname, "logs/super-admin-error.log"),
+      time: true,
+    },
   ],
 };

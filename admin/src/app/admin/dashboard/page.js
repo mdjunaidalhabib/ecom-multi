@@ -36,6 +36,12 @@ export default function DashboardPage() {
     totalSales: 0,
   });
 
+  // ✅ Online vs Offline breakdown
+  const [channelStats, setChannelStats] = useState({
+    online: { orders: 0, sales: 0 },
+    offline: { orders: 0, sales: 0 },
+  });
+
   // ✅ status stats (সব status থাকবে, না থাকলে 0)
   const [statusStats, setStatusStats] = useState(() =>
     ORDER_STATUSES.reduce((acc, st) => {
@@ -50,7 +56,7 @@ export default function DashboardPage() {
         setErr("");
         setLoading(true);
 
-        const res = await fetch(`${API}/admin/orders`, {
+        const res = await fetch(`${API}/admin/orders?limit=5000`, {
           method: "GET",
           credentials: "include",
           cache: "no-store",
@@ -58,9 +64,10 @@ export default function DashboardPage() {
 
         if (!res.ok) throw new Error("Orders fetch failed");
 
-        const data = await res.json();
+        const json = await res.json();
+        const data = Array.isArray(json?.orders) ? json.orders : [];
 
-        if (Array.isArray(data)) {
+        if (data.length) {
           setOrders(data);
 
           // ✅ Total Orders + Sales
@@ -80,6 +87,18 @@ export default function DashboardPage() {
           });
 
           setStatusStats(statusMap);
+
+          // ✅ Online vs Offline breakdown
+          const channelMap = {
+            online: { orders: 0, sales: 0 },
+            offline: { orders: 0, sales: 0 },
+          };
+          data.forEach((order) => {
+            const ch = order.saleChannel === "offline" ? "offline" : "online";
+            channelMap[ch].orders += 1;
+            channelMap[ch].sales += order.total || 0;
+          });
+          setChannelStats(channelMap);
         } else {
           setOrders([]);
           setStats({ totalOrders: 0, totalSales: 0 });
@@ -89,6 +108,10 @@ export default function DashboardPage() {
               return acc;
             }, {})
           );
+          setChannelStats({
+            online: { orders: 0, sales: 0 },
+            offline: { orders: 0, sales: 0 },
+          });
         }
       } catch (error) {
         console.error("Failed to fetch orders:", error);
@@ -161,6 +184,22 @@ const cards = useMemo(() => {
       sub: "Total revenue",
     },
     {
+      key: "onlineOrders",
+      label: "🌐 Online Orders",
+      value: channelStats.online.orders,
+      gradient: "from-blue-600 via-blue-600 to-cyan-500",
+      dot: "bg-white/50",
+      sub: `৳${channelStats.online.sales} sales`,
+    },
+    {
+      key: "offlineOrders",
+      label: "🏬 Offline Orders",
+      value: channelStats.offline.orders,
+      gradient: "from-purple-600 via-purple-600 to-fuchsia-500",
+      dot: "bg-white/50",
+      sub: `৳${channelStats.offline.sales} sales`,
+    },
+    {
       key: "pending",
       label: "Pending",
       value: statusStats.pending ?? 0,
@@ -201,7 +240,7 @@ const cards = useMemo(() => {
       sub: "Stopped orders",
     },
   ];
-}, [stats, statusStats]);
+}, [stats, statusStats, channelStats]);
 
   return (
     <div className="space-y-6 p-3 sm:p-6">

@@ -9,24 +9,39 @@ import {
   cleanupTrashAssets,
 } from "../../utils/trash/trash.helpers.js";
 import { permanentlyDeleteShopData } from "../../utils/shop/shopTrash.helpers.js";
-import { invalidateShopDomainCache } from "../../src/tenancy/publicShopResolver.js";
+import { invalidateShopCache } from "../../src/tenancy/publicShopResolver.js";
+
+// frontend/lib/shopMode.js এর DOMAIN_MODE_MARKER — কোনো real শপ এই slug
+// নিতে পারবে না, নাহলে custom-domain routing-এর সাথে conflict করবে
+const RESERVED_SLUGS = new Set(["__domain__"]);
+
+function normalizeSlug(value = "") {
+  return value
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
 
 /* -------------------------------------------------------
    Helper: name -> url-safe slug (+ auto-unique suffix)
+   শুধু তখনই ব্যবহার হয় যখন ইউজার নিজে কোনো slug দেয়নি
 ------------------------------------------------------- */
-async function generateUniqueSlug(name) {
-  const base =
-    name
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") || "shop";
+async function generateUniqueSlug(name, { excludeId } = {}) {
+  const base = normalizeSlug(name) || "shop";
 
-  let slug = base;
+  let slug = RESERVED_SLUGS.has(base) ? `${base}-shop` : base;
   let counter = 1;
 
   // eslint-disable-next-line no-await-in-loop
-  while (await Shop.findOne({ slug })) {
+  while (
+    await Shop.findOne({
+      slug,
+      ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+    })
+  ) {
     counter += 1;
     slug = `${base}-${counter}`;
   }
@@ -126,31 +141,59 @@ export const getShopById = async (req, res) => {
 ------------------------------------------------------- */
 export const createShop = async (req, res) => {
   try {
-    const { name, domain, contactEmail, contactPhone, plan } = req.body || {};
+    const { name, slug: rawSlug, domain, contactEmail, contactPhone, plan } = req.body || {};
 
     if (!name || !name.trim()) {
       return res.status(400).json({ message: "শপের নাম আবশ্যক" });
     }
-    if (!domain || !domain.trim()) {
-      return res.status(400).json({ message: "ডোমেইন আবশ্যক" });
+
+    // ✅ ডোমেইন ঐচ্ছিক — না দিলে শপ শুধু platform-এর slug-based path
+    // (/shop/<slug>/...) দিয়ে চলবে, পরে যেকোনো সময় custom domain যোগ করা যাবে
+    const trimmedDomain = domain && domain.trim() ? domain.trim() : "";
+    let normalizedDomain = "";
+
+    if (trimmedDomain) {
+      normalizedDomain = normalizeDomain(trimmedDomain);
+
+      const existing = await Shop.findOne({ domain: normalizedDomain });
+      if (existing) {
+        return res
+          .status(409)
+          .json({ message: "এই ডোমেইন দিয়ে ইতিমধ্যে একটা শপ আছে" });
+      }
     }
 
-    const normalizedDomain = normalizeDomain(domain);
+    // ✅ Slug ঐচ্ছিকভাবে নিজে দেওয়া যায় — না দিলে নাম থেকে অটো তৈরি হবে।
+    // নিজে দিলে exact match uniqueness চেক হয় (auto-generate-এর মতো চুপচাপ
+    // -2, -3 suffix বসানো হয় না, বরং স্পষ্ট এরর দেখানো হয়)।
+    const trimmedSlug = rawSlug && rawSlug.trim() ? rawSlug.trim() : "";
+    let slug;
 
-    const existing = await Shop.findOne({ domain: normalizedDomain });
-    if (existing) {
-      return res
-        .status(409)
-        .json({ message: "এই ডোমেইন দিয়ে ইতিমধ্যে একটা শপ আছে" });
+    if (trimmedSlug) {
+      const normalizedSlug = normalizeSlug(trimmedSlug);
+      if (!normalizedSlug) {
+        return res.status(400).json({
+          message: "Slug সঠিক ফরম্যাটে দিন (শুধু ছোট হাতের অক্ষর, সংখ্যা, হাইফেন)",
+        });
+      }
+      if (RESERVED_SLUGS.has(normalizedSlug)) {
+        return res.status(400).json({ message: "এই Slug ব্যবহার করা যাবে না" });
+      }
+      const slugClash = await Shop.findOne({ slug: normalizedSlug });
+      if (slugClash) {
+        return res
+          .status(409)
+          .json({ message: "এই Slug দিয়ে ইতিমধ্যে একটা শপ আছে" });
+      }
+      slug = normalizedSlug;
+    } else {
+      slug = await generateUniqueSlug(name);
     }
-
-    const slug = await generateUniqueSlug(name);
 
     const shop = await Shop.create({
       name: name.trim(),
       slug,
-      domain: normalizedDomain,
-      domainStatus: "pending_dns",
+      ...(normalizedDomain ? { domain: normalizedDomain, domainStatus: "pending_dns" } : {}),
       status: "trial",
       plan: plan && ["free", "starter", "pro"].includes(plan) ? plan : "free",
       contactEmail: contactEmail || "",
@@ -161,20 +204,24 @@ export const createShop = async (req, res) => {
     res.status(201).json({
       message: "✅ নতুন শপ তৈরি হয়েছে",
       shop,
-      dnsInstructions: {
-        note: "কাস্টমার এই ডোমেইনে ঢুকতে পারার জন্য DNS পয়েন্ট করাতে হবে।",
-        recommended: [
-          { type: "A", host: "@", value: process.env.SERVER_IP || "<SERVER_IP>" },
-          { type: "CNAME", host: "www", value: normalizedDomain },
-        ],
-      },
+      ...(normalizedDomain
+        ? {
+            dnsInstructions: {
+              note: "কাস্টমার এই ডোমেইনে ঢুকতে পারার জন্য DNS পয়েন্ট করাতে হবে।",
+              recommended: [
+                { type: "A", host: "@", value: process.env.SERVER_IP || "<SERVER_IP>" },
+                { type: "CNAME", host: "www", value: normalizedDomain },
+              ],
+            },
+          }
+        : {}),
     });
   } catch (err) {
     console.error("❌ createShop error:", err);
     if (err?.code === 11000) {
       return res
         .status(409)
-        .json({ message: "এই নাম বা ডোমেইন দিয়ে ইতিমধ্যে একটা শপ আছে" });
+        .json({ message: "এই নাম, Slug বা ডোমেইন দিয়ে ইতিমধ্যে একটা শপ আছে" });
     }
     res.status(500).json({ message: "Server error creating shop" });
   }
@@ -191,9 +238,11 @@ export const updateShop = async (req, res) => {
     if (!shop) return res.status(404).json({ message: "Shop not found" });
 
     const originalDomain = shop.domain; // cache invalidate করার জন্য আগের ডোমেইনটা রাখা হলো
+    const originalSlug = shop.slug;
 
     const {
       name,
+      slug,
       domain,
       contactEmail,
       contactPhone,
@@ -204,6 +253,30 @@ export const updateShop = async (req, res) => {
     } = req.body || {};
 
     if (name !== undefined && name.trim()) shop.name = name.trim();
+
+    if (slug !== undefined && slug.trim()) {
+      const normalizedSlug = normalizeSlug(slug);
+      if (!normalizedSlug) {
+        return res.status(400).json({
+          message: "Slug সঠিক ফরম্যাটে দিন (শুধু ছোট হাতের অক্ষর, সংখ্যা, হাইফেন)",
+        });
+      }
+      if (normalizedSlug !== shop.slug) {
+        if (RESERVED_SLUGS.has(normalizedSlug)) {
+          return res.status(400).json({ message: "এই Slug ব্যবহার করা যাবে না" });
+        }
+        const slugClash = await Shop.findOne({
+          slug: normalizedSlug,
+          _id: { $ne: shop._id },
+        });
+        if (slugClash) {
+          return res
+            .status(409)
+            .json({ message: "এই Slug দিয়ে অন্য একটা শপ ইতিমধ্যে আছে" });
+        }
+        shop.slug = normalizedSlug;
+      }
+    }
 
     if (domain !== undefined && domain.trim()) {
       const normalizedDomain = normalizeDomain(domain);
@@ -239,10 +312,10 @@ export const updateShop = async (req, res) => {
 
     await shop.save();
 
-    // 🔥 FIX: shop cache invalidate — নাহলে ডোমেইন/স্ট্যাটাস বদলানোর পরও
+    // 🔥 FIX: shop cache invalidate — নাহলে ডোমেইন/স্লাগ/স্ট্যাটাস বদলানোর পরও
     // পুরনো cached ডেটা দিয়ে (৬০ সেকেন্ড পর্যন্ত) request সার্ভ হতে পারতো
-    invalidateShopDomainCache(originalDomain);
-    invalidateShopDomainCache(shop.domain);
+    invalidateShopCache({ domain: originalDomain, slug: originalSlug });
+    invalidateShopCache({ domain: shop.domain, slug: shop.slug });
 
     res.json({ message: "✅ শপ আপডেট হয়েছে", shop });
   } catch (err) {
@@ -286,7 +359,7 @@ export const updateShopStatus = async (req, res) => {
     // 🔥 FIX: সাসপেন্ড/একটিভ করার সাথে সাথেই effect হওয়া উচিত — cache-এর
     // TTL (৬০ সেকেন্ড) শেষ হওয়া পর্যন্ত অপেক্ষা করা ঠিক না, বিশেষ করে
     // সাসপেনশনের ক্ষেত্রে।
-    invalidateShopDomainCache(shop.domain);
+    invalidateShopCache({ domain: shop.domain, slug: shop.slug });
 
     res.json({
       message:
@@ -335,7 +408,7 @@ export const deleteShop = async (req, res) => {
 
     // 🔥 FIX: শপ trash-এ যাওয়ার পরও পুরনো cache-এর কারণে ৬০ সেকেন্ড পর্যন্ত
     // ডোমেইনে হিট হলে শপ "পাওয়া যাচ্ছে" বলে দেখাতে পারতো
-    invalidateShopDomainCache(shop.domain);
+    invalidateShopCache({ domain: shop.domain, slug: shop.slug });
 
     res.json({
       message: "🗑️ Shop Trash-এ পাঠানো হয়েছে। ৩ দিনের মধ্যে Restore করা যাবে।",
@@ -635,7 +708,7 @@ export const verifyShopDomain = async (req, res) => {
       shop.domainStatus = "failed";
       shop.domainLastCheckedAt = new Date();
       await shop.save();
-      invalidateShopDomainCache(shop.domain);
+      invalidateShopCache({ domain: shop.domain });
       return res.status(200).json({
         verified: false,
         message: `"${shop.domain}" এর জন্য DNS resolve করা যায়নি`,
@@ -649,7 +722,7 @@ export const verifyShopDomain = async (req, res) => {
     shop.domainLastCheckedAt = new Date();
     if (verified) shop.domainVerifiedAt = new Date();
     await shop.save();
-    invalidateShopDomainCache(shop.domain);
+    invalidateShopCache({ domain: shop.domain });
 
     res.json({
       verified,

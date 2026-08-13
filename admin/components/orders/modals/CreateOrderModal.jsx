@@ -1,8 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  X,
+  Globe,
+  Store,
+  User,
+  Package,
+  Plus,
+  Minus,
+  Search,
+  Trash2,
+  Wallet,
+  Truck,
+  Receipt,
+  ShoppingBag,
+  ChevronDown,
+  ImageOff,
+  LayoutGrid,
+} from "lucide-react";
 
 const phoneRegex = /^(01[3-9]\d{8})$/;
+
+function SectionHeader({ icon: Icon, title }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="h-8 w-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+        <Icon size={15} />
+      </div>
+      <div className="text-sm font-semibold text-gray-900">{title}</div>
+    </div>
+  );
+}
 
 export default function CreateOrderModal({ open, onClose, onCreate, API }) {
   /* ===========================
@@ -23,6 +52,13 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerIndex, setPickerIndex] = useState(null);
   const [productQuery, setProductQuery] = useState("");
+  const [pickerCategoryId, setPickerCategoryId] = useState("");
+
+  /* ===========================
+     ✅ SALE CHANNEL
+  ============================ */
+  const [saleChannel, setSaleChannel] = useState("online");
+  const isOffline = saleChannel === "offline";
 
   /* ===========================
      ✅ BILLING
@@ -62,11 +98,14 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     let alive = true;
     setLoadingProducts(true);
 
-    fetch(`${API}/products`)
+    // ✅ Admin endpoint ব্যবহার করা হচ্ছে (public endpoint শুধু active category-এর
+    // active প্রোডাক্ট দেখায়, ফলে হিডেন/ইনঅ্যাক্টিভ প্রোডাক্ট পিকারে আসত না) —
+    // এখানে বড় limit দিয়ে পুরো ক্যাটালগ একসাথে আনা হচ্ছে
+    fetch(`${API}/admin/products?limit=2000`)
       .then((res) => res.json())
       .then((data) => {
         if (!alive) return;
-        setProducts(Array.isArray(data) ? data : []);
+        setProducts(Array.isArray(data?.products) ? data.products : []);
       })
       .catch(() => {
         if (!alive) return;
@@ -121,7 +160,9 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     setPickerOpen(false);
     setPickerIndex(null);
     setProductQuery("");
+    setPickerCategoryId("");
 
+    setSaleChannel("online");
     setTouched({ name: false, phone: false, address: false });
     setBilling({ name: "", phone: "", address: "", note: "" });
     setItems([{ productId: "", qty: 1, color: null }]);
@@ -158,18 +199,46 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
   };
 
   /* ===========================
-     ✅ FILTER PRODUCTS (SEARCH)
+     ✅ CATEGORIES (প্রোডাক্ট লিস্ট থেকেই ইউনিক ক্যাটাগরি বের করা হয়,
+     যেহেতু admin/products এন্ডপয়েন্ট categories populate করেই দেয়)
+  ============================ */
+  const allCategories = useMemo(() => {
+    const map = new Map();
+    products.forEach((p) => {
+      (p.categories || []).forEach((c) => {
+        if (c?._id && !map.has(String(c._id))) map.set(String(c._id), c);
+      });
+    });
+    return Array.from(map.values()).sort((a, b) =>
+      String(a.name || "").localeCompare(String(b.name || ""))
+    );
+  }, [products]);
+
+  /* ===========================
+     ✅ FILTER PRODUCTS (CATEGORY + SEARCH)
   ============================ */
   const filteredProducts = useMemo(() => {
-    if (!productQuery.trim()) return products;
+    let list = products;
 
-    const q = productQuery.trim().toLowerCase();
-    return products.filter((p) => {
-      const name = String(p?.name || "").toLowerCase();
-      const id = String(p?._id || "").toLowerCase();
-      return name.includes(q) || id.includes(q);
-    });
-  }, [productQuery, products]);
+    if (pickerCategoryId) {
+      list = list.filter((p) =>
+        (p.categories || []).some(
+          (c) => String(c?._id) === String(pickerCategoryId)
+        )
+      );
+    }
+
+    if (productQuery.trim()) {
+      const q = productQuery.trim().toLowerCase();
+      list = list.filter((p) => {
+        const name = String(p?.name || "").toLowerCase();
+        const id = String(p?._id || "").toLowerCase();
+        return name.includes(q) || id.includes(q);
+      });
+    }
+
+    return list;
+  }, [productQuery, products, pickerCategoryId]);
 
   /* ===========================
      ✅ VIEW ITEMS FOR SUMMARY
@@ -206,22 +275,28 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     0
   );
 
+  // ✅ Offline (in-store) sale-এ ডেলিভারি চার্জ প্রযোজ্য নয়
+  const effectiveDeliveryCharge = isOffline ? 0 : toNumber(deliveryCharge, 0);
+
   const total = Math.max(
     0,
-    subtotal + toNumber(deliveryCharge, 0) - toNumber(discount, 0)
+    subtotal + effectiveDeliveryCharge - toNumber(discount, 0)
   );
 
   /* ===========================
      ✅ VALIDATION
+     Offline sale-এ billing info ঐচ্ছিক
   ============================ */
   const errors = {
-    name: !billing.name.trim(),
-    phone: !billing.phone.trim() || !phoneRegex.test(billing.phone.trim()),
-    address: !billing.address.trim(),
+    name: !isOffline && !billing.name.trim(),
+    phone:
+      !isOffline &&
+      (!billing.phone.trim() || !phoneRegex.test(billing.phone.trim())),
+    address: !isOffline && !billing.address.trim(),
   };
 
   const canSubmit =
-    !deliveryLoading &&
+    (isOffline || !deliveryLoading) &&
     !errors.name &&
     !errors.phone &&
     !errors.address &&
@@ -254,6 +329,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     setPickerIndex(idx);
     setPickerOpen(true);
     setProductQuery("");
+    setPickerCategoryId("");
   };
 
   const pickProduct = (prod) => {
@@ -266,6 +342,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     setPickerOpen(false);
     setPickerIndex(null);
     setProductQuery("");
+    setPickerCategoryId("");
   };
 
   const changeQty = (idx, delta) => {
@@ -280,7 +357,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     let next = current + delta;
 
     next = Math.max(1, next);
-    if (stock > 0) next = Math.min(stock, next);
+    next = Math.min(stock, next);
+    if (next < 1) next = current;
 
     updateItem(idx, "qty", next);
   };
@@ -322,12 +400,15 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
       items: cleaned,
       billing,
       discount: toNumber(discount, 0),
+      deliveryCharge: effectiveDeliveryCharge,
       paymentMethod,
       paymentStatus,
       status,
 
       createdBy: "admin",
       createdByName: "Admin",
+
+      saleChannel,
     });
   };
 
@@ -342,23 +423,38 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
         } items-end sm:items-center justify-center bg-black/60`}
       >
         {/* ✅ MOBILE FULL SCREEN / DESKTOP CENTER */}
-        <div className="w-full sm:max-w-6xl sm:rounded-3xl bg-white h-[92vh] sm:h-[88vh] overflow-hidden shadow-2xl border border-gray-200 flex flex-col">
+        <div className="w-full sm:max-w-6xl sm:rounded-3xl bg-gray-50 h-[92vh] sm:h-[88vh] overflow-hidden shadow-2xl flex flex-col">
           {/* ✅ STICKY HEADER */}
-          <div className="shrink-0 px-4 sm:px-6 py-4 border-b bg-white flex items-center justify-between sticky top-0 z-20">
-            <div className="min-w-0">
-              <div className="text-lg sm:text-xl font-black text-gray-900 truncate">
-                Create New Order
+          <div
+            className={`shrink-0 overflow-hidden px-4 sm:px-6 py-5 flex items-center justify-between sticky top-0 z-20 transition-colors ${
+              isOffline
+                ? "bg-gradient-to-r from-purple-600 via-fuchsia-600 to-purple-700"
+                : "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600"
+            }`}
+          >
+            <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-14 left-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+
+            <div className="relative min-w-0 flex items-center gap-3">
+              <div className="h-11 w-11 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center border border-white/20 shrink-0">
+                <ShoppingBag className="text-white" size={20} />
               </div>
-              <div className="text-[11px] text-gray-500 font-semibold">
-                ✅ Created by Admin • Delivery charge from DB
+              <div className="min-w-0">
+                <div className="text-lg sm:text-xl font-semibold text-white truncate">
+                  Create New Order
+                </div>
+                <div className="text-[11px] text-white/80 font-semibold flex items-center gap-1.5">
+                  {isOffline ? <Store size={12} /> : <Globe size={12} />}
+                  {isOffline ? "Offline in-store sale" : "Online delivery order"}
+                </div>
               </div>
             </div>
 
             <button
               onClick={onClose}
-              className="h-10 w-10 rounded-2xl grid place-items-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-black"
+              className="relative h-10 w-10 rounded-2xl grid place-items-center bg-white/15 hover:bg-white/25 text-white font-black backdrop-blur transition"
             >
-              ✕
+              <X size={18} />
             </button>
           </div>
 
@@ -367,21 +463,68 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
             <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               {/* LEFT */}
               <div className="space-y-4">
-                {/* CUSTOMER CARD */}
-                <div className="rounded-3xl border bg-white p-4 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-black text-gray-900">
-                      Customer Info
+                {/* SALE CHANNEL CARD */}
+                <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                  <SectionHeader icon={ShoppingBag} title="Sale Channel" />
+                  <div className="grid grid-cols-2 gap-2.5 p-1 rounded-2xl bg-gray-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSaleChannel("online");
+                        setPaymentStatus("pending");
+                        setStatus("pending");
+                      }}
+                      className={`h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${
+                        !isOffline
+                          ? "bg-white text-blue-700 shadow-md"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      <Globe size={16} /> Online
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSaleChannel("offline");
+                        setPaymentStatus("paid");
+                        setStatus("delivered");
+                      }}
+                      className={`h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${
+                        isOffline
+                          ? "bg-white text-purple-700 shadow-md"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      <Store size={16} /> Offline
+                    </button>
+                  </div>
+                  {isOffline && (
+                    <div className="flex items-start gap-2 rounded-2xl bg-purple-50 border border-purple-100 px-3 py-2.5 text-[11px] text-purple-700 font-semibold">
+                      <Store size={14} className="shrink-0 mt-0.5" />
+                      In-store sale — কাস্টমার তথ্য ঐচ্ছিক, ডেলিভারি চার্জ ৳০, এবং Payment/Status ডিফল্টভাবে Paid ও Delivered বসানো হয়েছে।
                     </div>
-                    <div className="text-[11px] text-gray-500 font-semibold">
-                      Required *
+                  )}
+                </div>
+
+                {/* CUSTOMER CARD */}
+                <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <SectionHeader icon={User} title="Customer Info" />
+                    <div
+                      className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
+                        isOffline
+                          ? "bg-purple-50 text-purple-600"
+                          : "bg-red-50 text-red-600"
+                      }`}
+                    >
+                      {isOffline ? "Optional" : "Required"}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <div className="text-[11px] font-semibold text-gray-600">
-                        Name *
+                        Name {!isOffline && <span className="text-red-600">*</span>}
                       </div>
                       <input
                         className={inputClass(touched.name && errors.name)}
@@ -401,7 +544,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
 
                     <div className="space-y-1">
                       <div className="text-[11px] font-semibold text-gray-600">
-                        Phone *
+                        Phone {!isOffline && <span className="text-red-600">*</span>}
                       </div>
                       <input
                         className={inputClass(touched.phone && errors.phone)}
@@ -423,7 +566,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
 
                     <div className="space-y-1">
                       <div className="text-[11px] font-semibold text-gray-600">
-                        Address *
+                        Address {!isOffline && <span className="text-red-600">*</span>}
                       </div>
                       <input
                         className={inputClass(
@@ -462,16 +605,14 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                 </div>
 
                 {/* ITEMS CARD */}
-                <div className="rounded-3xl border bg-white p-4 shadow-sm space-y-3">
+                <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm font-black text-gray-900">
-                      Items
-                    </div>
+                    <SectionHeader icon={Package} title="Items" />
                     <button
                       onClick={addItem}
-                      className="h-10 px-4 rounded-2xl bg-gray-900 text-white text-xs font-black hover:opacity-90"
+                      className="h-10 px-4 rounded-2xl bg-indigo-600 text-white text-xs font-black hover:bg-indigo-700 flex items-center gap-1.5"
                     >
-                      + Add item
+                      <Plus size={14} /> Add item
                     </button>
                   </div>
 
@@ -494,13 +635,13 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                       return (
                         <div
                           key={idx}
-                          className="rounded-3xl border bg-gray-50 p-3 space-y-2"
+                          className="rounded-3xl border border-gray-100 bg-gray-50/70 p-3 space-y-2"
                         >
                           {/* TOP */}
                           <button
                             type="button"
                             onClick={() => openPicker(idx)}
-                            className="w-full h-14 rounded-3xl border bg-white px-3 flex items-center gap-3 hover:bg-gray-50"
+                            className="w-full h-14 rounded-3xl border border-gray-100 bg-white px-3 flex items-center gap-3 hover:border-blue-200 hover:bg-blue-50/30 transition"
                           >
                             <img
                               src={p ? image : "/no-image.png"}
@@ -520,10 +661,10 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                           </button>
 
                           {/* BOTTOM */}
-                          <div className="grid grid-cols-12 gap-2">
+                          <div className="flex flex-col sm:grid sm:grid-cols-12 gap-2">
                             {/* COLOR */}
                             <select
-                              className="col-span-7 h-12 rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+                              className="w-full sm:col-span-7 h-12 rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
                               value={it.color || ""}
                               onChange={(e) =>
                                 updateItem(idx, "color", e.target.value || null)
@@ -541,18 +682,18 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                             </select>
 
                             {/* QTY */}
-                            <div className="col-span-5 h-12 rounded-2xl border bg-white px-2 flex items-center justify-between">
+                            <div className="w-full sm:col-span-5 h-12 rounded-2xl border border-gray-200 bg-white px-2 flex items-center justify-between">
                               <button
                                 type="button"
                                 onClick={() => changeQty(idx, -1)}
                                 disabled={!p || toNumber(it.qty, 1) <= 1}
-                                className={`w-9 h-9 rounded-2xl font-black ${
+                                className={`w-9 h-9 rounded-xl font-black flex items-center justify-center transition ${
                                   !p || toNumber(it.qty, 1) <= 1
-                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                    : "bg-gray-200 hover:bg-gray-300"
+                                    ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                 }`}
                               >
-                                −
+                                <Minus size={14} />
                               </button>
 
                               <div className="text-base font-black">
@@ -562,14 +703,14 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                               <button
                                 type="button"
                                 onClick={() => changeQty(idx, 1)}
-                                disabled={!p || (stock > 0 && it.qty >= stock)}
-                                className={`w-9 h-9 rounded-2xl font-black ${
-                                  !p || (stock > 0 && it.qty >= stock)
-                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                    : "bg-gray-200 hover:bg-gray-300"
+                                disabled={!p || it.qty >= stock}
+                                className={`w-9 h-9 rounded-xl font-black flex items-center justify-center transition ${
+                                  !p || it.qty >= stock
+                                    ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                 }`}
                               >
-                                +
+                                <Plus size={14} />
                               </button>
                             </div>
                           </div>
@@ -582,9 +723,9 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                             <button
                               type="button"
                               onClick={() => removeItem(idx)}
-                              className="text-xs font-black text-red-600 hover:text-red-700"
+                              className="text-xs font-black text-red-600 hover:text-red-700 flex items-center gap-1"
                             >
-                              Remove
+                              <Trash2 size={13} /> Remove
                             </button>
                           </div>
                         </div>
@@ -594,10 +735,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                 </div>
 
                 {/* PAYMENT + STATUS */}
-                <div className="rounded-3xl border bg-white p-4 shadow-sm space-y-3">
-                  <div className="text-sm font-black text-gray-900">
-                    Payment & Status
-                  </div>
+                <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                  <SectionHeader icon={Wallet} title="Payment & Status" />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
@@ -609,7 +748,9 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value)}
                       >
-                        <option value="cod">Cash On Delivery</option>
+                        <option value="cod">
+                          {isOffline ? "Cash" : "Cash On Delivery"}
+                        </option>
                         <option value="bkash">bKash</option>
                       </select>
                     </div>
@@ -670,17 +811,44 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                   </div>
 
                   {/* DELIVERY LOCKED */}
-                  <div className="rounded-3xl border border-blue-100 bg-blue-50 p-4 flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-black text-gray-900">
-                        Delivery Charge (DB)
+                  <div
+                    className={`rounded-3xl border p-4 flex items-center justify-between gap-3 ${
+                      isOffline
+                        ? "border-purple-100 bg-purple-50"
+                        : "border-blue-100 bg-blue-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          isOffline
+                            ? "bg-purple-100 text-purple-600"
+                            : "bg-blue-100 text-blue-600"
+                        }`}
+                      >
+                        <Truck size={16} />
                       </div>
-                      <div className="text-[11px] text-gray-500 font-semibold">
-                        locked • not editable
+                      <div>
+                        <div className="text-sm font-black text-gray-900">
+                          Delivery Charge {isOffline ? "" : "(DB)"}
+                        </div>
+                        <div className="text-[11px] text-gray-500 font-semibold">
+                          {isOffline
+                            ? "in-store sale • no delivery"
+                            : "locked • not editable"}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-lg font-black text-blue-700">
-                      {deliveryLoading ? "..." : `৳${deliveryCharge}`}
+                    <div
+                      className={`text-lg font-black ${
+                        isOffline ? "text-purple-700" : "text-blue-700"
+                      }`}
+                    >
+                      {isOffline
+                        ? "৳0"
+                        : deliveryLoading
+                          ? "..."
+                          : `৳${deliveryCharge}`}
                     </div>
                   </div>
                 </div>
@@ -688,10 +856,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
 
               {/* RIGHT SUMMARY */}
               <div className="space-y-4">
-                <div className="rounded-3xl border bg-white p-4 shadow-sm space-y-3 lg:sticky lg:top-4">
-                  <div className="text-sm font-black text-gray-900">
-                    Order Summary
-                  </div>
+                <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3 lg:sticky lg:top-4">
+                  <SectionHeader icon={Receipt} title="Order Summary" />
 
                   {!viewItems.length ? (
                     <div className="text-sm text-gray-500">
@@ -743,7 +909,11 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                         Delivery
                       </span>
                       <span className="font-black">
-                        {deliveryLoading ? "..." : `৳${deliveryCharge}`}
+                        {isOffline
+                          ? "৳0"
+                          : deliveryLoading
+                            ? "..."
+                            : `৳${deliveryCharge}`}
                       </span>
                     </div>
 
@@ -756,9 +926,15 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                       </div>
                     )}
 
-                    <div className="flex justify-between text-lg font-black border-t pt-2">
+                    <div
+                      className={`flex justify-between items-center text-lg font-black rounded-2xl px-4 py-3 mt-1 ${
+                        isOffline
+                          ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white"
+                          : "bg-gradient-to-r from-indigo-600 to-blue-600 text-white"
+                      }`}
+                    >
                       <span>Total</span>
-                      <span className="text-blue-700">৳{total}</span>
+                      <span>৳{total}</span>
                     </div>
                   </div>
                 </div>
@@ -767,15 +943,19 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
           </div>
 
           {/* ✅ STICKY FOOTER (MOBILE + DESKTOP) */}
-          <div className="shrink-0 px-4 sm:px-6 py-3 border-t bg-white flex items-center justify-between sticky bottom-0 z-20">
-            <div className="text-[11px] text-gray-500 font-semibold">
-              {canSubmit ? "Ready to create ✅" : "Fill required fields..."}
+          <div className="shrink-0 px-4 sm:px-6 py-3 border-t border-gray-100 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sticky bottom-0 z-20">
+            <div
+              className={`text-[11px] font-bold flex items-center gap-1.5 ${
+                canSubmit ? "text-emerald-600" : "text-gray-400"
+              }`}
+            >
+              {canSubmit ? "✅ Ready to create" : "Fill required fields..."}
             </div>
 
             <div className="flex gap-2">
               <button
                 onClick={onClose}
-                className="h-11 px-4 rounded-2xl border bg-white font-black text-gray-700 hover:bg-gray-50"
+                className="flex-1 sm:flex-none h-11 px-4 rounded-2xl border border-gray-200 bg-white font-black text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
@@ -783,10 +963,12 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
               <button
                 onClick={submit}
                 disabled={!canSubmit}
-                className={`h-11 px-5 rounded-2xl font-black text-white ${
-                  canSubmit
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-300 cursor-not-allowed"
+                className={`flex-1 sm:flex-none h-11 px-5 rounded-2xl font-black text-white transition ${
+                  !canSubmit
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : isOffline
+                      ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:opacity-90"
+                      : "bg-gradient-to-r from-indigo-600 to-blue-600 hover:opacity-90"
                 }`}
               >
                 Create Order
@@ -803,14 +985,141 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
           setPickerOpen(false);
           setPickerIndex(null);
           setProductQuery("");
+          setPickerCategoryId("");
         }}
         query={productQuery}
         setQuery={setProductQuery}
         products={filteredProducts}
         loading={loadingProducts}
         onPick={pickProduct}
+        categories={allCategories}
+        selectedCategoryId={pickerCategoryId}
+        onSelectCategory={setPickerCategoryId}
       />
     </>
+  );
+}
+
+/* ===========================
+   ✅ CATEGORY DROPDOWN (single-select) — প্রোডাক্ট ফর্মের ক্যাটাগরি
+   ড্রপডাউনের মতোই thumbnail + name সহ লিস্ট
+=========================== */
+function CategoryDropdown({
+  categories,
+  selectedCategory,
+  selectedCategoryId,
+  onSelectCategory,
+}) {
+  const [open, setOpen] = useState(false);
+  const boxRef = useRef(null);
+
+  useEffect(() => {
+    const onOutside = (e) => {
+      if (boxRef.current && !boxRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, []);
+
+  const pick = (id) => {
+    onSelectCategory(id);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={boxRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full h-12 rounded-2xl border border-gray-200 bg-white px-4 flex items-center justify-between gap-2 text-left"
+      >
+        <span className="flex items-center gap-2 min-w-0">
+          {selectedCategory ? (
+            <>
+              <span className="relative h-7 w-7 rounded-lg overflow-hidden border bg-gray-50 shrink-0">
+                {selectedCategory.image ? (
+                  <img
+                    src={selectedCategory.image}
+                    alt={selectedCategory.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-gray-300">
+                    <ImageOff size={12} />
+                  </span>
+                )}
+              </span>
+              <span className="text-sm font-semibold text-gray-900 truncate">
+                {selectedCategory.name}
+              </span>
+            </>
+          ) : (
+            <>
+              <LayoutGrid size={16} className="text-gray-400 shrink-0" />
+              <span className="text-sm font-semibold text-gray-500">
+                All Categories
+              </span>
+            </>
+          )}
+        </span>
+        <ChevronDown
+          size={18}
+          className={`text-gray-400 shrink-0 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute z-30 mt-1 w-full max-h-64 overflow-y-auto rounded-2xl border border-gray-100 bg-white shadow-lg py-1">
+          <button
+            type="button"
+            onClick={() => pick("")}
+            className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
+              !selectedCategoryId
+                ? "bg-indigo-50 text-indigo-700 font-semibold"
+                : "text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <LayoutGrid size={16} className="shrink-0" />
+            <span>All Categories</span>
+          </button>
+
+          {categories.map((c) => {
+            const isSelected = String(selectedCategoryId) === String(c._id);
+            return (
+              <button
+                key={c._id}
+                type="button"
+                onClick={() => pick(c._id)}
+                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
+                  isSelected
+                    ? "bg-indigo-50 text-indigo-700 font-semibold"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span className="relative h-8 w-8 rounded-lg overflow-hidden border bg-gray-50 shrink-0">
+                  {c.image ? (
+                    <img
+                      src={c.image}
+                      alt={c.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-gray-300">
+                      <ImageOff size={14} />
+                    </span>
+                  )}
+                </span>
+                <span className="truncate">{c.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -825,43 +1134,68 @@ function ProductPickerModal({
   products,
   loading,
   onPick,
+  categories = [],
+  selectedCategoryId,
+  onSelectCategory,
 }) {
+  const selectedCategory = categories.find(
+    (c) => String(c._id) === String(selectedCategoryId)
+  );
+
   return (
     <div
       className={`fixed inset-0 z-[60] bg-black/70 px-2 ${
         open ? "flex" : "hidden"
       } items-end sm:items-center justify-center`}
     >
-      <div className="bg-white w-full sm:max-w-3xl h-[85vh] sm:h-auto sm:rounded-3xl rounded-t-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
+      <div className="bg-white w-full sm:max-w-md h-[88vh] sm:h-[80vh] sm:rounded-3xl rounded-t-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
         {/* HEADER */}
-        <div className="px-4 py-3 border-b bg-white flex items-center justify-between sticky top-0 z-10">
-          <div className="text-base font-black text-gray-900">
+        <div className="px-4 py-3.5 border-b border-gray-100 bg-gradient-to-r from-indigo-600 to-blue-600 flex items-center justify-between sticky top-0 z-10 shrink-0">
+          <div className="text-base font-semibold text-white">
             Select Product
           </div>
           <button
             onClick={onClose}
-            className="h-10 w-10 rounded-2xl grid place-items-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-black"
+            className="h-10 w-10 rounded-2xl grid place-items-center bg-white/15 hover:bg-white/25 text-white font-black backdrop-blur"
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
-        {/* SEARCH */}
-        <div className="p-4 border-b bg-gray-50">
-          <input
-            autoFocus
-            className="w-full h-12 rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
-            placeholder="Search product by name or ID..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+        {/* CATEGORY + SEARCH */}
+        <div className="p-4 border-b border-gray-100 bg-gray-50 shrink-0 space-y-2.5">
+          <CategoryDropdown
+            categories={categories}
+            selectedCategory={selectedCategory}
+            selectedCategoryId={selectedCategoryId}
+            onSelectCategory={onSelectCategory}
           />
-          <div className="text-[11px] text-gray-500 mt-2 font-semibold">
+
+          <div className="relative">
+            <Search
+              size={16}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              className="w-full h-12 rounded-2xl border border-gray-200 bg-white pl-11 pr-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="Search product by name or ID..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <div className="text-[11px] text-gray-500 font-semibold">
             Showing <b>{products.length}</b> products
+            {selectedCategory ? (
+              <>
+                {" "}
+                in <b>{selectedCategory.name}</b>
+              </>
+            ) : null}
           </div>
         </div>
 
         {/* LIST */}
-        <div className="p-4 overflow-y-auto space-y-2">
+        <div className="p-4 overflow-y-auto flex-1 space-y-2">
           {loading ? (
             <div className="p-10 text-center text-gray-500">Loading...</div>
           ) : !products.length ? (
@@ -878,47 +1212,54 @@ function ProductPickerModal({
               const stock = Number.isFinite(Number(p.stock))
                 ? Number(p.stock)
                 : 0;
+              const outOfStock = stock <= 0;
 
               return (
                 <button
                   key={p._id}
                   type="button"
                   onClick={() => onPick(p)}
-                  className="w-full text-left border rounded-3xl p-3 hover:bg-gray-50 flex items-center gap-3"
+                  className="w-full text-left border border-gray-100 rounded-2xl p-2.5 bg-white hover:border-indigo-300 hover:bg-indigo-50/30 transition flex items-center gap-3"
                 >
-                  <img
-                    src={img}
-                    alt=""
-                    className="w-14 h-14 rounded-3xl border object-cover"
-                  />
+                  <span className="relative h-12 w-12 rounded-xl overflow-hidden border bg-gray-50 shrink-0">
+                    {img ? (
+                      <img
+                        src={img}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-gray-300">
+                        <ImageOff size={16} />
+                      </span>
+                    )}
+                  </span>
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-black truncate">{p.name}</div>
-                    <div className="text-[11px] text-gray-600 font-semibold">
-                      Price: ৳{Number(p.price || 0)} • Stock: {stock}
+                    <div className="text-sm font-semibold text-gray-900 truncate">
+                      {p.name}
                     </div>
-                    <div className="text-[10px] text-gray-400 font-mono truncate">
-                      {String(p._id)}
+                    <div className="text-[11px] text-gray-500 font-semibold truncate">
+                      {(p.categories || []).map((c) => c.name).join(", ")}
                     </div>
                   </div>
 
-                  <div className="text-xs bg-blue-600 text-white px-4 py-2 rounded-2xl font-black">
-                    Select
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-black text-indigo-700">
+                      ৳{Number(p.price || 0)}
+                    </div>
+                    <div
+                      className={`text-[10px] font-bold ${
+                        outOfStock ? "text-red-500" : "text-gray-400"
+                      }`}
+                    >
+                      {outOfStock ? "Out of stock" : `Stock: ${stock}`}
+                    </div>
                   </div>
                 </button>
               );
             })
           )}
-        </div>
-
-        {/* FOOTER */}
-        <div className="p-3 border-t bg-white">
-          <button
-            onClick={onClose}
-            className="w-full h-12 rounded-2xl bg-gray-900 text-white font-black hover:opacity-90"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>

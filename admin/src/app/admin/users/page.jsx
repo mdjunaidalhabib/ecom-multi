@@ -2,19 +2,26 @@
 
 import { useEffect, useState } from "react";
 import UsersSkeleton from "../../../../components/Skeleton/UsersSkeleton";
+import Pagination from "../../../../components/Pagination";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   // 🔹 Fetch Users
   useEffect(() => {
     async function fetchUsers() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/admin/users`);
+        const res = await fetch(`/api/admin/users?page=${page}&limit=50`);
         const data = await res.json();
-        setUsers(Array.isArray(data) ? data : []);
+        setUsers(Array.isArray(data.users) ? data.users : []);
+        setTotal(data.total || 0);
+        setTotalPages(data.totalPages || 1);
       } catch (error) {
         console.error("Failed to fetch users:", error);
       } finally {
@@ -22,7 +29,7 @@ export default function UsersPage() {
       }
     }
     fetchUsers();
-  }, []);
+  }, [page]);
 
   return (
     <div className="p-3 sm:p-6">
@@ -95,6 +102,13 @@ export default function UsersPage() {
               </div>
             ))}
           </div>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={setPage}
+          />
         </>
       )}
     </div>

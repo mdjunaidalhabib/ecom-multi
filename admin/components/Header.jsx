@@ -1,25 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { Button } from "./button";
 import { Menu, X } from "lucide-react";
 import MenuBar from "./MenuBar";
 import LogoutButton from "./LogoutButton";
 import LiveDateTime from "./LiveDateTime";
-import { navItems, settingsChildren, superAdminNavItems } from "./menuConfig";
+import { navItems, settingsChildren } from "./menuConfig";
 import { motion, AnimatePresence } from "framer-motion";
-import useAdminMe from "../hooks/useAdminMe";
 
 export default function Header() {
-  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { admin, loading: adminLoading, isSuperAdmin } = useAdminMe();
+  const [adminName, setAdminName] = useState("");
 
-  const displayName = adminLoading ? "..." : admin?.name || "Admin";
-  const panelTitle = pathname?.startsWith("/super-admin")
-    ? "Super Admin Panel"
-    : "Admin Panel";
+  useEffect(() => {
+    const loadAdmin = async () => {
+      try {
+        const res = await axios.get("/api/admin/verify", {
+          withCredentials: true,
+        });
+        setAdminName(res.data?.admin?.name || "");
+      } catch (err) {
+        console.error("Failed to load admin info:", err);
+      }
+    };
+
+    loadAdmin();
+  }, []);
+
+  const displayName = adminName || "Admin";
 
   return (
     <header className="bg-white shadow p-2 md:px-6 md:py-2.5 flex items-center justify-between gap-2 relative">
@@ -39,7 +49,7 @@ export default function Header() {
 
       {/* Title - বড় স্ক্রিনে সেন্টারে */}
       <h1 className="hidden lg:block text-lg font-bold absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-700">
-        {panelTitle}
+        Admin Panel
       </h1>
 
       {/* ডান দিকে: তারিখ-সময়, লগআউট বাটন এবং মোবাইল মেনু */}
@@ -52,9 +62,7 @@ export default function Header() {
             variant="ghost"
             size="icon"
             onClick={() => setMenuOpen(!menuOpen)}
-            disabled={adminLoading}
-            aria-label="Open navigation menu"
-            className="!rounded-full !h-9 !w-9 bg-gray-50 border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="!rounded-full !h-9 !w-9 bg-gray-50 border border-gray-200"
           >
             {menuOpen ? (
               <X className="text-rose-600" size={20} />
@@ -67,7 +75,7 @@ export default function Header() {
 
       {/* মোবাইল মেনু */}
       <AnimatePresence>
-        {menuOpen && !adminLoading && (
+        {menuOpen && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -87,8 +95,8 @@ export default function Header() {
               className="fixed top-0 left-0 h-[100dvh] w-64 bg-white shadow-lg z-50 p-4 pb-[env(safe-area-inset-bottom,0px)] overflow-y-auto"
             >
               <MenuBar
-                items={isSuperAdmin ? superAdminNavItems : navItems}
-                settingsChildren={isSuperAdmin ? [] : settingsChildren}
+                items={navItems}
+                settingsChildren={settingsChildren}
                 onItemClick={() => setMenuOpen(false)}
                 vertical={true}
               />

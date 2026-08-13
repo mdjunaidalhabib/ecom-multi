@@ -6,6 +6,24 @@ import BasicInfoCategory from "./BasicInfoCategory";
 import VariantSection from "./VariantSection";
 import ReviewsSection from "./ReviewsSection";
 
+const normalizeCategories = (categories) =>
+  Array.isArray(categories)
+    ? categories.map((c) => (typeof c === "object" ? c?._id : c)).filter(Boolean)
+    : [];
+
+// ✅ পুরনো প্রোডাক্টের description/additionalInfo প্লেইন টেক্সট (HTML ছাড়া) হিসেবে সেভ করা —
+// নতুন rich text editor-এ ঠিকভাবে দেখানোর জন্য একে HTML প্যারাগ্রাফে রূপান্তর করা হয়
+const legacyTextToHtml = (text) => {
+  if (!text) return "";
+  if (/<[a-z][\s\S]*>/i.test(text)) return text; // ইতিমধ্যে HTML হলে যেমন আছে তেমনই থাকবে
+  const esc = (s) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return text
+    .split(/\n{2,}/)
+    .map((para) => `<p>${esc(para).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+};
+
 const EMPTY_DEFAULT_VARIANT = {
   name: "Default Variant",
   price: "",
@@ -42,7 +60,7 @@ export default function ProductForm({
 
   const [form, setForm] = useState({
     name: "",
-    category: "",
+    categories: [],
     description: "",
     additionalInfo: "",
     order: 1,
@@ -83,7 +101,9 @@ export default function ProductForm({
 
     return {
       name: f?.name || "",
-      category: f?.category || "",
+      categories: Array.isArray(f?.categories)
+        ? [...f.categories].sort()
+        : [],
       description: f?.description || "",
       additionalInfo: f?.additionalInfo || "",
       order: Number(f?.order || 1),
@@ -154,7 +174,7 @@ export default function ProductForm({
 
       setForm({
         name: "",
-        category: "",
+        categories: [],
         description: "",
         additionalInfo: "",
         order: last,
@@ -202,9 +222,9 @@ export default function ProductForm({
 
       setForm({
         name: product.name || "",
-        category: product.category?._id || product.category || "",
-        description: product.description || "",
-        additionalInfo: product.additionalInfo || "",
+        categories: normalizeCategories(product.categories),
+        description: legacyTextToHtml(product.description || ""),
+        additionalInfo: legacyTextToHtml(product.additionalInfo || ""),
         order: orderValue,
         isActive: product.isActive ?? true,
         freeDelivery: product.freeDelivery ?? false,
@@ -237,9 +257,9 @@ export default function ProductForm({
 
     setForm({
       name: product.name || "",
-      category: product.category?._id || product.category || "",
-      description: product.description || "",
-      additionalInfo: product.additionalInfo || "",
+      categories: normalizeCategories(product.categories),
+      description: legacyTextToHtml(product.description || ""),
+      additionalInfo: legacyTextToHtml(product.additionalInfo || ""),
       order: orderValue,
       isActive: product.isActive ?? true,
       freeDelivery: product.freeDelivery ?? false,
@@ -274,7 +294,8 @@ export default function ProductForm({
   const validateForm = () => {
     const e = {};
     if (!form.name?.trim()) e.name = "প্রোডাক্ট নাম দিতে হবে";
-    if (!form.category) e.category = "ক্যাটাগরি নির্বাচন করুন";
+    if (!Array.isArray(form.categories) || form.categories.length === 0)
+      e.categories = "ক্যাটাগরি নির্বাচন করুন";
 
     const list = Array.isArray(form.variants) ? form.variants : [];
     list.forEach((v, i) => {
@@ -366,7 +387,7 @@ export default function ProductForm({
     try {
       const formData = new FormData();
       formData.append("name", form.name);
-      formData.append("category", form.category);
+      formData.append("categories", JSON.stringify(form.categories || []));
       formData.append("description", form.description || "");
       formData.append("additionalInfo", form.additionalInfo || "");
       formData.append("order", String(form.order));

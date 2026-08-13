@@ -252,7 +252,12 @@ export const deleteCategory = async (req, res) => {
 /* ================== ADMIN READ ================== */
 export const getCategoriesAdmin = async (req, res) => {
   try {
-    const categories = await Category.find().sort({ order: 1, createdAt: 1 });
+    // ✅ Categories চালিত হয় manual "order" field দিয়ে (drag/reorder ভিত্তিক),
+    // পুরো list একসাথে লোড হওয়া দরকার — তাই full pagination না বসিয়ে শুধু
+    // একটা safety cap, যাতে কখনো unbounded result ফেরত না যায়।
+    const categories = await Category.find()
+      .sort({ order: 1, createdAt: 1 })
+      .limit(500);
     res.json(categories);
   } catch (err) {
     console.error("❌ Admin getCategories error:", err);

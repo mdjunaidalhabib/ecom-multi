@@ -21,6 +21,7 @@ const categorySchema = new mongoose.Schema(
 
 // ✅ একই শপে একই নামের category দুইবার না হোক, কিন্তু দুই শপে একই নাম চলবে
 categorySchema.index({ shopId: 1, name: 1 }, { unique: true });
+categorySchema.index({ shopId: 1, isActive: 1, order: 1, createdAt: 1 });
 
 categorySchema.plugin(tenantPlugin);
 

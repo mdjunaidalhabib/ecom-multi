@@ -3,16 +3,16 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import cloudinaryLoader from "../../lib/cloudinaryLoader";
-import { usePathname } from "next/navigation";
 import { FaUser } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "../../context/UserContext";
+import useShopPath from "../../hooks/useShopPath";
 
 export default function AccountMenuDesktop() {
   const { me, setMe, loadingUser } = useUser();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
-  const pathname = usePathname();
+  const { base, subPath } = useShopPath();
 
   // বাইরে ক্লিক করলে বন্ধ হবে
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function AccountMenuDesktop() {
   // রুট পরিবর্তন হলে dropdown বন্ধ
   useEffect(() => {
     setOpen(false);
-  }, [pathname]);
+  }, [subPath]);
 
   const dropdownAnim = {
     hidden: { opacity: 0, y: -10 },
@@ -64,7 +64,7 @@ export default function AccountMenuDesktop() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setMe(null);
-    window.location.replace("/"); // ✅ replace() দিয়ে history stack clean রাখো
+    window.location.replace(base || "/"); // ✅ replace() দিয়ে history stack clean রাখো
   };
 
   return (
@@ -73,7 +73,7 @@ export default function AccountMenuDesktop() {
       <button
         onClick={() => setOpen(!open)}
         className={`p-2 rounded flex items-center gap-1 transition ${
-          pathname === "/profile" || pathname === "/orders"
+          subPath === "/profile" || subPath === "/orders"
             ? "text-pink-600 bg-pink-300 border border-pink-400 font-medium"
             : "text-gray-900 hover:text-pink-600 hover:bg-pink-300"
         }`}
@@ -121,9 +121,9 @@ export default function AccountMenuDesktop() {
 
             {/* 🔗 Links */}
             <Link
-              href="/profile"
+              href={`${base}/profile`}
               className={`block px-3 py-2 rounded transition ${
-                pathname === "/profile"
+                subPath === "/profile"
                   ? "text-pink-600 bg-pink-300 border border-pink-400 font-medium"
                   : "text-gray-900 hover:text-pink-600 hover:bg-pink-300"
               }`}
@@ -132,9 +132,9 @@ export default function AccountMenuDesktop() {
             </Link>
 
             <Link
-              href="/orders"
+              href={`${base}/orders`}
               className={`block px-3 py-2 rounded transition ${
-                pathname === "/orders"
+                subPath === "/orders"
                   ? "text-pink-600 bg-pink-300 border border-pink-400 font-medium"
                   : "text-gray-900 hover:text-pink-600 hover:bg-pink-300"
               }`}

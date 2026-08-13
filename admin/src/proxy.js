@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+const SUPER_ADMIN_URL = process.env.SUPER_ADMIN_URL || "http://localhost:3002";
+
 function decodeJwtPayload(token) {
   try {
     const parts = token.split(".");
@@ -33,24 +35,17 @@ function redirectWithClearedCookie(url) {
   return response;
 }
 
-function superAdminLegacyTarget(pathname) {
-  if (pathname === "/admin/shops") return "/super-admin/shops";
-  if (pathname === "/admin/profile") return "/super-admin/profile";
-  return "/super-admin/dashboard";
-}
-
 export function proxy(req) {
   const token = req.cookies.get("admin_token")?.value || "";
   const session = getSession(token);
   const { pathname, origin } = req.nextUrl;
 
   const isAdminLogin = pathname === "/login";
-  const isSuperAdminLogin = pathname === "/super-admin/login";
   const isForcedShopAccessLogin =
     isAdminLogin && req.nextUrl.searchParams.get("shopAccess") === "blocked";
 
-  // Logged-in users should not remain on either login page.
-  if (isAdminLogin || isSuperAdminLogin) {
+  // A logged-in shop admin/staff shouldn't remain on the login page.
+  if (isAdminLogin) {
     // A shop can be deleted/suspended while its old JWT is still present in
     // the browser. Let the session guard force-open the login page and clear
     // that stale cookie instead of bouncing back to /admin/dashboard.
@@ -66,37 +61,24 @@ export function proxy(req) {
 
     if (!session) return NextResponse.next();
 
-    const home =
-      session.role === "superadmin"
-        ? "/super-admin/dashboard"
-        : "/admin/dashboard";
-
-    return NextResponse.redirect(`${origin}${home}`);
-  }
-
-  // Dedicated super admin portal.
-  if (pathname.startsWith("/super-admin")) {
-    if (!session) {
-      return redirectWithClearedCookie(`${origin}/super-admin/login`);
+    // A superadmin cookie can still be present here on shared-`localhost`
+    // dev setups (cookies aren't port-scoped), so send it to its own app
+    // instead of looping it into the shop-admin dashboard.
+    if (session.role === "superadmin") {
+      return NextResponse.redirect(`${SUPER_ADMIN_URL}/dashboard`);
     }
 
-    if (session.role !== "superadmin") {
-      return NextResponse.redirect(`${origin}/admin/dashboard`);
-    }
-
-    return NextResponse.next();
+    return NextResponse.redirect(`${origin}/admin/dashboard`);
   }
 
-  // Shop admin/staff portal. Super admins are moved to their own namespace.
+  // Shop admin/staff portal.
   if (pathname.startsWith("/admin")) {
     if (!session) {
       return redirectWithClearedCookie(`${origin}/login`);
     }
 
     if (session.role === "superadmin") {
-      return NextResponse.redirect(
-        `${origin}${superAdminLegacyTarget(pathname)}`,
-      );
+      return NextResponse.redirect(`${SUPER_ADMIN_URL}/dashboard`);
     }
   }
 
@@ -104,5 +86,5 @@ export function proxy(req) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/super-admin/:path*", "/login"],
+  matcher: ["/admin/:path*", "/login"],
 };

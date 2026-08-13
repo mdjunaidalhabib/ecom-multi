@@ -5,6 +5,8 @@ import {
   regenerateInvoiceInBackground,
   invalidateInvoiceCache,
 } from "../../utils/invoice/invoiceService.js";
+import { releasePromoUsage } from "../../services/promoService.js";
+import { updateInventoryForItem } from "../../services/inventoryService.js";
 
 const router = express.Router();
 
@@ -73,13 +75,17 @@ router.post("/", async (req, res) => {
       createdBy = "admin",
       createdByName = "Admin",
       createdById = null,
+
+      // ✅ NEW: sale channel — "online" (delivery order) or "offline" (in-store sale)
+      saleChannel = "online",
     } = req.body;
 
-    // ✅ Validate billing
+    // ✅ Validate billing — শুধু "online" sale-এ বাধ্যতামূলক, "offline" sale-এ ঐচ্ছিক
     if (
-      !billing?.name?.trim() ||
-      !billing?.phone?.trim() ||
-      !billing?.address?.trim()
+      saleChannel !== "offline" &&
+      (!billing?.name?.trim() ||
+        !billing?.phone?.trim() ||
+        !billing?.address?.trim())
     ) {
       return res
         .status(400)
@@ -160,10 +166,10 @@ router.post("/", async (req, res) => {
       total,
 
       billing: {
-        name: billing.name.trim(),
-        phone: billing.phone.trim(),
-        address: billing.address.trim(),
-        note: billing.note?.trim() || "",
+        name: billing?.name?.trim() || "",
+        phone: billing?.phone?.trim() || "",
+        address: billing?.address?.trim() || "",
+        note: billing?.note?.trim() || "",
       },
 
       promoCode,
@@ -176,7 +182,29 @@ router.post("/", async (req, res) => {
       createdBy,
       createdByName,
       createdById,
+
+      saleChannel,
     });
+
+    /* ✅✅ STRICT INVENTORY UPDATE
+       - Validates real stock and decrements stock/sold, same as
+         customer checkout. If any item doesn't have enough stock,
+         the order is rolled back (not silently created).
+    */
+    try {
+      await Promise.all(
+        finalItems.map((item) => updateInventoryForItem(item, "decrease")),
+      );
+    } catch (stockErr) {
+      console.error("❌ Stock/Sold Update Error (admin order):", stockErr);
+
+      await Order.findByIdAndDelete(created._id);
+
+      return res.status(400).json({
+        error:
+          stockErr?.message || "Stock not available / Inventory update failed",
+      });
+    }
 
     // ✅ Pre-generate the invoice PDF in the background so it's ready
     // instantly whenever it's downloaded later.
@@ -200,9 +228,23 @@ router.get("/", async (req, res) => {
     if (req.query.userId) filter.userId = req.query.userId;
     if (req.query.status) filter.status = req.query.status;
     if (req.query.paymentStatus) filter.paymentStatus = req.query.paymentStatus;
+    if (req.query.saleChannel) filter.saleChannel = req.query.saleChannel;
 
-    const orders = await Order.find(filter).sort({ createdAt: -1 });
-    res.json(orders);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 5000); // cap max page size (dashboard needs full data for accurate totals)
+    const skip = (page - 1) * limit;
+
+    const [orders, total] = await Promise.all([
+      Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Order.countDocuments(filter),
+    ]);
+
+    res.json({
+      orders,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (err) {
     console.error("❌ Failed to fetch orders:", err);
     res.status(500).json({
@@ -264,6 +306,31 @@ router.put("/bulk/status", async (req, res) => {
           new: true,
         });
 
+        if (status === "cancelled" && o.promo?.promoId) {
+          try {
+            await releasePromoUsage({
+              promoId: o.promo.promoId,
+              orderId: o._id,
+            });
+          } catch (promoReleaseErr) {
+            console.error(
+              "❌ Failed to release promo usage on bulk cancel:",
+              promoReleaseErr,
+            );
+          }
+        }
+
+        // ✅ Order cancelled -> restock
+        if (status === "cancelled") {
+          try {
+            await Promise.all(
+              o.items.map((item) => updateInventoryForItem(item, "increase")),
+            );
+          } catch (restockErr) {
+            console.error("❌ Restock Error (admin bulk cancel):", restockErr);
+          }
+        }
+
         result.updated.push(updated._id);
       } catch (e) {
         result.errors.push({ id: o._id, error: e.message });
@@ -303,6 +370,19 @@ router.post("/bulk/delete", async (req, res) => {
     // ✅ hard-delete এর বদলে Trash এ move — 3 দিন পর auto-purge হবে
     const orders = await Order.find({ _id: { $in: ids } });
     for (const o of orders) {
+      if (o.promo?.promoId) {
+        try {
+          await releasePromoUsage({
+            promoId: o.promo.promoId,
+            orderId: o._id,
+          });
+        } catch (promoReleaseErr) {
+          console.error(
+            "❌ Failed to release promo usage on delete:",
+            promoReleaseErr,
+          );
+        }
+      }
       await moveToTrash("Order", o);
     }
 
@@ -441,6 +521,37 @@ router.put("/:id", async (req, res) => {
       new: true,
       runValidators: true,
     });
+
+    // ✅ Order cancelled -> free up the promo code's usage slot so
+    // "Usage X/Y" on the Promo Codes page reflects only real, kept orders.
+    if (
+      updateData.status === "cancelled" &&
+      current.status !== "cancelled" &&
+      current.promo?.promoId
+    ) {
+      try {
+        await releasePromoUsage({
+          promoId: current.promo.promoId,
+          orderId: current._id,
+        });
+      } catch (promoReleaseErr) {
+        console.error(
+          "❌ Failed to release promo usage on cancel:",
+          promoReleaseErr,
+        );
+      }
+    }
+
+    // ✅ Order cancelled -> restock (mirrors the customer-side cancel flow)
+    if (updateData.status === "cancelled" && current.status !== "cancelled") {
+      try {
+        await Promise.all(
+          current.items.map((item) => updateInventoryForItem(item, "increase")),
+        );
+      } catch (restockErr) {
+        console.error("❌ Restock Error (admin cancel):", restockErr);
+      }
+    }
 
     // ✅ Invoice-visible fields changed -> old cached PDF is stale.
     // Wipe it and rebuild in the background so downloads stay instant.

@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateTime } from "../lib/utils";
+
 const TYPE_BADGE_STYLE = {
   Product: "bg-indigo-100 border-indigo-200 text-indigo-700",
   Category: "bg-blue-100 border-blue-200 text-blue-700",
@@ -124,7 +126,7 @@ export default function TrashCard({ item, busy, onRestore, onDelete }) {
       )}
 
       <p className="text-xs text-gray-400 mt-1">
-        Deleted: {new Date(item.deletedAt).toLocaleString()}
+        Deleted: {formatDateTime(item.deletedAt)}
       </p>
 
       {/* 🎯 Buttons */}

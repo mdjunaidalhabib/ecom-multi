@@ -2,11 +2,13 @@
 import React from "react";
 import Link from "next/link";
 import { FaHeart } from "react-icons/fa";
+import useShopPath from "../../hooks/useShopPath";
 
 export default function WishlistIcon({ wishlistCount, mobile }) {
+  const { base } = useShopPath();
   return (
     <Link
-      href="/wishlist"
+      href={`${base}/wishlist`}
       className={`relative flex flex-col items-center ${mobile ? "" : ""}`}
     >
       <FaHeart className="w-6 h-6" />

@@ -21,7 +21,7 @@ const router = express.Router();
 
 router.post("/login", loginAdmin);
 router.post("/super-login", loginSuperAdmin);
-router.post("/logout", protect, logoutAdmin);
+router.post("/logout", logoutAdmin);
 
 // ✅ VERIFY
 router.get("/verify", protect, async (req, res) => {

@@ -11,7 +11,7 @@ import {
   LayoutDashboard,
   Trash2,
   Wallet,
-  Store,
+  BadgePercent,
 } from "lucide-react";
 
 export const navItems = [
@@ -23,6 +23,7 @@ export const navItems = [
   { icon: <ShoppingCart size={18} />, label: "Orders", href: "/admin/orders" },
   { icon: <Wallet size={18} />, label: "Payments", href: "/admin/payments" },
   { icon: <Package size={18} />, label: "Products", href: "/admin/products" },
+  { icon: <BadgePercent size={18} />, label: "Promo Codes", href: "/admin/promos" },
   {
     icon: <ChartBarStacked size={18} />,
     label: "Category",
@@ -52,43 +53,6 @@ export const navItems = [
   { icon: <Settings size={18} />, label: "Settings", href: "/admin/settings" },
 ];
 
-// ✅ শুধু superadmin-এর জন্য — Sidebar.jsx রোল চেক করে navItems-এর সাথে
-// এটা জুড়ে দেয়
-export const superAdminOnlyNavItems = [
-  {
-    icon: <Store size={18} />,
-    label: "Shops",
-    href: "/admin/shops",
-  },
-];
-
-// ✅ Superadmin-এর কাজ শুধু শপ তৈরি/ম্যানেজ করা — কোনো শপের
-// Products/Orders/Users/Settings ইত্যাদি shop-scoped ডেটাতে তার এক্সেস
-// নেই (backend-এও ব্লক করা আছে, দেখুন tenancy/adminShopContext.js), তাই
-// মেনুতেও শুধু প্রাসঙ্গিক platform-level আইটেমগুলোই দেখানো হয়
-export const superAdminNavItems = [
-  {
-    icon: <CircleGauge size={18} />,
-    label: "Dashboard",
-    href: "/super-admin/dashboard",
-  },
-  {
-    icon: <Store size={18} />,
-    label: "Shops",
-    href: "/super-admin/shops",
-  },
-  {
-    icon: <Trash2 size={18} />,
-    label: "Shop Trash",
-    href: "/super-admin/trash",
-  },
-  {
-    icon: <User size={18} />,
-    label: "Profile",
-    href: "/super-admin/profile",
-  },
-];
-
 export const settingsChildren = [
   {
     icon: <LayoutDashboard size={16} />,
@@ -105,10 +69,35 @@ export const settingsChildren = [
     label: "About Page",
     href: "/admin/about",
   },
-    {
+  {
+    icon: <LayoutDashboard size={16} />,
+    label: "Privacy Policy",
+    href: "/admin/privacy-policy",
+  },
+  {
+    icon: <LayoutDashboard size={16} />,
+    label: "Refund Policy",
+    href: "/admin/refund-policy",
+  },
+  {
+    icon: <LayoutDashboard size={16} />,
+    label: "Founder & CEO",
+    href: "/admin/founder-ceo",
+  },
+  {
+    icon: <LayoutDashboard size={16} />,
+    label: "FAQ",
+    href: "/admin/faq",
+  },
+  {
     icon: <LayoutDashboard size={16} />,
     label: "Action Button",
     href: "/admin/floatingActionButton",
+  },
+  {
+    icon: <LayoutDashboard size={16} />,
+    label: "Homepage Popup",
+    href: "/admin/homepagePopup",
   },
   {
     icon: <LayoutDashboard size={16} />,
@@ -122,6 +111,11 @@ export const settingsChildren = [
   },
   {
     icon: <LayoutDashboard size={16} />,
+    label: "Order Number",
+    href: "/admin/orderCounter",
+  },
+  {
+    icon: <LayoutDashboard size={16} />,
     label: "Home Badges",
     href: "/admin/home-badges",
   },
@@ -129,6 +123,11 @@ export const settingsChildren = [
     icon: <LayoutDashboard size={16} />,
     label: "Order Mail Send",
     href: "/admin/order-mail-send",
+  },
+  {
+    icon: <LayoutDashboard size={16} />,
+    label: "Mail Report",
+    href: "/admin/mail-report",
   },
   {
     icon: <LayoutDashboard size={16} />,

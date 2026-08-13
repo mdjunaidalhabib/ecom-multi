@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "../../../../utils/api";
 import Toast from "../../../../components/Toast";
 import ConfirmDialog from "../../../../components/ConfirmDialog";
+import Pagination from "../../../../components/Pagination";
+import { formatDateTime } from "../../../../lib/utils";
 
 /* =========================================================
    ✅ Small skeleton for initial loading
@@ -170,7 +172,7 @@ function PendingVerificationTab({ showToast }) {
               </div>
 
               <p className="text-[10px] text-gray-400">
-                {new Date(o.createdAt).toLocaleString("bn-BD")}
+                {formatDateTime(o.createdAt)}
               </p>
             </div>
 
@@ -232,24 +234,40 @@ function VerifiedPaymentsTab({ showToast }) {
   const [busyId, setBusyId] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null); // order pending remove/restore confirm
 
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   const load = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams();
     if (filter !== "all") params.set("paymentStatus", filter);
     if (showHidden) params.set("hidden", "true");
-    const qs = params.toString() ? `?${params.toString()}` : "";
+    params.set("page", page);
+    params.set("limit", 50);
+    const qs = `?${params.toString()}`;
 
     apiFetch(`/admin/payments/verified${qs}`)
-      .then((data) => setOrders(Array.isArray(data) ? data : []))
+      .then((data) => {
+        setOrders(Array.isArray(data.orders) ? data.orders : []);
+        setTotal(data.total || 0);
+        setTotalPages(data.totalPages || 1);
+      })
       .catch(() =>
         showToast("❌ Verified payment history লোড করা যায়নি!", "error"),
       )
       .finally(() => setLoading(false));
-  }, [filter, showHidden, showToast]);
+  }, [filter, showHidden, page, showToast]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // ✅ Filter/hidden-view বদলালে page 1 এ ফিরিয়ে আনা — নাহলে নতুন
+  // ফলাফলে totalPages এর চেয়ে বেশি page নম্বরে আটকে থাকতে পারে
+  useEffect(() => {
+    setPage(1);
+  }, [filter, showHidden]);
 
   async function setVisibility(orderId, hidden) {
     setBusyId(orderId);
@@ -374,7 +392,7 @@ function VerifiedPaymentsTab({ showToast }) {
                 </div>
 
                 <p className="text-[10px] text-gray-400">
-                  Verified: {new Date(o.updatedAt).toLocaleString("bn-BD")}
+                  Verified: {formatDateTime(o.updatedAt)}
                 </p>
               </div>
 
@@ -401,6 +419,13 @@ function VerifiedPaymentsTab({ showToast }) {
           ))}
         </div>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        onPageChange={setPage}
+      />
 
       <ConfirmDialog
         show={!!confirmTarget}

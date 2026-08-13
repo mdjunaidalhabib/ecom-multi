@@ -122,6 +122,7 @@ router.get("/pending", async (req, res) => {
       paymentStatus: "pending",
     })
       .sort({ createdAt: -1 })
+      .limit(500) // safety cap — pending queue shouldn't realistically exceed this
       .select(
         "orderNumber billing total deliveryCharge paymentMethod paymentDetails createdAt status",
       );
@@ -150,14 +151,27 @@ router.get("/verified", async (req, res) => {
       hiddenFromPaymentsView: hidden === "true" ? true : { $ne: true },
     };
 
-    const orders = await Order.find(filter)
-      .sort({ updatedAt: -1 })
-      .limit(200)
-      .select(
-        "orderNumber billing total deliveryCharge paymentMethod paymentStatus paymentDetails createdAt updatedAt status cancelReason",
-      );
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200); // cap max page size
+    const skip = (page - 1) * limit;
 
-    res.json(orders);
+    const [orders, total] = await Promise.all([
+      Order.find(filter)
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select(
+          "orderNumber billing total deliveryCharge paymentMethod paymentStatus paymentDetails createdAt updatedAt status cancelReason",
+        ),
+      Order.countDocuments(filter),
+    ]);
+
+    res.json({
+      orders,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (err) {
     console.error("❌ Failed to load verified payments:", err);
     res.status(500).json({ error: "Failed to load verified payments" });

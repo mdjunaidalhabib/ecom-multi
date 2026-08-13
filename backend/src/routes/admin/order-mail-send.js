@@ -1,6 +1,7 @@
 import express from "express";
 import { getOrderMailSendSettings } from "../../../utils/mail/index.js";
 import { sendAdminOrderEmail } from "../../../utils/mail/sendAdminOrderEmail.js";
+import { logMailReport } from "../../../utils/mail/logMailReport.js";
 
 const router = express.Router();
 
@@ -51,19 +52,35 @@ router.post("/test", async (req, res) => {
 
   if (!active) return res.status(400).json({ error: "No active email" });
 
-  await sendAdminOrderEmail({
-    to: active.email,
-    orderId: "TEST-123",
-    customerName: "Test User",
-    customerPhone: "01700000000",
-    address: "Dhaka",
-    items: [],
-    subtotal: 0,
-    deliveryCharge: 0,
-    discount: 0,
-    total: 0,
-    paymentMethod: "COD",
-  });
+  try {
+    await sendAdminOrderEmail({
+      to: active.email,
+      orderId: "TEST-123",
+      customerName: "Test User",
+      customerPhone: "01700000000",
+      address: "Dhaka",
+      items: [],
+      subtotal: 0,
+      deliveryCharge: 0,
+      discount: 0,
+      total: 0,
+      paymentMethod: "COD",
+    });
+    await logMailReport({
+      to: active.email,
+      purpose: "test_mail",
+      subject: "New Order Received - TEST-123",
+    });
+  } catch (err) {
+    await logMailReport({
+      to: active.email,
+      purpose: "test_mail",
+      subject: "New Order Received - TEST-123",
+      status: "failed",
+      error: err.message,
+    });
+    throw err;
+  }
 
   res.json({ success: true });
 });

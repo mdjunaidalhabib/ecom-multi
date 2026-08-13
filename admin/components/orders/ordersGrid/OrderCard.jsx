@@ -19,7 +19,11 @@ import {
   STATUS_FLOW,
   READY_STATUS,
 } from "../shared/constants";
-import { formatOrderTime, needsPaymentVerification } from "../shared/utils";
+import {
+  formatOrderTime,
+  needsPaymentVerification,
+  paymentMethodLabel,
+} from "../shared/utils";
 
 export default function OrderCard({
   o,
@@ -89,6 +93,12 @@ export default function OrderCard({
               <div className="leading-none">
                 <Badge type={o.status}>{STATUS_LABEL[o.status]}</Badge>
               </div>
+
+              {o.saleChannel === "offline" && (
+                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 leading-none">
+                  🏬 Offline
+                </span>
+              )}
             </div>
 
             {/* Cancel Reason */}
@@ -193,7 +203,7 @@ export default function OrderCard({
             </div>
             {!!o.discount && (
               <div className="flex justify-between text-red-500 font-medium">
-                <span>Discount</span>
+                <span>Discount{o.promo?.code ? ` (${o.promo.code})` : ""}</span>
                 <span>-৳{o.discount}</span>
               </div>
             )}
@@ -208,7 +218,7 @@ export default function OrderCard({
               <span className="text-[9px] font-bold text-gray-400 uppercase">
                 Payment
               </span>
-              <Badge>{o.paymentMethod?.toUpperCase()}</Badge>
+              <Badge>{paymentMethodLabel(o)}</Badge>
               {o.paymentMethod !== "cod" && (
                 <span
                   className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${

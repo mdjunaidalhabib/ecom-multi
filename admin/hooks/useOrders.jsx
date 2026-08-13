@@ -6,6 +6,18 @@ export default function useOrders(API) {
   const [loading, setLoading] = useState(true);
 
   /* ===============================
+     📄 PAGINATION
+     =============================== */
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  /* ===============================
+     🌐 SALE CHANNEL FILTER (online/offline/"")
+     =============================== */
+  const [saleChannel, setSaleChannel] = useState("");
+
+  /* ===============================
      🔁 QUEUE
      =============================== */
   const queueRef = useRef(Promise.resolve());
@@ -42,12 +54,18 @@ export default function useOrders(API) {
   /* ===============================
      Fetch orders
      =============================== */
-  const fetchOrders = async () => {
+  const fetchOrders = async (targetPage = page) => {
     try {
       setLoading(true);
-      const res = await fetch(`${API}/admin/orders`);
+      const channelParam = saleChannel ? `&saleChannel=${saleChannel}` : "";
+      const res = await fetch(
+        `${API}/admin/orders?page=${targetPage}&limit=50${channelParam}`
+      );
       const data = await res.json();
-      setOrders(Array.isArray(data) ? data : []);
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+      setTotal(data.total || 0);
+      setTotalPages(data.totalPages || 1);
+      setPage(data.page || targetPage);
     } catch {
       setToast({ message: "❌ Failed to load orders", type: "error" });
     } finally {
@@ -56,8 +74,24 @@ export default function useOrders(API) {
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  // ✅ চ্যানেল ফিল্টার বদলালে ১ম পেজ থেকে আবার fetch হবে (প্রথমবার mount-এ skip)
+  const isFirstChannelRun = useRef(true);
+  useEffect(() => {
+    if (isFirstChannelRun.current) {
+      isFirstChannelRun.current = false;
+      return;
+    }
+    if (page !== 1) {
+      setPage(1);
+      return;
+    }
+    fetchOrders(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saleChannel]);
 
   /* ===============================
      Update status (single) – SILENT SUPPORT
@@ -294,6 +328,16 @@ const sendCourierDirect = (order) =>
     filtered: orders,
     loading,
     fetchOrders,
+
+    // pagination
+    page,
+    setPage,
+    total,
+    totalPages,
+
+    // channel filter
+    saleChannel,
+    setSaleChannel,
 
     // status
     updateStatus,

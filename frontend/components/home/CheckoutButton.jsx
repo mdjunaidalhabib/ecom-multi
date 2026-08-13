@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useUser } from "../../context/UserContext";
 import { useState, useCallback, useMemo } from "react";
+import useShopPath from "../../hooks/useShopPath";
 
 export default function CheckoutButton({
   product,
@@ -30,6 +31,7 @@ export default function CheckoutButton({
 }) {
   const router = useRouter();
   const { me } = useUser();
+  const { base } = useShopPath();
   const [loading, setLoading] = useState(false);
 
   const mergedLoading = Boolean(externalLoading || loading);
@@ -76,17 +78,17 @@ export default function CheckoutButton({
         // ✅ cart checkout
         if (Array.isArray(checkoutItems) && checkoutItems.length > 0) {
           const payload = encodeURIComponent(JSON.stringify(checkoutItems));
-          return `/checkout?items=${payload}`;
+          return `${base}/checkout?items=${payload}`;
         }
 
         // ✅ single product checkout (include color + stock)
         if (productId) {
           const c = color ? `&color=${encodeURIComponent(color)}` : "";
           const s = `&stock=${encodeURIComponent(String(currentStock))}`;
-          return `/checkout?productId=${productId}&qty=${qty}${c}${s}`;
+          return `${base}/checkout?productId=${productId}&qty=${qty}${c}${s}`;
         }
 
-        return `/checkout`;
+        return `${base}/checkout`;
       })();
 
       // 🔹 User not logged in → redirect to Google Auth
@@ -107,16 +109,16 @@ export default function CheckoutButton({
       const redirectPath = (() => {
         if (Array.isArray(checkoutItems) && checkoutItems.length > 0) {
           const payload = encodeURIComponent(JSON.stringify(checkoutItems));
-          return `/checkout?items=${payload}`;
+          return `${base}/checkout?items=${payload}`;
         }
 
         if (productId) {
           const c = color ? `&color=${encodeURIComponent(color)}` : "";
           const s = `&stock=${encodeURIComponent(String(currentStock))}`;
-          return `/checkout?productId=${productId}&qty=${qty}${c}${s}`;
+          return `${base}/checkout?productId=${productId}&qty=${qty}${c}${s}`;
         }
 
-        return `/checkout`;
+        return `${base}/checkout`;
       })();
 
       router.push(redirectPath);
@@ -138,6 +140,7 @@ export default function CheckoutButton({
     router,
     color,
     currentStock,
+    base,
   ]);
 
   const isDisabled =

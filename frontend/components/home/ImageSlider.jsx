@@ -7,6 +7,7 @@ import Link from "next/link";
 import axios from "axios";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import ImageSliderSkeleton from "../skeletons/ImageSliderSkeleton";
+import useShopPath, { shopHref } from "../../hooks/useShopPath";
 
 export default function ImageSlider({
   images,
@@ -21,6 +22,7 @@ export default function ImageSlider({
   swipeThresholdPx = 60,
 }) {
   const API_BASE = "/api";
+  const { base } = useShopPath();
 
   const [slides, setSlides] = useState(images || []);
   const [loading, setLoading] = useState(!images);
@@ -179,7 +181,7 @@ export default function ImageSlider({
               return (
                 <div key={i} className="w-full shrink-0">
                   {img.href ? (
-                    <Link href={img.href} className="block">
+                    <Link href={shopHref(base, img.href)} className="block">
                       {imageEl}
                     </Link>
                   ) : (

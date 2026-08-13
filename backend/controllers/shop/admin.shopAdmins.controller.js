@@ -65,6 +65,16 @@ export const inviteShopAdmin = async (req, res) => {
           .json({ message: "এই admin ইতিমধ্যে এই শপে assign করা আছে" });
       }
 
+      // ✅ একটা ইমেইল একসাথে দুইটা শপের admin/staff হতে পারবে না — প্রতিটা
+      // শপের ইমেইল সেই শপের জন্যই নির্দিষ্ট থাকবে (একটা শপ থেকে unassign
+      // করা হলে — shops খালি হলে — তখনই সেই ইমেইল অন্য শপে ব্যবহার করা যাবে)
+      if (existing.shops.length > 0) {
+        return res.status(409).json({
+          message:
+            "এই ইমেইলটি ইতিমধ্যে অন্য একটি শপে ব্যবহৃত হচ্ছে। একই ইমেইল দিয়ে দুইটা শপ খোলা যাবে না — আলাদা ইমেইল ব্যবহার করুন।",
+        });
+      }
+
       const currentCount = await Admin.countDocuments({
         shops: shop._id,
         role: { $ne: "superadmin" },

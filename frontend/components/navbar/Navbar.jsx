@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCart } from "../../context/CartContext";
 import {
   FaHome,
@@ -18,6 +18,7 @@ import AccountMenuMobile from "./AccountMenuMobile";
 import CartIcon from "./CartIcon";
 import WishlistIcon from "./WishlistIcon";
 import { useUser } from "../../context/UserContext";
+import useShopPath, { shopHref } from "../../hooks/useShopPath";
 
 const sideMenu = {
   hidden: { x: "-100%" },
@@ -35,8 +36,8 @@ export default function Navbar() {
   const [imgError, setImgError] = useState(false);
   const { me } = useUser();
 
-  const pathname = usePathname();
   const router = useRouter();
+  const { base, subPath } = useShopPath();
   const { cart = {}, wishlist = [] } = useCart() || {};
   const cartCount = Object.keys(cart).length;
   const wishlistCount = Array.isArray(wishlist) ? wishlist.length : 0;
@@ -77,20 +78,20 @@ export default function Navbar() {
     document.body.style.overflow = menuOpen ? "hidden" : "auto";
   }, [menuOpen]);
 
-  const isActive = (path) => pathname === path;
+  const isActive = (path) => subPath === path;
 
   const handleCartvanBox = () => {
-    if (pathname === "/") {
+    if (subPath === "/") {
       window.dispatchEvent(
         new CustomEvent("offerFilterChange", { detail: "cartvanBox" }),
       );
     } else {
-      router.push("/#cartvan-box");
+      router.push(`${base}/#cartvan-box`);
     }
   };
 
   const handleLogoClick = (e) => {
-    if (pathname === "/") {
+    if (subPath === "/") {
       e.preventDefault();
       window.dispatchEvent(
         new CustomEvent("offerFilterChange", { detail: null }),
@@ -130,7 +131,7 @@ export default function Navbar() {
 
           {/* 🏷 Brand */}
           <Link
-            href="/"
+            href={base || "/"}
             onClick={handleLogoClick}
             className="flex items-center gap-3"
           >
@@ -175,7 +176,7 @@ export default function Navbar() {
             ].map(({ href, label }) => (
               <Link
                 key={href}
-                href={href}
+                href={shopHref(base, href)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded transition-all duration-200 ${
                   isActive(href)
                     ? "text-pink-600 bg-pink-300 border border-pink-400 font-medium"
@@ -195,7 +196,7 @@ export default function Navbar() {
               setMobileSearchOpen={setMobileSearchOpen}
             />
             <div
-              className={`rounded transition-all duration-200 ${pathname.startsWith("/profile") || pathname.startsWith("/orders") ? "text-pink-600 bg-pink-300 border border-pink-400 font-medium" : "text-gray-900 hover:text-pink-600 hover:bg-pink-200"}`}
+              className={`rounded transition-all duration-200 ${subPath.startsWith("/profile") || subPath.startsWith("/orders") ? "text-pink-600 bg-pink-300 border border-pink-400 font-medium" : "text-gray-900 hover:text-pink-600 hover:bg-pink-200"}`}
             >
               <AccountMenuDesktop />
             </div>
@@ -265,7 +266,7 @@ export default function Navbar() {
               ].map(({ href, icon, label }) => (
                 <Link
                   key={href}
-                  href={href}
+                  href={shopHref(base, href)}
                   className={`flex items-center gap-2.5 px-3 py-2 rounded transition-all duration-200 ${
                     isActive(href)
                       ? "text-pink-600 bg-pink-200 font-medium"
@@ -286,7 +287,7 @@ export default function Navbar() {
       <div className="fixed bottom-0 left-0 right-0 md:hidden z-50 bg-pink-100 border-t border-pink-300">
         <div className="relative flex justify-between items-center px-4 py-2">
           <Link
-            href="/"
+            href={base || "/"}
             className={`flex flex-col items-center text-[11px] gap-0.5 ${isActive("/") ? "text-pink-500" : "text-gray-900"}`}
           >
             <FaHome className="w-5 h-5" />
@@ -294,7 +295,7 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="/categories"
+            href={shopHref(base, "/categories")}
             className={`flex flex-col items-center text-[11px] gap-0.5 ${isActive("/categories") ? "text-pink-500" : "text-gray-900"}`}
           >
             <FaThLarge className="w-5 h-5" />

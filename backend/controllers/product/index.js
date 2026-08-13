@@ -1,7 +1,8 @@
-// ✅ ADMIN (READ)
+// ✅ ADMIN (READ + BULK)
 export {
   getProductsAdmin,
   getProductByIdAdmin,
+  bulkSetProductVisibility,
 } from "./admin.product.controller.js";
 
 export {

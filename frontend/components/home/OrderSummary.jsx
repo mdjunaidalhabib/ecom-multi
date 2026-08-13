@@ -1,8 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import OrderSummarySkeleton from "../skeletons/OrderSummarySkeleton";
+import { formatDateTime } from "../../lib/utils";
+import useShopPath from "../../hooks/useShopPath";
 
 export default function OrderSummary({ orderId }) {
+  const { base } = useShopPath();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,6 +32,15 @@ export default function OrderSummary({ orderId }) {
       </p>
     );
 
+  const itemPromoDiscount = Math.max(
+    Number(order.discount || 0),
+    Number(order.promo?.discountAmount || 0),
+  );
+  const shippingDiscount = Math.max(
+    0,
+    Number(order.promo?.shippingDiscount || 0),
+  );
+
   return (
     <div className="max-w-sm mx-auto my-4 bg-white shadow rounded-lg divide-y divide-gray-200 text-sm">
       {/* Header */}
@@ -44,10 +56,10 @@ export default function OrderSummary({ orderId }) {
       {/* Order Info */}
       <div className="p-3 space-y-0.5">
         <p>
-          <strong>Order ID:</strong> {order._id}
+          <strong>Order ID:</strong> #{order.orderNumber}
         </p>
         <p>
-          <strong>Date:</strong> {new Date(order.createdAt).toLocaleString()}
+          <strong>Date:</strong> {formatDateTime(order.createdAt)}
         </p>
         <p>
           <strong>Status:</strong>{" "}
@@ -114,7 +126,20 @@ export default function OrderSummary({ orderId }) {
       <div className="p-3 text-right space-y-0.5">
         <p>Subtotal: ৳{order.subtotal}</p>
         <p>Delivery: ৳{order.deliveryCharge}</p>
-        {order.discount > 0 && <p>Discount: -৳{order.discount}</p>}
+        {itemPromoDiscount > 0 && (
+          <p className="text-green-700">
+            Promo discount
+            {order.promo?.code ? ` (${order.promo.code})` : ""}: -৳
+            {itemPromoDiscount}
+          </p>
+        )}
+        {shippingDiscount > 0 && (
+          <p className="text-green-700">
+            Delivery promo saved
+            {order.promo?.code ? ` (${order.promo.code})` : ""}: ৳
+            {shippingDiscount}
+          </p>
+        )}
         <p className="text-green-700 font-semibold text-sm">
           Total: ৳{order.total}
         </p>
@@ -132,7 +157,7 @@ export default function OrderSummary({ orderId }) {
         </a>
 
         <a
-          href="/"
+          href={base || "/"}
           className="flex-1 bg-indigo-600 text-white py-1.5 rounded text-center hover:bg-indigo-700 text-xs"
         >
           🏠 Home

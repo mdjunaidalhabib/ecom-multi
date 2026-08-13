@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import useShopPath from "../../hooks/useShopPath";
 
 export default function Error({ error, reset }) {
+  const { base } = useShopPath();
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-center p-4">
       <h1 className="text-8xl font-bold text-red-600">500</h1>
 
-      <p className="text-2xl mt-4 text-gray-700">সার্ভারে কিছু সমস্যা হয়েছে!</p>
+      <p className="text-2xl mt-4 text-gray-700">সার্ভারে কিছু সমস্যা হয়েছে!</p>
 
       {error?.message && (
         <p className="text-gray-500 mt-2">এরর মেসেজ: {error.message}</p>
@@ -22,7 +25,7 @@ export default function Error({ error, reset }) {
         </button>
 
         <Link
-          href="/"
+          href={base || "/"}
           className="px-6 py-3 text-white bg-red-600 rounded-lg shadow hover:bg-red-700 transition"
         >
           হোমে ফিরে যান

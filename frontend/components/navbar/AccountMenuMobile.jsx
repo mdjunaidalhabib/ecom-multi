@@ -7,13 +7,13 @@ import { FaUser, FaClipboardList, FaSignOutAlt } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfirmModal from "../ConfirmModal";
 import { useUser } from "../../context/UserContext";
-import { usePathname } from "next/navigation";
+import useShopPath, { shopHref } from "../../hooks/useShopPath";
 
 export default function AccountMenuMobile({ onOpen }) {
   const { me, setMe, loadingUser } = useUser();
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const pathname = usePathname();
+  const { base, subPath } = useShopPath();
 
   if (loadingUser) {
     return (
@@ -52,16 +52,16 @@ export default function AccountMenuMobile({ onOpen }) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setMe(null);
-    window.location.replace("/"); // ✅ replace() দিয়ে history stack clean রাখো
+    window.location.replace(base || "/"); // ✅ replace() দিয়ে history stack clean রাখো
   };
 
-  const isActive = (route) => pathname === route;
+  const isActive = (route) => subPath === route;
 
   const MenuItem = ({ href, label, icon: Icon }) => {
     const active = isActive(href);
     return (
       <Link
-        href={href}
+        href={shopHref(base, href)}
         onClick={() => {
           setOpen(false);
           if (onOpen) onOpen();

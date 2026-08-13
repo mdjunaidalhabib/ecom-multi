@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { X, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import useShopPath from "../../hooks/useShopPath";
 
 const useDebouncedValue = (value, delay = 400) => {
   const [v, setV] = useState(value);
@@ -33,6 +34,7 @@ const ProductCard = ({ product, onClick }) => (
 
 export default function SearchBox({ mobileSearchOpen, setMobileSearchOpen }) {
   const router = useRouter();
+  const { base } = useShopPath();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -45,9 +47,9 @@ export default function SearchBox({ mobileSearchOpen, setMobileSearchOpen }) {
       setQuery("");
       setResults([]);
       setMobileSearchOpen(false);
-      router.push(`/products/${id}`);
+      router.push(`${base}/products/${id}`);
     },
-    [router, setMobileSearchOpen],
+    [router, setMobileSearchOpen, base],
   );
 
   // Auto focus mobile input when opened

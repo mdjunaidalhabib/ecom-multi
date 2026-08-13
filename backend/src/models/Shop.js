@@ -20,12 +20,15 @@ const shopSchema = new mongoose.Schema(
     },
 
     // ✅ Customer-facing custom domain, e.g. "shop1.com" (no protocol, no www)
+    // ঐচ্ছিক — কাস্টম ডোমেইন ছাড়াও শপ platform-এর নিজস্ব slug-based path
+    // (/shop/<slug>/...) দিয়ে সম্পূর্ণভাবে চলতে পারে (দেখুন publicShopResolver.js)
     domain: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true,
       lowercase: true,
       trim: true,
+      default: undefined,
     },
 
     // DNS/SSL এখনো ঠিকমতো point করা হয়েছে কিনা
@@ -75,7 +78,7 @@ const shopSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-shopSchema.index({ domain: 1 }, { unique: true });
+shopSchema.index({ domain: 1 }, { unique: true, sparse: true });
 shopSchema.index({ slug: 1 }, { unique: true });
 
 export default mongoose.models.Shop || mongoose.model("Shop", shopSchema);

@@ -4,6 +4,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProductDetailsSkeleton from "../skeletons/ProductDetailsSkeleton";
 import { useCartUtils } from "../../hooks/useCartUtils";
+import { useLiveStock } from "../../hooks/useLiveStock";
 
 import ProductBreadcrumb from "./ProductBreadcrumb";
 import ProductGallery from "./ProductGallery";
@@ -12,15 +13,18 @@ import PurchaseActions from "./PurchaseActions";
 import ProductTabs from "./ProductTabs";
 import RelatedProducts from "./RelatedProducts";
 import FacebookGroupLink from "./FacebookGroupLink";
+import useShopPath from "../../hooks/useShopPath";
 
 export default function ProductDetailsClient({
   product,
-  category,
+  categories = [],
   related = [],
   loading = false,
 }) {
   const { cart, wishlist, toggleWishlist, updateCart } = useCartUtils();
   const router = useRouter();
+  const { base } = useShopPath();
+  const liveStock = useLiveStock(product?._id);
 
   const [selectedColor, setSelectedColor] = useState(
     product?.colors?.length > 0 ? product.colors[0] : null
@@ -36,12 +40,19 @@ export default function ProductDetailsClient({
 
   if (loading || !product?._id) return <ProductDetailsSkeleton />;
 
-  // ✅ normalize isSoldOut
-  const isSoldOut =
-    product?.isSoldOut === true || product?.isSoldOut === "true";
+  // ✅ live variant match (by color name) — instant stock, no cache
+  const liveColorStock = selectedColor?.name
+    ? liveStock?.colors?.find((c) => c.name === selectedColor.name)
+    : null;
 
-  // ✅ stock normalize (variant stock first)
-  const currentStockRaw = selectedColor?.stock ?? product?.stock ?? 0;
+  // ✅ normalize isSoldOut (live value wins when available)
+  const rawIsSoldOut = liveStock?.isSoldOut ?? product?.isSoldOut;
+  const isSoldOut = rawIsSoldOut === true || rawIsSoldOut === "true";
+
+  // ✅ stock normalize (variant stock first, live value wins)
+  const currentStockRaw = selectedColor
+    ? liveColorStock?.stock ?? selectedColor?.stock ?? 0
+    : liveStock?.stock ?? product?.stock ?? 0;
   const currentStock = Number(currentStockRaw) || 0;
 
   // ✅ final out of stock
@@ -55,8 +66,16 @@ export default function ProductDetailsClient({
   // ✅ quantity by cartKey
   const quantity = cart[String(cartKey)] || 0;
 
-  // ✅ numeric total price
-  const totalPrice = Number(product?.price || 0) * Number(quantity || 0);
+  // ✅ selected variant price is the source of truth for the UI
+  const currentPrice = Number(selectedColor?.price ?? product?.price ?? 0) || 0;
+  const currentOldPriceRaw = selectedColor?.oldPrice ?? product?.oldPrice ?? null;
+  const currentOldPrice =
+    currentOldPriceRaw === null || currentOldPriceRaw === undefined
+      ? null
+      : Number(currentOldPriceRaw);
+
+  // ✅ numeric total price (variant aware)
+  const totalPrice = currentPrice * Number(quantity || 0);
 
   // ✅ images choose from variant or fallback
   const images = useMemo(() => {
@@ -88,23 +107,22 @@ export default function ProductDetailsClient({
     return () => clearInterval(interval);
   }, [images]);
 
-  // ✅ oldPrice discount logic
+  // ✅ oldPrice discount logic (variant aware)
   const hasOldPrice =
-    product.oldPrice && Number(product.oldPrice) > Number(product.price || 0);
+    Number.isFinite(currentOldPrice) && currentOldPrice > currentPrice;
 
   const discountPct = hasOldPrice
-    ? (
-        ((Number(product.oldPrice) - Number(product.price)) /
-          Number(product.oldPrice)) *
-        100
-      ).toFixed(1)
+    ? (((currentOldPrice - currentPrice) / currentOldPrice) * 100).toFixed(1)
     : null;
 
   // ✅ wishlist normalize
   const isInWishlist = wishlist.includes(String(product._id));
 
-  // ✅ sold count variant aware
-  const soldCount = Number(selectedColor?.sold ?? product?.sold ?? 0) || 0;
+  // ✅ sold count variant aware (live value wins)
+  const soldCountRaw = selectedColor
+    ? liveColorStock?.sold ?? selectedColor?.sold ?? 0
+    : liveStock?.sold ?? product?.sold ?? 0;
+  const soldCount = Number(soldCountRaw) || 0;
 
   // ✅ checkout pass color + stock + cartKey qty
   const handleCheckout = async () => {
@@ -118,7 +136,7 @@ export default function ProductDetailsClient({
     const finalQty = quantity || 1;
 
     router.push(
-      `/checkout?productId=${product._id}&qty=${finalQty}${
+      `${base}/checkout?productId=${product._id}&qty=${finalQty}${
         selectedColor ? `&color=${encodeURIComponent(selectedColor.name)}` : ""
       }&stock=${currentStock}`
     );
@@ -126,9 +144,9 @@ export default function ProductDetailsClient({
 
 return (
   <main className="container mx-auto px-4 sm:px-6 lg:px-8 mt-4 md:py-8">
-    <ProductBreadcrumb product={product} category={category} />
+    <ProductBreadcrumb product={product} categories={categories} />
 
-    <section className="bg-pink-50 rounded-2xl grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 overflow-hidden">
+    <section className="bg-pink-50 rounded-2xl grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 overflow-visible">
       {/* Product Gallery */}
       <div className="lg:col-span-7">
         <ProductGallery
@@ -144,10 +162,12 @@ return (
       <div className="lg:col-span-5 flex flex-col md:px-6 md:py-6 bg-pink-50 gap-4">
         <ProductInfo
           product={product}
-          category={category}
+          categories={categories}
           isOutOfStock={isOutOfStock}
           currentStock={currentStock}
           soldCount={soldCount}
+          currentPrice={currentPrice}
+          currentOldPrice={currentOldPrice}
           hasOldPrice={hasOldPrice}
           discountPct={discountPct}
           isInWishlist={isInWishlist}

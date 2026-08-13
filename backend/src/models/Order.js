@@ -22,6 +22,18 @@ const orderSchema = new mongoose.Schema(
     orderNumber: { type: Number, index: true },
 
     /* ===========================
+       ✅ SALE CHANNEL
+       - "online": ওয়েবসাইট/ডেলিভারি অর্ডার (billing info বাধ্যতামূলক)
+       - "offline": দোকানে সামনাসামনি বিক্রি (billing info ঐচ্ছিক)
+    ============================ */
+    saleChannel: {
+      type: String,
+      enum: ["online", "offline"],
+      default: "online",
+      index: true,
+    },
+
+    /* ===========================
        ✅ ITEMS
     ============================ */
     items: [
@@ -50,9 +62,12 @@ const orderSchema = new mongoose.Schema(
        ✅ BILLING
     ============================ */
     billing: {
-      name: { type: String, required: true },
-      phone: { type: String, required: true },
-      address: { type: String, required: true },
+      // ✅ Offline (in-store) sale-এ billing info ঐচ্ছিক, তাই schema-level
+      // required সরানো হয়েছে — online checkout-এ route-level validation
+      // (public/order.routes.js, admin/order.admin.routes.js) বাধ্যতামূলক রাখে।
+      name: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      address: { type: String, default: "" },
       note: { type: String, default: "" },
     },
 
@@ -60,6 +75,20 @@ const orderSchema = new mongoose.Schema(
        ✅ OPTIONAL META
     ============================ */
     promoCode: { type: String, default: null },
+    promo: {
+      promoId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Promo",
+        default: null,
+      },
+      code: { type: String, default: null },
+      title: { type: String, default: "" },
+      discountType: { type: String, default: null },
+      discountValue: { type: Number, default: 0 },
+      eligibleSubtotal: { type: Number, default: 0 },
+      discountAmount: { type: Number, default: 0 },
+      shippingDiscount: { type: Number, default: 0 },
+    },
     userId: { type: String, default: null },
 
     /* ===========================
@@ -169,6 +198,9 @@ orderSchema.index({
 
 // ✅ orderNumber শুধু নিজের শপের মধ্যেই unique (দুই শপে #1001 দুইটাই থাকতে পারবে)
 orderSchema.index({ shopId: 1, orderNumber: 1 }, { unique: true });
+
+// ✅ Speeds up default admin sort (newest first) as order volume grows
+orderSchema.index({ shopId: 1, createdAt: -1 });
 
 // ✅ Tenant plugin আগে বসানো হচ্ছে যাতে নিচের orderNumber hook চলার আগেই
 // this.shopId বসানো থাকে (request context থেকে, যদি already সেট না থাকে)

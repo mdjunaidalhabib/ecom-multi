@@ -12,15 +12,35 @@ import {
   FaMinus,
 } from "react-icons/fa";
 import { useCartUtils } from "../../hooks/useCartUtils";
+import { useLiveStock } from "../../hooks/useLiveStock";
+import { useInView } from "../../hooks/useInView";
+import useShopPath from "../../hooks/useShopPath";
 
 const ProductCard = memo(({ product, priority = false }) => {
   const { cart, updateCart, wishlist, toggleWishlist } = useCartUtils();
+  const { base } = useShopPath();
 
   const productId = product?._id;
+
+  // ✅ lazy: only start the live-stock fetch once this card has actually
+  // scrolled near the viewport, instead of every card on the page firing
+  // at once on mount (priority/above-fold cards fetch immediately).
+  const [cardRef, inView] = useInView({ enabled: !priority });
+  const live = useLiveStock(inView ? productId : null);
+
   if (!productId) return null;
 
-  // ✅ SAFE colors array
-  const colors = Array.isArray(product?.colors) ? product.colors : [];
+  // ✅ SAFE colors array — variant stock/sold overridden with live values
+  // (by color name) when available, so stock displayed here is instant
+  // even though `product` itself came from the 30s cached fetch.
+  const colors = useMemo(() => {
+    const base = Array.isArray(product?.colors) ? product.colors : [];
+    if (!live?.colors) return base;
+    return base.map((c) => {
+      const match = live.colors.find((lc) => lc.name === c.name);
+      return match ? { ...c, stock: match.stock, sold: match.sold } : c;
+    });
+  }, [product, live]);
 
   // ✅ pick default variant (first color)
   const defaultColor = colors.length > 0 ? colors[0] : null;
@@ -40,24 +60,24 @@ const ProductCard = memo(({ product, priority = false }) => {
   const isInWishlist = wishlist.includes(String(productId));
   const totalPrice = Number(product?.price || 0) * quantity;
 
-  const isSoldOut =
-    product?.isSoldOut === true || product?.isSoldOut === "true";
+  const rawIsSoldOut = live?.isSoldOut ?? product?.isSoldOut;
+  const isSoldOut = rawIsSoldOut === true || rawIsSoldOut === "true";
 
   // ✅ ✅ Total Stock (variants থাকলে যোগ করে, না থাকলে product.stock)
   const totalStock = useMemo(() => {
     if (colors.length > 0) {
       return colors.reduce((sum, v) => sum + Number(v?.stock || 0), 0);
     }
-    return Number(product?.stock || 0);
-  }, [colors, product]);
+    return Number(live?.stock ?? product?.stock ?? 0);
+  }, [colors, product, live]);
 
   // ✅ ✅ Total Sold (variants থাকলে যোগ করে, না থাকলে product.sold)
   const totalSold = useMemo(() => {
     if (colors.length > 0) {
       return colors.reduce((sum, v) => sum + Number(v?.sold || 0), 0);
     }
-    return Number(product?.sold || 0);
-  }, [colors, product]);
+    return Number(live?.sold ?? product?.sold ?? 0);
+  }, [colors, product, live]);
 
   const isOutOfStock = totalStock <= 0 || isSoldOut;
 
@@ -70,9 +90,12 @@ const ProductCard = memo(({ product, priority = false }) => {
   }, [product, defaultColor]);
 
   return (
-    <div className="relative bg-pink-100 shadow-md rounded-lg hover:shadow-lg transition flex flex-col group">
+    <div
+      ref={cardRef}
+      className="relative bg-pink-100 shadow-md rounded-lg hover:shadow-lg transition flex flex-col group"
+    >
       <Link
-        href={`/products/${productId}`}
+        href={`${base}/products/${productId}`}
         className="relative w-full aspect-square mb-1 overflow-hidden rounded-lg"
       >
         <div className="absolute top-1 left-1 right-1 flex justify-between z-10">

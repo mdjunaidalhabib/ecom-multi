@@ -5,6 +5,7 @@ import Image from "next/image";
 import cloudinaryLoader from "../../lib/cloudinaryLoader";
 import FooterSkeleton from "../skeletons/FooterSkeleton";
 import { useEffect, useState } from "react";
+import useShopPath, { shopHref } from "../../hooks/useShopPath";
 import {
   FaFacebookF,
   FaUsers,
@@ -37,7 +38,9 @@ const quickLinksData = [
 
 const customerServiceLinks = [
   { label: "Privacy Policy", href: "/privacy-policy" },
-  { label: "Terms & Conditions", href: "/terms" },
+  { label: "Founder & CEO", href: "/founder-ceo" },
+  { label: "Refund Policy", href: "/refund-policy" },
+  { label: "FAQ", href: "/faq" },
 ];
 
 const SOCIAL_ICON_MAP = {
@@ -55,6 +58,7 @@ const SOCIAL_ICON_MAP = {
 };
 
 export default function Footer() {
+  const { base } = useShopPath();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
@@ -133,7 +137,7 @@ export default function Footer() {
                   return (
                     <Link
                       key={idx}
-                      href={social.url}
+                      href={shopHref(base, social.url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-9 h-9 rounded-xl bg-pink-500 hover:bg-pink-600 border border-zinc-800 hover:border-pink-500 text-white transition-all duration-300 flex items-center justify-center hover:-translate-y-1 backdrop-blur-sm"
@@ -154,7 +158,7 @@ export default function Footer() {
               {quickLinksData.map((item, i) => (
                 <li key={i}>
                   <Link
-                    href={item.href}
+                    href={shopHref(base, item.href)}
                     className="hover:text-pink-400 transition-colors duration-200 flex items-center group"
                   >
                     <span className="w-1.5 h-1.5 bg-black rounded-full mr-2 group-hover:w-2 group-hover:h-2 group-hover:bg-pink-400 transition-all duration-200"></span>{" "}
@@ -174,7 +178,7 @@ export default function Footer() {
               {customerServiceLinks.map((item, i) => (
                 <li key={i}>
                   <Link
-                    href={item.href}
+                    href={shopHref(base, item.href)}
                     className=" hover:text-pink-400 transition-colors duration-200 flex items-center group"
                   >
                     <span className="w-1.5 h-1.5 bg-black rounded-full mr-2 group-hover:w-2 group-hover:h-2 group-hover:bg-pink-400 transition-all duration-200"></span>{" "}

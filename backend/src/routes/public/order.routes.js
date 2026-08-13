@@ -3,10 +3,21 @@ import Order from "../../models/Order.js";
 import Product from "../../models/Product.js";
 import DeliveryCharge from "../../models/DeliveryCharge.js";
 import PaymentMethod from "../../models/PaymentMethod.js";
+import {
+  buildPricedOrderItemsFromDB,
+  calculateItemsSubtotal,
+} from "../../services/orderPricingService.js";
+import {
+  validatePromoForOrder,
+  reservePromoUsage,
+  releasePromoUsage,
+} from "../../services/promoService.js";
+import { updateInventoryForItem } from "../../services/inventoryService.js";
 
 // ✅ correct relative path
 import { getOrderMailSendSettings } from "../../../utils/mail/index.js";
-import { sendAdminOrderEmailInBackground } from "../../../utils/mail/index.js";
+import { sendAdminOrderEmail } from "../../../utils/mail/index.js";
+import { logMailReport } from "../../../utils/mail/index.js";
 import {
   regenerateInvoiceInBackground,
   invalidateInvoiceCache,
@@ -47,25 +58,6 @@ const resolvePaymentMethod = async (method) => {
 // ✅ bKash-স্টাইল TrxID: সাধারণত 8-15 ক্যারেক্টার alphanumeric
 const isValidTrxId = (id) => /^[A-Za-z0-9]{6,20}$/.test(String(id || ""));
 const isValidSenderNumber = (num) => /^01[3-9]\d{8}$/.test(String(num || ""));
-
-const normalizeString = (s) =>
-  String(s || "")
-    .trim()
-    .toLowerCase();
-
-const hasVariants = (product) =>
-  Array.isArray(product?.colors) && product.colors.length > 0;
-
-const computeVariantTotalStock = (colors) => {
-  const list = Array.isArray(colors) ? colors : [];
-  return list.reduce((sum, c) => sum + toNumber(c?.stock, 0), 0);
-};
-
-const computeSoldOut = (product) => {
-  if (!hasVariants(product)) return toNumber(product?.stock, 0) <= 0;
-  const anyInStock = product.colors.some((c) => toNumber(c?.stock, 0) > 0);
-  return !anyInStock;
-};
 
 /**
  * ✅ DB থেকে Latest delivery fee fetch
@@ -114,107 +106,6 @@ const isEntireCartFreeDelivery = async (items) => {
   }
 };
 
-/**
- * ✅ Inventory update (stock & sold) for a single item
- * item: { productId, qty, color }
- * mode: "decrease" | "increase"
- *
- * IMPORTANT FIXES:
- * ✅ no silent return (throw error instead)
- * ✅ normalize color match
- * ✅ strict stock validation
- */
-const updateInventoryForItem = async (item, mode = "decrease") => {
-  const productId = item?.productId;
-  const qty = toNumber(item?.qty, 0);
-  const color = item?.color ? String(item.color) : null;
-
-  // ✅ STOP silent fail
-  if (!productId || qty <= 0) {
-    throw new Error(
-      `Invalid order item! productId=${productId}, qty=${item?.qty}`
-    );
-  }
-
-  const product = await Product.findById(productId);
-  if (!product) {
-    throw new Error(`Product not found: ${productId}`);
-  }
-
-  const productHasVariants = hasVariants(product);
-
-  // ✅ Variant Mode
-  if (productHasVariants && color) {
-    const targetColor = normalizeString(color);
-
-    const idx = product.colors.findIndex(
-      (c) => normalizeString(c?.name) === targetColor
-    );
-
-    if (idx === -1) {
-      throw new Error(
-        `Variant not found: "${color}" for product: ${product.name}`
-      );
-    }
-
-    const currentVariantStock = toNumber(product.colors[idx]?.stock, 0);
-
-    if (mode === "decrease") {
-      if (currentVariantStock < qty) {
-        throw new Error(
-          `${product.name} (${product.colors[idx]?.name}) stock not enough. Available: ${currentVariantStock}`
-        );
-      }
-
-      // ✅ update variant
-      product.colors[idx].stock = currentVariantStock - qty;
-      product.colors[idx].sold = toNumber(product.colors[idx]?.sold, 0) + qty;
-
-      // ✅ update product sold
-      product.sold = toNumber(product.sold, 0) + qty;
-    } else {
-      // ✅ restock
-      product.colors[idx].stock = currentVariantStock + qty;
-      product.colors[idx].sold = toNumber(product.colors[idx]?.sold, 0) - qty;
-      if (product.colors[idx].sold < 0) product.colors[idx].sold = 0;
-
-      product.sold = toNumber(product.sold, 0) - qty;
-      if (product.sold < 0) product.sold = 0;
-    }
-
-    // ✅ sync product stock + soldout
-    product.stock = computeVariantTotalStock(product.colors);
-    product.isSoldOut = computeSoldOut(product);
-
-    await product.save();
-    return product;
-  }
-
-  // ✅ Normal Product (No variant)
-  const baseStock = toNumber(product.stock, 0);
-
-  if (mode === "decrease") {
-    if (baseStock < qty) {
-      throw new Error(
-        `${product.name} stock not enough. Available: ${baseStock}`
-      );
-    }
-
-    product.stock = baseStock - qty;
-    product.sold = toNumber(product.sold, 0) + qty;
-
-    if (product.stock <= 0) product.stock = 0;
-  } else {
-    product.stock = baseStock + qty;
-    product.sold = toNumber(product.sold, 0) - qty;
-    if (product.sold < 0) product.sold = 0;
-  }
-
-  product.isSoldOut = computeSoldOut(product);
-  await product.save();
-  return product;
-};
-
 /* ---------------- Routes ---------------- */
 
 /**
@@ -226,9 +117,7 @@ router.post("/", async (req, res) => {
   try {
     const {
       items,
-      subtotal,
       billing,
-      discount,
       promoCode,
       userId,
       paymentMethod,
@@ -237,7 +126,7 @@ router.post("/", async (req, res) => {
     } = req.body;
 
     // ✅ Validation
-    if (!items?.length || subtotal == null) {
+    if (!items?.length) {
       return res.status(400).json({
         error: "প্রয়োজনীয় তথ্য প্রদান করা হয়নি (Missing fields)",
       });
@@ -246,6 +135,17 @@ router.post("/", async (req, res) => {
     if (!billing?.name || !billing?.phone || !billing?.address) {
       return res.status(400).json({
         error: "Billing তথ্য সম্পূর্ণ নয় (name/phone/address required)",
+      });
+    }
+
+    // ✅ Never trust frontend price/subtotal. Rebuild every item from DB using
+    // productId + color, then calculate subtotal from those DB prices.
+    let trustedItems;
+    try {
+      trustedItems = await buildPricedOrderItemsFromDB(items);
+    } catch (pricingErr) {
+      return res.status(pricingErr?.statusCode || 400).json({
+        error: pricingErr?.message || "Invalid order items",
       });
     }
 
@@ -305,21 +205,47 @@ router.post("/", async (req, res) => {
     const baseDeliveryFee = await getDeliveryFeeFromDB();
 
     // ✅ যদি cart-এ কোনো Free Delivery প্রোডাক্ট থাকে → চার্জ 0
-    const isFreeDelivery = await isEntireCartFreeDelivery(items);
+    const isFreeDelivery = await isEntireCartFreeDelivery(trustedItems);
     const DELIVERY_CHARGE = isFreeDelivery ? 0 : baseDeliveryFee;
 
-    // ✅ backend-safe total calculation
-    const calculatedSubtotal = toNumber(subtotal, 0);
-    const calculatedDiscount = toNumber(discount, 0);
+    // ✅ backend-safe total calculation from DB-authoritative item prices
+    const calculatedSubtotal = calculateItemsSubtotal(trustedItems);
 
-    const calculatedTotal =
-      calculatedSubtotal + DELIVERY_CHARGE - calculatedDiscount;
+    // ✅ Frontend sends only promoCode. Backend validates the campaign and
+    // recalculates every discount from trusted product/variant prices.
+    let promoValidation = null;
+    if (String(promoCode || "").trim()) {
+      try {
+        promoValidation = await validatePromoForOrder({
+          code: promoCode,
+          items: trustedItems,
+          subtotal: calculatedSubtotal,
+          deliveryCharge: DELIVERY_CHARGE,
+          userId,
+          phone: billing.phone,
+          paymentMethod: normalizedPaymentMethod,
+        });
+      } catch (promoErr) {
+        return res.status(promoErr?.statusCode || 400).json({
+          error: promoErr?.message || "Promo code is not valid",
+          code: promoErr?.code || "PROMO_INVALID",
+        });
+      }
+    }
+
+    const calculatedDiscount = promoValidation?.discountAmount || 0;
+    const finalDeliveryCharge =
+      promoValidation?.finalDeliveryCharge ?? DELIVERY_CHARGE;
+    const calculatedTotal = Math.max(
+      0,
+      calculatedSubtotal + finalDeliveryCharge - calculatedDiscount,
+    );
 
     // ✅ SAVE ORDER
     const order = new Order({
-      items,
+      items: trustedItems,
       subtotal: calculatedSubtotal,
-      deliveryCharge: DELIVERY_CHARGE,
+      deliveryCharge: finalDeliveryCharge,
       discount: calculatedDiscount,
       total: calculatedTotal,
       billing: {
@@ -328,7 +254,19 @@ router.post("/", async (req, res) => {
         address: billing.address,
         note: billing.note || "",
       },
-      promoCode: promoCode || "",
+      promoCode: promoValidation?.promo?.code || null,
+      promo: promoValidation
+        ? {
+            promoId: promoValidation.promo._id,
+            code: promoValidation.promo.code,
+            title: promoValidation.promo.title || "",
+            discountType: promoValidation.promo.discountType,
+            discountValue: promoValidation.promo.discountValue || 0,
+            eligibleSubtotal: promoValidation.eligibleSubtotal,
+            discountAmount: promoValidation.discountAmount,
+            shippingDiscount: promoValidation.shippingDiscount,
+          }
+        : undefined,
       userId: userId || null,
       paymentMethod: normalizedPaymentMethod,
       paymentStatus: "pending",
@@ -338,12 +276,33 @@ router.post("/", async (req, res) => {
 
     const savedOrder = await order.save();
 
+    // ✅ Atomic global-limit reservation. If another checkout used the last
+    // available slot at the same time, this order is rolled back.
+    if (promoValidation) {
+      try {
+        await reservePromoUsage({
+          validation: promoValidation,
+          order: savedOrder,
+          userId,
+          phone: billing.phone,
+        });
+      } catch (promoReserveErr) {
+        await Order.findByIdAndDelete(savedOrder._id);
+        return res.status(promoReserveErr?.statusCode || 400).json({
+          error:
+            promoReserveErr?.message ||
+            "Promo usage could not be reserved",
+          code: promoReserveErr?.code || "PROMO_LIMIT_REACHED",
+        });
+      }
+    }
+
     /* ✅✅ STRICT INVENTORY UPDATE
        - If stock update fails => rollback order + return 400
     */
     try {
       await Promise.all(
-        items.map((item) => updateInventoryForItem(item, "decrease")),
+        trustedItems.map((item) => updateInventoryForItem(item, "decrease")),
       );
     } catch (stockErr) {
       console.error("❌ Stock/Sold Update Error:", stockErr);
@@ -351,6 +310,12 @@ router.post("/", async (req, res) => {
       // ✅ rollback order so fake order not saved
       try {
         await Order.findByIdAndDelete(savedOrder._id);
+        if (promoValidation) {
+          await releasePromoUsage({
+            promoId: promoValidation.promo._id,
+            orderId: savedOrder._id,
+          });
+        }
       } catch (rbErr) {
         console.error("❌ Rollback failed:", rbErr);
       }
@@ -367,20 +332,19 @@ router.post("/", async (req, res) => {
     regenerateInvoiceInBackground(savedOrder._id);
 
     // ✅ Admin Email Notify (DB settings)
-    // 🔥 FIX: এখন এই পুরো ব্লক আর await করা হচ্ছে না — settings lookup +
-    // SMTP send দুটোই ব্যাকগ্রাউন্ডে চলবে, কাস্টমারের response আটকাবে না।
-    (async () => {
-      try {
-        const settings = await getOrderMailSendSettings();
+    // Admin Email Notify (DB settings)
+    try {
+      const settings = await getOrderMailSendSettings();
 
-        // DB তে active email খুঁজে বের করা
-        const activeEmailObj = settings.emails.find((e) => e.active);
-        const adminEmail = activeEmailObj?.email?.trim();
+      // DB তে active email খুঁজে বের করা
+      const activeEmailObj = settings.emails.find((e) => e.active);
+      const adminEmail = activeEmailObj?.email?.trim();
 
-        if (adminEmail) {
-          sendAdminOrderEmailInBackground({
+      if (adminEmail) {
+        try {
+          await sendAdminOrderEmail({
             to: adminEmail,
-            orderId: savedOrder._id,
+            orderId: `#${savedOrder.orderNumber}`,
             customerName: savedOrder?.billing?.name,
             customerPhone: savedOrder?.billing?.phone,
             address: savedOrder?.billing?.address,
@@ -392,13 +356,29 @@ router.post("/", async (req, res) => {
             total: savedOrder?.total,
             paymentMethod: savedOrder?.paymentMethod,
           });
-        } else {
-          console.warn("⚠️ No active admin email set in DB");
+          await logMailReport({
+            to: adminEmail,
+            purpose: "order_notification",
+            subject: `New Order Received - #${savedOrder.orderNumber}`,
+            meta: { orderId: savedOrder.orderNumber },
+          });
+        } catch (sendErr) {
+          await logMailReport({
+            to: adminEmail,
+            purpose: "order_notification",
+            subject: `New Order Received - #${savedOrder.orderNumber}`,
+            status: "failed",
+            error: sendErr.message,
+            meta: { orderId: savedOrder.orderNumber },
+          });
+          throw sendErr;
         }
-      } catch (mailErr) {
-        console.error("❌ Admin Email Send Failed:", mailErr);
+      } else {
+        console.warn("⚠️ No active admin email set in DB");
       }
-    })();
+    } catch (mailErr) {
+      console.error("❌ Admin Email Send Failed:", mailErr);
+    }
 
     return res.status(201).json(savedOrder);
   } catch (err) {
@@ -437,7 +417,7 @@ router.get("/", async (req, res) => {
     if (!userId) {
       return res.status(400).json({ error: "userId প্রয়োজন।" });
     }
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 }).limit(100);
     return res.json(orders);
   } catch (err) {
     return res.status(500).json({ error: "অর্ডার লিস্ট লোড করা সম্ভব হয়নি।" });

@@ -18,6 +18,12 @@ import homeBadgeRoutes from "./homeBadge.js";
 import facebookGroupRoutes from "./facebookGroup.routes.js";
 import aboutRoutes from "./about.routes.js";
 import paymentMethodRoutes from "./paymentMethod.routes.js";
+import promoRoutes from "./promo.routes.js";
+import homepagePopupRoutes from "./homepagePopup.route.js";
+import privacyPolicyRoutes from "./privacyPolicy.routes.js";
+import supportRoutes from "./support.routes.js";
+import refundPolicyRoutes from "./refundPolicy.routes.js";
+import faqRoutes from "./faq.routes.js";
 import { resolveShopByDomain } from "../../tenancy/publicShopResolver.js";
 
 const router = express.Router();
@@ -47,5 +53,11 @@ router.use("/homeBadges", homeBadgeRoutes);
 router.use("/facebook-group", facebookGroupRoutes);
 router.use("/about", aboutRoutes);
 router.use("/payment-methods", paymentMethodRoutes);
+router.use("/promos", promoRoutes);
+router.use("/homepage-popup", homepagePopupRoutes);
+router.use("/privacy-policy", privacyPolicyRoutes);
+router.use("/support", supportRoutes);
+router.use("/refund-policy", refundPolicyRoutes);
+router.use("/faq", faqRoutes);
 
 export default router;

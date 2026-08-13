@@ -9,6 +9,7 @@ import EditOrderModal from "../modals/EditOrderModal";
 import CreateOrderModal from "../modals/CreateOrderModal";
 import OrdersSkeleton from "../../Skeleton/OrdersSkeleton";
 import Toast from "../../Toast";
+import Pagination from "../../Pagination";
 
 import ConfirmModal from "../modals/ConfirmModal";
 
@@ -19,6 +20,14 @@ export default function OrdersPage() {
     filtered,
     loading,
     fetchOrders,
+
+    page,
+    setPage,
+    total,
+    totalPages,
+
+    saleChannel,
+    setSaleChannel,
 
     deleting,
     handleDelete,
@@ -137,7 +146,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-4 px-2 sm:px-4">
       {/* TOP BAR */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-lg font-bold">Orders</h1>
 
         <div className="flex gap-2">
@@ -156,6 +165,27 @@ export default function OrdersPage() {
             Refresh
           </button>
         </div>
+      </div>
+
+      {/* ✅ SALE CHANNEL FILTER */}
+      <div className="flex items-center gap-2">
+        {[
+          { key: "", label: "All", active: "bg-indigo-600 border-indigo-600" },
+          { key: "online", label: "🌐 Online", active: "bg-blue-600 border-blue-600" },
+          { key: "offline", label: "🏬 Offline", active: "bg-purple-600 border-purple-600" },
+        ].map((c) => (
+          <button
+            key={c.key}
+            onClick={() => setSaleChannel(c.key)}
+            className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition ${
+              saleChannel === c.key
+                ? `${c.active} text-white`
+                : "bg-white border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -182,6 +212,13 @@ export default function OrdersPage() {
             onBulkStatusChange={updateManyStatus}
             onBulkDelete={deleteMany}
             onBulkSendCourier={sendCourierMany}
+          />
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={setPage}
           />
         </>
       )}

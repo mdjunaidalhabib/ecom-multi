@@ -1,9 +1,14 @@
-import Link from "next/link";
+"use client";
 
-export default function ProductBreadcrumb({ product, category }) {
+import Link from "next/link";
+import useShopPath from "../../hooks/useShopPath";
+
+export default function ProductBreadcrumb({ product, categories = [] }) {
+  const { base } = useShopPath();
+  const category = Array.isArray(categories) ? categories[0] : null;
   return (
     <nav className="text-xs md:text-sm text-gray-500 mb-4">
-      <Link href="/" className="hover:underline">
+      <Link href={base || "/"} className="hover:underline">
         Home
       </Link>
       <span className="mx-2">/</span>
@@ -11,7 +16,7 @@ export default function ProductBreadcrumb({ product, category }) {
       {category && (
         <>
           <Link
-            href={`/categories/${category._id}`}
+            href={`${base}/categories/${category._id}`}
             className="hover:underline"
           >
             {category.name}

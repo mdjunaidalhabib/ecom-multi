@@ -2,11 +2,13 @@
 import React from "react";
 import Link from "next/link";
 import { FaShoppingCart } from "react-icons/fa";
+import useShopPath from "../../hooks/useShopPath";
 
 export default function CartIcon({ cartCount, mobile }) {
+  const { base } = useShopPath();
   return (
     <Link
-      href="/cart"
+      href={`${base}/cart`}
       className={`relative flex flex-col items-center ${mobile ? "" : ""}`}
     >
       <FaShoppingCart className="w-6 h-6" />

@@ -15,7 +15,11 @@ import {
   READY_STATUS,
 } from "../shared/constants";
 
-import { formatOrderTime, needsPaymentVerification } from "../shared/utils";
+import {
+  formatOrderTime,
+  needsPaymentVerification,
+  paymentMethodLabel,
+} from "../shared/utils";
 import useOrdersManager from "../hooks/useOrdersManager";
 import StatusTabs from "./StatusTabs";
 import BulkActions from "./BulkActions";
@@ -186,8 +190,13 @@ export default function OrdersTable({
                     </td>
                     {/* ORDER INFO */}
                     <td className="p-2">
-                      <div className="font-mono text-xs text-gray-500">
+                      <div className="font-mono text-xs text-gray-500 flex items-center gap-1.5">
                         #{o.orderNumber ?? o._id}
+                        {o.saleChannel === "offline" && (
+                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                            🏬 Offline
+                          </span>
+                        )}
                       </div>
 
                       {isAdminCreated && (
@@ -256,7 +265,7 @@ export default function OrdersTable({
 
                       {!!o.discount && (
                         <div className="flex justify-between text-red-600">
-                          <span>Discount</span>
+                          <span>Discount{o.promo?.code ? ` (${o.promo.code})` : ""}</span>
                           <span>-৳{o.discount}</span>
                         </div>
                       )}
@@ -269,7 +278,7 @@ export default function OrdersTable({
                     {/* PAYMENT */}
                     <td className="p-2 space-y-1 min-w-[150px]">
                       <div className="flex items-center gap-1 flex-wrap">
-                        <Badge>{o.paymentMethod?.toUpperCase()}</Badge>
+                        <Badge>{paymentMethodLabel(o)}</Badge>
                         {o.paymentMethod !== "cod" && (
                           <span
                             className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${

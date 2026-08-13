@@ -21,6 +21,14 @@ import trashAdminRoutes from "./trash.admin.routes.js";
 import aboutAdminRoutes from "./about.admin.routes.js";
 import paymentsAdminRoutes from "./payments.admin.routes.js";
 import shopAdminRoutes from "./shop.admin.routes.js";
+import orderCounterAdmin from "./orderCounter.admin.js";
+import promoAdminRoutes from "./promo.admin.routes.js";
+import homepagePopupAdminRoutes from "./homepagePopup.admin.routes.js";
+import privacyPolicyAdminRoutes from "./privacyPolicy.admin.routes.js";
+import supportAdminRoutes from "./support.admin.routes.js";
+import refundPolicyAdminRoutes from "./refundPolicy.admin.routes.js";
+import faqAdminRoutes from "./faq.admin.routes.js";
+import mailReportAdminRoutes from "./mailReport.admin.routes.js";
 
 import { protect } from "../../middlewares/adminAuthMiddleware.js";
 import { requireShopContext } from "../../tenancy/adminShopContext.js";
@@ -60,5 +68,13 @@ router.use("/facebook-group", facebookGroupAdminRoutes);
 router.use("/trash", trashAdminRoutes);
 router.use("/about", aboutAdminRoutes);
 router.use("/payments", paymentsAdminRoutes);
+router.use("/orderCounter", orderCounterAdmin);
+router.use("/promos", promoAdminRoutes);
+router.use("/homepage-popup", homepagePopupAdminRoutes);
+router.use("/privacy-policy", privacyPolicyAdminRoutes);
+router.use("/support", supportAdminRoutes);
+router.use("/refund-policy", refundPolicyAdminRoutes);
+router.use("/faq", faqAdminRoutes);
+router.use("/mail-report", mailReportAdminRoutes);
 
 export default router;

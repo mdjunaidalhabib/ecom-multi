@@ -1,3 +1,5 @@
+import { formatDateTime } from "../../../lib/utils.js";
+
 /**
  * ✅ Manual/mobile-banking payments (bKash/Nagad/etc.) must be verified
  * (accepted/rejected) by admin from Payments > Pending Verification
@@ -12,18 +14,19 @@ export function needsPaymentVerification(o) {
   );
 }
 
+/**
+ * ✅ Offline (in-store) sale-এ "cod" ভ্যালুটাই থাকে (backend/flow অপরিবর্তিত
+ * রাখতে), কিন্তু UI-তে সেটাকে ডেলিভারির "COD" না বলে "CASH" দেখানো হয় —
+ * CreateOrderModal-এর Payment Method ফিল্ডে যেভাবে দেখানো হয় সেভাবেই।
+ */
+export function paymentMethodLabel(o) {
+  if (o?.saleChannel === "offline" && o?.paymentMethod === "cod") {
+    return "CASH";
+  }
+  return o?.paymentMethod?.toUpperCase() || "";
+}
+
 export function formatOrderTime(o) {
   const raw = o?.createdAt || o?.orderDate || o?.date;
-  if (!raw) return "—";
-
-  const d = new Date(raw);
-  if (isNaN(d.getTime())) return "—";
-
-  return d.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  return formatDateTime(raw, { year: undefined });
 }

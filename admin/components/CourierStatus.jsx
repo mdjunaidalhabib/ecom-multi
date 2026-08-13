@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Badge from "./Badge";
+import { formatDateTime } from "../lib/utils";
 
 function Modal({ isOpen, onClose, children }) {
   if (!isOpen) return null;
@@ -191,9 +192,7 @@ export default function CourierStatus({
           <div className="relative pl-6 border-l-2 border-gray-300 space-y-3">
             {events.map((e, idx) => {
               const message = e?.status || "Unknown update";
-              const date = e?.timestamp
-                ? new Date(e.timestamp).toLocaleString()
-                : "—";
+              const date = e?.timestamp ? formatDateTime(e.timestamp) : "—";
 
               return (
                 <div key={idx} className="relative">

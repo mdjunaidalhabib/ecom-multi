@@ -1,39 +1,42 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getAdmin } from "../../lib/auth";
 
 export default function RootRedirect() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let active = true;
+    let cancelled = false;
 
     (async () => {
-      const admin = await getAdmin();
-      if (!active) return;
+      const admin = await getAdmin(); // 🔐 token check (frontend fallback)
 
-      if (admin?.role === "superadmin") {
-        router.replace("/super-admin/dashboard");
-      } else if (admin) {
-        router.replace("/admin/dashboard");
-      } else {
-        router.replace("/login");
-      }
+      if (cancelled) return;
+
+      router.push(admin ? "/admin/dashboard" : "/login");
+      setLoading(false);
     })();
 
     return () => {
-      active = false;
+      cancelled = true;
     };
   }, [router]);
 
-  return (
-    <div className="flex h-screen items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
-        <p className="mt-4 font-medium text-gray-600">Loading portal...</p>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">
+            Loading Admin Panel...
+          </p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }
