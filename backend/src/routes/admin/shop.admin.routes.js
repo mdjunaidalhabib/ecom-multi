@@ -21,6 +21,10 @@ import {
   inviteShopAdmin,
   removeShopAdmin,
 } from "../../../controllers/shop/admin.shopAdmins.controller.js";
+import {
+  listPlanRequests,
+  reviewPlanRequest,
+} from "../../../controllers/shop/planRequest.superadmin.controller.js";
 
 const router = express.Router();
 
@@ -37,6 +41,11 @@ router.get("/trash", listShopTrash);
 router.post("/trash/:trashId/restore", restoreDeletedShop);
 router.delete("/trash/empty", emptyShopTrash);
 router.delete("/trash/:trashId", permanentDeleteShop);
+
+// Plan change requests (cross-shop) — must be declared before the generic
+// /:id route, otherwise "/plan-requests" would be swallowed as an :id.
+router.get("/plan-requests", listPlanRequests);
+router.patch("/plan-requests/:id/review", reviewPlanRequest);
 
 router.get("/:id", getShopById);
 router.patch("/:id", updateShop);

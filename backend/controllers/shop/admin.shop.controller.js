@@ -10,6 +10,7 @@ import {
 } from "../../utils/trash/trash.helpers.js";
 import { permanentlyDeleteShopData } from "../../utils/shop/shopTrash.helpers.js";
 import { invalidateShopCache } from "../../src/tenancy/publicShopResolver.js";
+import { getPlanFeatures } from "../../src/services/planFeatureService.js";
 
 // frontend/lib/shopMode.js এর DOMAIN_MODE_MARKER — কোনো real শপ এই slug
 // নিতে পারবে না, নাহলে custom-domain routing-এর সাথে conflict করবে
@@ -147,12 +148,21 @@ export const createShop = async (req, res) => {
       return res.status(400).json({ message: "শপের নাম আবশ্যক" });
     }
 
+    const resolvedPlan = plan && ["free", "starter", "pro"].includes(plan) ? plan : "free";
+    const planFeatures = await getPlanFeatures(resolvedPlan);
+
     // ✅ ডোমেইন ঐচ্ছিক — না দিলে শপ শুধু platform-এর slug-based path
     // (/shop/<slug>/...) দিয়ে চলবে, পরে যেকোনো সময় custom domain যোগ করা যাবে
     const trimmedDomain = domain && domain.trim() ? domain.trim() : "";
     let normalizedDomain = "";
 
     if (trimmedDomain) {
+      if (!planFeatures.customDomain) {
+        return res.status(400).json({
+          message: `${resolvedPlan} প্ল্যানে কাস্টম ডোমেইন সুবিধা নেই। প্ল্যান আপগ্রেড করুন অথবা Settings > Plan Features থেকে এই প্ল্যানে ডোমেইন চালু করুন।`,
+        });
+      }
+
       normalizedDomain = normalizeDomain(trimmedDomain);
 
       const existing = await Shop.findOne({ domain: normalizedDomain });
@@ -195,7 +205,13 @@ export const createShop = async (req, res) => {
       slug,
       ...(normalizedDomain ? { domain: normalizedDomain, domainStatus: "pending_dns" } : {}),
       status: "trial",
-      plan: plan && ["free", "starter", "pro"].includes(plan) ? plan : "free",
+      plan: resolvedPlan,
+      // ✅ Plan-এর ডিফল্ট limits দিয়ে শুরু হয় (PlatformSettings.planFeatures) —
+      // পরে শপের নিজের এডিট ফর্ম থেকে override করা যাবে
+      limits: {
+        maxProducts: planFeatures.maxProducts,
+        maxAdmins: planFeatures.maxAdmins,
+      },
       contactEmail: contactEmail || "",
       contactPhone: contactPhone || "",
       ownerAdminId: req.admin?._id || null,
@@ -279,9 +295,20 @@ export const updateShop = async (req, res) => {
       }
     }
 
+    if (plan !== undefined && ["free", "starter", "pro"].includes(plan)) {
+      shop.plan = plan;
+    }
+
     if (domain !== undefined && domain.trim()) {
       const normalizedDomain = normalizeDomain(domain);
       if (normalizedDomain !== shop.domain) {
+        const planFeatures = await getPlanFeatures(shop.plan);
+        if (!planFeatures.customDomain) {
+          return res.status(400).json({
+            message: `${shop.plan} প্ল্যানে কাস্টম ডোমেইন সুবিধা নেই। প্ল্যান আপগ্রেড করুন অথবা Settings > Plan Features থেকে এই প্ল্যানে ডোমেইন চালু করুন।`,
+          });
+        }
+
         const clash = await Shop.findOne({
           domain: normalizedDomain,
           _id: { $ne: shop._id },
@@ -300,9 +327,6 @@ export const updateShop = async (req, res) => {
 
     if (contactEmail !== undefined) shop.contactEmail = contactEmail;
     if (contactPhone !== undefined) shop.contactPhone = contactPhone;
-    if (plan !== undefined && ["free", "starter", "pro"].includes(plan)) {
-      shop.plan = plan;
-    }
     if (themeColor !== undefined) shop.branding.themeColor = themeColor;
     if (theme !== undefined) {
       // খালি স্ট্রিং/"" মানে override সরিয়ে plan-এর default theme ব্যবহার করা

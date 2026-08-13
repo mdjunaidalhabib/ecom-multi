@@ -18,8 +18,10 @@ const NAV_LINKS = [
   { href: "/categories", label: "Categories" },
 ];
 
-// Terra: warm/organic top bar — cream surface, rounded pill nav, emerald
-// accent. Reuses the same functional widgets as the other themes.
+// Terra: warm/organic floating navbar — a rounded pill bar with margin and
+// shadow (not edge-to-edge), gradient cream-to-mint surface, single-row
+// logo + segmented pill nav + icon cluster. Reuses the same functional
+// widgets as the other themes.
 export default function TerraNavbar() {
   const [navbar, setNavbar] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -53,8 +55,8 @@ export default function TerraNavbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-amber-50 shadow-sm">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <nav className="sticky top-3 z-50 px-3 sm:px-6">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 rounded-[2rem] bg-gradient-to-r from-amber-50 via-amber-50 to-emerald-50 px-4 py-2.5 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-900/5 sm:px-5">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="text-emerald-900 md:hidden"
@@ -81,14 +83,14 @@ export default function TerraNavbar() {
             </span>
           </Link>
 
-          <div className="hidden items-center gap-1 rounded-full bg-white/70 p-1 md:flex">
+          <div className="hidden items-center gap-1 rounded-full bg-white/80 p-1 shadow-inner md:flex">
             {NAV_LINKS.map(({ href, label }) => (
               <Link
                 key={href}
                 href={shopHref(base, href)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
                   isActive(href)
-                    ? "bg-emerald-700 text-white"
+                    ? "bg-emerald-700 text-white shadow-sm"
                     : "text-emerald-900 hover:bg-emerald-100"
                 }`}
               >
@@ -97,7 +99,7 @@ export default function TerraNavbar() {
             ))}
           </div>
 
-          <div className="flex items-center gap-1 text-emerald-900">
+          <div className="flex items-center gap-1 rounded-full bg-white/60 px-1 text-emerald-900">
             <button
               className="p-2 hover:text-emerald-700 md:hidden"
               onClick={() => setMobileSearchOpen(true)}
@@ -164,8 +166,9 @@ export default function TerraNavbar() {
         )}
       </AnimatePresence>
 
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-emerald-100 bg-amber-50 md:hidden">
-        <div className="flex items-center justify-around px-4 py-2 text-emerald-900/70">
+      {/* Floating rounded bottom bar — matches the top pill bar's language */}
+      <div className="fixed inset-x-3 bottom-3 z-50 rounded-[1.75rem] bg-gradient-to-r from-amber-50 via-amber-50 to-emerald-50 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-900/5 md:hidden">
+        <div className="flex items-center justify-around px-4 py-2.5 text-emerald-900/70">
           <Link
             href={base || "/"}
             className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/") ? "text-emerald-700" : ""}`}

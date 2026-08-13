@@ -1,4 +1,4 @@
-import { CircleGauge, Store, Trash2, User, Settings, Palette } from "lucide-react";
+import { CircleGauge, Store, Trash2, User, Settings, Palette, SlidersHorizontal, Inbox } from "lucide-react";
 
 // ✅ Superadmin-এর কাজ শুধু শপ তৈরি/ম্যানেজ করা — কোনো শপের
 // Products/Orders/Users/Settings ইত্যাদি shop-scoped ডেটাতে তার এক্সেস
@@ -14,6 +14,11 @@ export const superAdminNavItems = [
     icon: <Store size={18} />,
     label: "Shops",
     href: "/shops",
+  },
+  {
+    icon: <Inbox size={18} />,
+    label: "Plan Requests",
+    href: "/plan-requests",
   },
   {
     icon: <Trash2 size={18} />,
@@ -38,5 +43,10 @@ export const superAdminSettingsChildren = [
     icon: <Palette size={16} />,
     label: "Themes",
     href: "/settings/themes",
+  },
+  {
+    icon: <SlidersHorizontal size={16} />,
+    label: "Plan Features",
+    href: "/settings/plan-features",
   },
 ];

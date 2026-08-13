@@ -1,6 +1,7 @@
 // app/dashboard/layout.jsx
 import Sidebar from "../../../components/Sidebar";
 import Header from "../../../components/Header";
+import AdminMainContent from "../../../components/AdminMainContent";
 import "../globals.css";
 
 export default function AdminLayout({ children }) {
@@ -9,7 +10,9 @@ export default function AdminLayout({ children }) {
           <Sidebar />
           <div className="flex-1 flex flex-col">
             <Header />
-            <main className="p-2 sm:p-4 overflow-auto flex-1">{children}</main>
+            <main className="p-2 sm:p-4 overflow-auto flex-1">
+              <AdminMainContent>{children}</AdminMainContent>
+            </main>
           </div>
         </div>
   );

@@ -4,16 +4,29 @@ import axios from "axios";
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
   const API_URL = "/api";
 
   useEffect(() => {
     if (!API_URL) return;
 
     axios
-      .get(`${API_URL}/visit/stats`)
+      .get(`${API_URL}/admin/analytics/stats`, { withCredentials: true })
       .then((res) => setData(res.data))
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        if (err?.response?.status === 403) {
+          setUpgradeMessage(
+            err.response.data?.message ||
+              "আপনার বর্তমান প্ল্যানে Analytics ফিচারটি নেই।",
+          );
+        } else {
+          console.log(err);
+        }
+      });
   }, [API_URL]);
+
+  if (upgradeMessage)
+    return <div className="p-10 text-center text-lg text-gray-600">{upgradeMessage}</div>;
 
   if (!data)
     return <div className="p-10 text-center text-lg">Loading analytics...</div>;

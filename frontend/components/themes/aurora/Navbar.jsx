@@ -18,9 +18,11 @@ const NAV_LINKS = [
   { href: "/categories", label: "Categories" },
 ];
 
-// Aurora: clean, minimal top bar — white surface, thin bottom border,
-// uppercase tracking-wide links, single amber accent. Reuses the same
-// functional widgets (search/account/cart/wishlist) as the classic navbar.
+// Aurora: editorial two-tier navbar — a slim utility row (search/account/
+// cart) on top, then a centered logo row, then a centered underline-style
+// nav row below it. Monochrome neutral palette with a single thin gold
+// accent line for a premium boutique feel. Reuses the same functional
+// widgets (search/account/cart/wishlist) as the other themes.
 export default function AuroraNavbar() {
   const [navbar, setNavbar] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,74 +56,88 @@ export default function AuroraNavbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="text-neutral-700 md:hidden"
-            aria-label="Menu"
-          >
-            {menuOpen ? <FaTimes className="h-5 w-5" /> : <FaBars className="h-5 w-5" />}
-          </button>
+      <nav className="sticky top-0 z-50 bg-white">
+        {/* Row 1 — slim utility row: menu (mobile) + search/account/wishlist/cart */}
+        <div className="border-b border-neutral-100">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2 sm:px-6">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="text-neutral-600 md:hidden"
+              aria-label="Menu"
+            >
+              {menuOpen ? <FaTimes className="h-5 w-5" /> : <FaBars className="h-5 w-5" />}
+            </button>
 
-          <Link href={base || "/"} className="flex items-center gap-2.5">
+            <div className="hidden text-[11px] uppercase tracking-[0.2em] text-neutral-400 md:block">
+              Aurora Collection
+            </div>
+
+            <div className="flex items-center gap-1 text-neutral-600">
+              <button
+                className="p-2 hover:text-neutral-950 md:hidden"
+                onClick={() => setMobileSearchOpen(true)}
+                aria-label="Search"
+              >
+                <FaSearch className="h-4 w-4" />
+              </button>
+              <div className="hidden md:block">
+                <SearchBox mobileSearchOpen={mobileSearchOpen} setMobileSearchOpen={setMobileSearchOpen} />
+              </div>
+              <div className="hidden md:block">
+                <AccountMenuDesktop />
+              </div>
+              <div className="md:hidden">
+                <AccountMenuMobile topbar />
+              </div>
+              <div className="p-2">
+                <WishlistIcon wishlistCount={wishlistCount} />
+              </div>
+              <div className="p-2">
+                <CartIcon cartCount={cartCount} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2 — centered brand mark */}
+        <div className="mx-auto flex w-full max-w-7xl justify-center px-4 pt-4 sm:px-6">
+          <Link href={base || "/"} className="flex flex-col items-center gap-2">
             {navbar?.brand?.logo && !imgError ? (
               <img
                 src={navbar.brand.logo}
                 alt={navbar?.brand?.name || "Brand"}
-                className="h-8 w-8 rounded-full object-cover"
+                className="h-11 w-11 rounded-full object-cover"
                 onError={() => setImgError(true)}
               />
             ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50">
-                <FaUserCircle className="h-4 w-4 text-neutral-300" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50">
+                <FaUserCircle className="h-5 w-5 text-neutral-300" />
               </div>
             )}
-            <span className="truncate text-lg font-semibold tracking-tight text-neutral-900">
+            <span className="truncate font-serif text-xl tracking-tight text-neutral-950">
               {navbar?.brand?.name?.trim() || ""}
             </span>
           </Link>
+        </div>
 
-          <div className="hidden items-center gap-1 md:flex">
-            {NAV_LINKS.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={shopHref(base, href)}
-                className={`rounded-full px-4 py-1.5 text-xs font-medium uppercase tracking-wider transition ${
-                  isActive(href)
-                    ? "bg-neutral-900 text-white"
-                    : "text-neutral-600 hover:text-amber-600"
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
+        {/* Thin gold accent rule */}
+        <div className="mx-auto mt-3 h-px w-full max-w-7xl bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
 
-          <div className="flex items-center gap-1 text-neutral-700">
-            <button
-              className="p-2 hover:text-amber-600 md:hidden"
-              onClick={() => setMobileSearchOpen(true)}
-              aria-label="Search"
+        {/* Row 3 — centered underline nav */}
+        <div className="hidden justify-center gap-8 px-4 py-3 md:flex">
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={shopHref(base, href)}
+              className={`border-b-2 pb-0.5 text-xs font-medium uppercase tracking-[0.15em] transition ${
+                isActive(href)
+                  ? "border-neutral-950 text-neutral-950"
+                  : "border-transparent text-neutral-400 hover:text-neutral-950"
+              }`}
             >
-              <FaSearch className="h-4 w-4" />
-            </button>
-            <div className="hidden md:block">
-              <SearchBox mobileSearchOpen={mobileSearchOpen} setMobileSearchOpen={setMobileSearchOpen} />
-            </div>
-            <div className="hidden md:block">
-              <AccountMenuDesktop />
-            </div>
-            <div className="md:hidden">
-              <AccountMenuMobile topbar />
-            </div>
-            <div className="p-2">
-              <WishlistIcon wishlistCount={wishlistCount} />
-            </div>
-            <div className="p-2">
-              <CartIcon cartCount={cartCount} />
-            </div>
-          </div>
+              {label}
+            </Link>
+          ))}
         </div>
       </nav>
 
@@ -151,10 +167,10 @@ export default function AuroraNavbar() {
                   key={href}
                   href={shopHref(base, href)}
                   onClick={() => setMenuOpen(false)}
-                  className={`block rounded-lg px-3 py-2.5 text-sm font-medium ${
+                  className={`block border-b border-transparent px-3 py-2.5 text-sm font-medium uppercase tracking-wide ${
                     isActive(href)
-                      ? "bg-neutral-900 text-white"
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? "border-neutral-950 text-neutral-950"
+                      : "text-neutral-500 hover:text-neutral-950"
                   }`}
                 >
                   {label}
@@ -165,27 +181,27 @@ export default function AuroraNavbar() {
         )}
       </AnimatePresence>
 
-      {/* Mobile bottom bar — same functional icons as classic, minimal styling */}
+      {/* Mobile bottom bar — flush, minimal, matches the monochrome + gold-line language */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-white md:hidden">
-        <div className="flex items-center justify-around px-4 py-2 text-neutral-600">
+        <div className="flex items-center justify-around px-4 py-2 text-neutral-500">
           <Link
             href={base || "/"}
-            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/") ? "text-amber-600" : ""}`}
+            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/") ? "text-neutral-950" : ""}`}
           >
             <FaHome className="h-4 w-4" />
             Home
           </Link>
           <Link
             href={shopHref(base, "/categories")}
-            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/categories") ? "text-amber-600" : ""}`}
+            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/categories") ? "text-neutral-950" : ""}`}
           >
             <FaThLarge className="h-4 w-4" />
             Categories
           </Link>
-          <div className={`text-[11px] ${isActive("/wishlist") ? "text-amber-600" : ""}`}>
+          <div className={`text-[11px] ${isActive("/wishlist") ? "text-neutral-950" : ""}`}>
             <WishlistIcon wishlistCount={wishlistCount} mobile />
           </div>
-          <div className={`text-[11px] ${isActive("/cart") ? "text-amber-600" : ""}`}>
+          <div className={`text-[11px] ${isActive("/cart") ? "text-neutral-950" : ""}`}>
             <CartIcon cartCount={cartCount} mobile />
           </div>
         </div>

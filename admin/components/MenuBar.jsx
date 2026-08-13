@@ -2,9 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import AdminHeaderCard from "./AdminHeaderCard";
 
 export default function MenuBar({
@@ -15,16 +12,6 @@ export default function MenuBar({
   collapsed = false,
 }) {
   const pathname = usePathname();
-  const [openSettings, setOpenSettings] = useState(false);
-
-  useEffect(() => {
-    if (pathname && pathname.startsWith("/settings")) setOpenSettings(true);
-  }, [pathname]);
-
-  // Collapse করলে সাবমেনু বন্ধ রাখি, যাতে আইকন-অনলি ভিউ পরিষ্কার থাকে
-  useEffect(() => {
-    if (collapsed) setOpenSettings(false);
-  }, [collapsed]);
 
   return (
     <nav className="flex flex-col h-full">
@@ -40,76 +27,11 @@ export default function MenuBar({
           } flex ${collapsed ? "items-center" : ""}`}
         >
           {items.map(({ icon, label, href }) => {
-            if (label === "Settings") {
-              const parentActive = pathname.startsWith("/settings");
-
-              return (
-                <div key="settings" className="w-full">
-                  <button
-                    onClick={() => setOpenSettings((s) => !s)}
-                    aria-expanded={openSettings}
-                    title={collapsed ? label : undefined}
-                    className={`w-full flex items-center gap-2 py-2 rounded transition ${
-                      collapsed ? "justify-center px-2" : "justify-between px-4"
-                    } ${
-                      parentActive
-                        ? "bg-gray-200 font-semibold text-blue-600"
-                        : "hover:bg-rose-50"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className="flex items-center justify-center w-5 h-5 shrink-0">
-                        {icon}
-                      </span>
-                      {!collapsed && <span>{label}</span>}
-                    </span>
-                    {!collapsed && (
-                      <ChevronDown
-                        className={`transition-transform ${
-                          openSettings ? "rotate-180" : "rotate-0"
-                        }`}
-                      />
-                    )}
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {openSettings && !collapsed && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="mt-1 flex flex-col overflow-hidden"
-                      >
-                        {settingsChildren.map(
-                          ({ icon: cIcon, label: cLabel, href: cHref }) => {
-                            const active = pathname === cHref;
-                            return (
-                              <Link
-                                key={cLabel}
-                                href={cHref}
-                                onClick={onItemClick}
-                                title={cLabel}
-                                className={`flex items-center gap-2 min-w-0 ml-6 px-4 py-2 rounded transition text-sm ${
-                                  active
-                                    ? "bg-rose-50 font-semibold text-rose-600"
-                                    : "hover:bg-rose-50"
-                                }`}
-                              >
-                                {cIcon}
-                                <span className="truncate">{cLabel}</span>
-                              </Link>
-                            );
-                          }
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            }
-
-            const active = pathname === href;
+            const active =
+              href === "/admin/settings"
+                ? pathname === href ||
+                  settingsChildren.some((child) => child.href === pathname)
+                : pathname === href;
             return (
               <Link
                 key={label}

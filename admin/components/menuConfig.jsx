@@ -12,6 +12,7 @@ import {
   Trash2,
   Wallet,
   BadgePercent,
+  CreditCard,
 } from "lucide-react";
 
 export const navItems = [
@@ -22,8 +23,14 @@ export const navItems = [
   },
   { icon: <ShoppingCart size={18} />, label: "Orders", href: "/admin/orders" },
   { icon: <Wallet size={18} />, label: "Payments", href: "/admin/payments" },
+  { icon: <CreditCard size={18} />, label: "Plan", href: "/admin/plan" },
   { icon: <Package size={18} />, label: "Products", href: "/admin/products" },
-  { icon: <BadgePercent size={18} />, label: "Promo Codes", href: "/admin/promos" },
+  {
+    icon: <BadgePercent size={18} />,
+    label: "Promo Codes",
+    href: "/admin/promos",
+    feature: "promo",
+  },
   {
     icon: <ChartBarStacked size={18} />,
     label: "Category",
@@ -46,6 +53,7 @@ export const navItems = [
     icon: <Eye size={18} />,
     label: "Visitor",
     href: "/admin/analytics",
+    feature: "analytics",
   },
 
   { icon: <Trash2 size={18} />, label: "Trash", href: "/admin/trash" },

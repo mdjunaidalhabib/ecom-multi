@@ -51,9 +51,10 @@ const SOCIAL_ICON_MAP = {
   telegram: FaTelegram,
 };
 
-// Aurora: dark, minimal footer — same /api/footer data contract as classic
-// (brand/contact/socialLinks), deliberately different visual language
-// (dark neutral surface, amber accent) for a premium/editorial feel.
+// Aurora: dark, centered editorial footer — same /api/footer data contract
+// as the other themes (brand/contact/socialLinks). Brand block, then all
+// links/contact centered underneath in a single flowing column, separated
+// by thin gold rules — a boutique/magazine-style layout rather than a grid.
 export default function AuroraFooter() {
   const { base } = useShopPath();
   const [data, setData] = useState(null);
@@ -82,57 +83,61 @@ export default function AuroraFooter() {
   const { brand = {}, contact = {}, socialLinks = [] } = data;
 
   return (
-    <footer className="mb-14 bg-neutral-950 px-4 pb-8 pt-14 text-neutral-300 md:mb-0 md:px-12">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              {brand.logo && !imgError ? (
-                <Image
-                  loader={cloudinaryLoader}
-                  src={brand.logo}
-                  alt={brand?.title || "Brand Logo"}
-                  width={40}
-                  height={40}
-                  className="rounded-full object-cover"
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <div className="h-10 w-10 rounded-full bg-neutral-800" />
-              )}
-              <h2 className="text-lg font-semibold tracking-tight text-white">
-                {brand.title || "Brand"}
-              </h2>
-            </div>
-            <p className="text-sm leading-6 text-neutral-400">
-              {brand.about || "Thoughtfully curated products, delivered with care."}
-            </p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              {socialLinks
-                .filter((s) => s.url)
-                .map((social, idx) => {
-                  const Icon = SOCIAL_ICON_MAP[social.platform];
-                  if (!Icon) return null;
-                  return (
-                    <Link
-                      key={idx}
-                      href={shopHref(base, social.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-700 text-neutral-300 transition hover:border-amber-600 hover:text-amber-500"
-                    >
-                      <Icon className="text-sm" />
-                    </Link>
-                  );
-                })}
-            </div>
-          </div>
+    <footer className="mb-14 bg-neutral-950 px-4 pb-10 pt-16 text-neutral-300 md:mb-0 md:px-12">
+      <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+        {/* Brand block — centered */}
+        <div className="flex items-center gap-3">
+          {brand.logo && !imgError ? (
+            <Image
+              loader={cloudinaryLoader}
+              src={brand.logo}
+              alt={brand?.title || "Brand Logo"}
+              width={44}
+              height={44}
+              className="rounded-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="h-11 w-11 rounded-full bg-neutral-800" />
+          )}
+          <h2 className="font-serif text-2xl tracking-tight text-white">
+            {brand.title || "Brand"}
+          </h2>
+        </div>
+        <p className="mt-4 max-w-md text-sm leading-6 text-neutral-400">
+          {brand.about || "Thoughtfully curated products, delivered with care."}
+        </p>
 
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          {socialLinks
+            .filter((s) => s.url)
+            .map((social, idx) => {
+              const Icon = SOCIAL_ICON_MAP[social.platform];
+              if (!Icon) return null;
+              return (
+                <Link
+                  key={idx}
+                  href={shopHref(base, social.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-700 text-neutral-300 transition hover:border-amber-500 hover:text-amber-500"
+                >
+                  <Icon className="text-sm" />
+                </Link>
+              );
+            })}
+        </div>
+
+        {/* Gold rule */}
+        <div className="my-10 h-px w-24 bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
+
+        {/* Links + contact — flowing centered row, wraps on small screens */}
+        <div className="flex flex-wrap items-start justify-center gap-x-14 gap-y-8 text-sm">
           <div>
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-neutral-500">
+            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
               Explore
             </h3>
-            <ul className="space-y-2.5 text-sm">
+            <ul className="space-y-2.5">
               {EXPLORE_LINKS.map((item) => (
                 <li key={item.href}>
                   <Link
@@ -147,10 +152,10 @@ export default function AuroraFooter() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-neutral-500">
+            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
               Support
             </h3>
-            <ul className="space-y-2.5 text-sm">
+            <ul className="space-y-2.5">
               {SUPPORT_LINKS.map((item) => (
                 <li key={item.href}>
                   <Link
@@ -165,14 +170,14 @@ export default function AuroraFooter() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-neutral-500">
+            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
               Contact
             </h3>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-3">
               {contact.phone && (
                 <li className="flex items-center gap-2.5">
                   <FaPhoneAlt className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                  <a href={`tel:${contact.phone}`} className="truncate hover:text-amber-500">
+                  <a href={`tel:${contact.phone}`} className="hover:text-amber-500">
                     {contact.phone}
                   </a>
                 </li>
@@ -180,13 +185,13 @@ export default function AuroraFooter() {
               {contact.email && (
                 <li className="flex items-center gap-2.5">
                   <FaEnvelope className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                  <a href={`mailto:${contact.email}`} className="truncate hover:text-amber-500">
+                  <a href={`mailto:${contact.email}`} className="hover:text-amber-500">
                     {contact.email}
                   </a>
                 </li>
               )}
               {contact.address && (
-                <li className="flex items-start gap-2.5">
+                <li className="flex items-start gap-2.5 text-left">
                   <FaMapMarkerAlt className="mt-1 h-3.5 w-3.5 shrink-0 text-amber-500" />
                   <span className="leading-5">{contact.address}</span>
                 </li>
@@ -195,9 +200,7 @@ export default function AuroraFooter() {
           </div>
         </div>
 
-        <div className="my-8 h-px w-full bg-neutral-800" />
-
-        <div className="flex flex-col items-center justify-between gap-2 text-xs text-neutral-500 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center gap-1.5 text-xs text-neutral-500">
           <p>
             © {new Date().getFullYear()} {brand.title || "Company"}. All Rights Reserved.
           </p>

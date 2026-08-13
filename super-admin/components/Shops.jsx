@@ -34,10 +34,19 @@ const DOMAIN_STATUS_STYLES = {
   failed: { icon: XCircle, className: "text-red-600" },
 };
 
+const PLAN_LABELS = { free: "Free", starter: "Starter", pro: "Pro" };
+const PLAN_STYLES = {
+  free: "bg-gray-100 text-gray-700 border-gray-300",
+  starter: "bg-blue-100 text-blue-700 border-blue-300",
+  pro: "bg-purple-100 text-purple-700 border-purple-300",
+};
+const THEME_LABELS = { classic: "Classic", aurora: "Aurora", terra: "Terra" };
+
 export default function Shops() {
   const [shops, setShops] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [toast, setToast] = useState(null);
+  const [planThemeMap, setPlanThemeMap] = useState({});
 
   const [showModal, setShowModal] = useState(false);
   const [editingShop, setEditingShop] = useState(null); // null = creating new
@@ -79,6 +88,12 @@ export default function Shops() {
 
   useEffect(() => {
     loadShops();
+    // ✅ কোনো শপের branding.theme override না থাকলে effective theme বের
+    // করার জন্য plan-এর default theme mapping লাগে (দেখুন Settings > Themes)
+    fetch("/api/admin/theme-settings")
+      .then((res) => res.json())
+      .then((data) => setPlanThemeMap(data.planThemeMap || {}))
+      .catch(() => {});
   }, []);
 
   // ================== MODAL HELPERS ==================
@@ -411,6 +426,9 @@ export default function Shops() {
             const domainInfo =
               DOMAIN_STATUS_STYLES[shop.domainStatus] || DOMAIN_STATUS_STYLES.pending_dns;
             const DomainIcon = domainInfo.icon;
+            const effectiveTheme =
+              shop.branding?.theme || planThemeMap[shop.plan] || "classic";
+            const themeIsOverridden = !!shop.branding?.theme;
 
             return (
               <div
@@ -431,6 +449,23 @@ export default function Shops() {
                     }`}
                   >
                     {shop.status}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span
+                    className={`text-xs font-semibold px-2 py-1 rounded-full border ${
+                      PLAN_STYLES[shop.plan] || PLAN_STYLES.free
+                    }`}
+                  >
+                    {PLAN_LABELS[shop.plan] || shop.plan} প্ল্যান
+                  </span>
+                  <span
+                    className="text-xs font-semibold px-2 py-1 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200"
+                    title={themeIsOverridden ? "এই শপে নিজস্ব override করা theme" : "প্ল্যানের default theme"}
+                  >
+                    {THEME_LABELS[effectiveTheme] || effectiveTheme} থিম
+                    {themeIsOverridden ? " (override)" : ""}
                   </span>
                 </div>
 

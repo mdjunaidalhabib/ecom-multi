@@ -24,6 +24,37 @@ const platformSettingsSchema = new mongoose.Schema(
       starter: { type: String, enum: ["classic", "aurora", "terra"], default: "classic" },
       pro: { type: String, enum: ["classic", "aurora", "terra"], default: "classic" },
     },
+
+    // Plan → feature access mapping। কোন plan-এ custom domain/analytics/promo
+    // চালু থাকবে, আর নতুন শপ তৈরির সময় maxProducts/maxAdmins-এর default কত
+    // হবে — সবই এখান থেকে super admin নিয়ন্ত্রণ করে (দেখুন
+    // services/planFeatureService.js এবং middlewares/requirePlanFeature.js)।
+    // ⚠️ maxProducts/maxAdmins শুধু *নতুন* শপ তৈরির সময় ডিফল্ট হিসেবে বসে —
+    // আগে থেকে থাকা শপের limits এখান থেকে বদলালে বদলায় না, সেটা প্রতিটা
+    // শপের নিজের এডিট ফর্ম থেকে (Shops পেজ) আলাদাভাবে override করা লাগে।
+    planFeatures: {
+      free: {
+        customDomain: { type: Boolean, default: false },
+        analytics: { type: Boolean, default: false },
+        promo: { type: Boolean, default: false },
+        maxProducts: { type: Number, default: 50 },
+        maxAdmins: { type: Number, default: 1 },
+      },
+      starter: {
+        customDomain: { type: Boolean, default: false },
+        analytics: { type: Boolean, default: true },
+        promo: { type: Boolean, default: true },
+        maxProducts: { type: Number, default: 200 },
+        maxAdmins: { type: Number, default: 2 },
+      },
+      pro: {
+        customDomain: { type: Boolean, default: true },
+        analytics: { type: Boolean, default: true },
+        promo: { type: Boolean, default: true },
+        maxProducts: { type: Number, default: 1000 },
+        maxAdmins: { type: Number, default: 5 },
+      },
+    },
   },
   { timestamps: true },
 );

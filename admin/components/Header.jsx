@@ -8,11 +8,13 @@ import MenuBar from "./MenuBar";
 import LogoutButton from "./LogoutButton";
 import LiveDateTime from "./LiveDateTime";
 import { navItems, settingsChildren } from "./menuConfig";
+import { useShopFeatures, filterByFeature } from "../hooks/useShopFeatures";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [adminName, setAdminName] = useState("");
+  const features = useShopFeatures();
 
   useEffect(() => {
     const loadAdmin = async () => {
@@ -95,8 +97,8 @@ export default function Header() {
               className="fixed top-0 left-0 h-[100dvh] w-64 bg-white shadow-lg z-50 p-4 pb-[env(safe-area-inset-bottom,0px)] overflow-y-auto"
             >
               <MenuBar
-                items={navItems}
-                settingsChildren={settingsChildren}
+                items={filterByFeature(navItems, features)}
+                settingsChildren={filterByFeature(settingsChildren, features)}
                 onItemClick={() => setMenuOpen(false)}
                 vertical={true}
               />

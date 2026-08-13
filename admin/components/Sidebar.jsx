@@ -5,9 +5,11 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import MenuBar from "./MenuBar";
 import { navItems, settingsChildren } from "./menuConfig";
+import { useShopFeatures, filterByFeature } from "../hooks/useShopFeatures";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const features = useShopFeatures();
 
   // Restore collapsed state from previous session
   useEffect(() => {
@@ -39,8 +41,8 @@ export default function Sidebar() {
 
       <div className="flex-1 flex flex-col min-h-0">
         <MenuBar
-          items={navItems}
-          settingsChildren={settingsChildren}
+          items={filterByFeature(navItems, features)}
+          settingsChildren={filterByFeature(settingsChildren, features)}
           vertical={true}
           collapsed={collapsed}
         />

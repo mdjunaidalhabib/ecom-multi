@@ -4,6 +4,7 @@ import Promo from "../../models/Promo.js";
 import PromoRedemption from "../../models/PromoRedemption.js";
 import PromoCustomerUsage from "../../models/PromoCustomerUsage.js";
 import { protect } from "../../middlewares/adminAuthMiddleware.js";
+import { requirePlanFeature } from "../../middlewares/requirePlanFeature.js";
 import { normalizePromoCode } from "../../services/promoService.js";
 import PromoSetting, {
   PROMO_SETTING_KEY,
@@ -16,6 +17,14 @@ import {
 
 const router = express.Router();
 router.use(protect);
+// ✅ Promo/Coupon tools plan-gated — free plan থেকে বন্ধ থাকতে পারে
+// (দেখুন PlatformSettings.planFeatures, super admin Settings > Plan Features থেকে ম্যানেজ করে)
+router.use(
+  requirePlanFeature(
+    "promo",
+    "আপনার বর্তমান প্ল্যানে Promo/Coupon ফিচারটি নেই। প্ল্যান আপগ্রেড করতে সুপারএডমিনের সাথে যোগাযোগ করুন।",
+  ),
+);
 
 const nullableNumber = (value) => {
   if (value === "" || value === null || value === undefined) return null;
