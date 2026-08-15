@@ -2,6 +2,7 @@ import Link from "next/link";
 import ProductCard from "../../../../../../components/home/ProductCard";
 import { serverFetch } from "../../../../../../lib/serverApi";
 import { shopBasePath } from "../../../../../../lib/shopMode";
+import { requireFullStorefront } from "../../../../../../lib/requireFullStorefront";
 
 async function getCategoryData(id) {
   const [catRes, prodRes] = await Promise.allSettled([
@@ -20,6 +21,7 @@ async function getCategoryData(id) {
 
 export default async function CategoryPage({ params }) {
   const { id, shopSlug } = await params;
+  await requireFullStorefront(shopSlug);
   const base = shopBasePath(shopSlug);
   const { category, products } = await getCategoryData(id);
 

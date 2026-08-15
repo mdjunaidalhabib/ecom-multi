@@ -59,6 +59,15 @@ export default function CategoriesPage() {
     [categories],
   );
 
+  const counts = useMemo(
+    () => ({
+      all: categories.length,
+      active: categories.filter((c) => c.isActive).length,
+      hidden: categories.filter((c) => !c.isActive).length,
+    }),
+    [categories],
+  );
+
   // ================== CLOSE MODAL ==================
   const closeModal = () => {
     setShowModal(false);
@@ -186,10 +195,62 @@ export default function CategoriesPage() {
   return (
     <div className="">
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-6">
-        <h1 className="text-2xl font-bold">✨ Categories</h1>
+      <div className="flex flex-col gap-3 mb-6 md:flex-row md:flex-wrap md:items-center">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 shrink-0">
+          ✨ Categories
+        </h1>
 
-        <div className="flex flex-col items-end gap-2 lg:flex-row lg:items-center lg:gap-2 lg:ml-auto">
+        <div className="flex flex-wrap items-center gap-1.5 md:ml-auto">
+          {["all", "active", "hidden"].map((f) => {
+            const active = filter === f;
+            const activeClass =
+              f === "all"
+                ? "bg-indigo-600 text-white border-indigo-600"
+                : f === "active"
+                  ? "bg-green-600 text-white border-green-600"
+                  : "bg-gray-700 text-white border-gray-700";
+            const hoverClass =
+              f === "all"
+                ? "hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400"
+                : f === "active"
+                  ? "hover:border-green-300 dark:hover:border-green-500/40 hover:text-green-600 dark:hover:text-green-400"
+                  : "hover:border-gray-400 dark:hover:border-slate-500 hover:text-gray-800 dark:hover:text-slate-200";
+
+            return (
+              <button
+                key={f}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold capitalize transition-all ${
+                  active
+                    ? `${activeClass} shadow`
+                    : `bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 ${hoverClass}`
+                }`}
+                onClick={() => setFilter(f)}
+              >
+                {f}
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                    active ? "bg-white/20" : "bg-gray-100 dark:bg-slate-700"
+                  }`}
+                >
+                  {counts[f]}
+                </span>
+              </button>
+            );
+          })}
+
+          {categories.length > 0 && (
+            <button
+              onClick={toggleAllCategories}
+              className={`px-2.5 py-1.5 rounded-md border text-xs font-medium leading-none text-white transition-colors ${
+                hasAnyActive
+                  ? "bg-gray-700 border-gray-700 hover:bg-gray-800"
+                  : "bg-green-600 border-green-600 hover:bg-green-700"
+              }`}
+            >
+              {hasAnyActive ? "Hide All" : "Show All"}
+            </button>
+          )}
+
           <button
             onClick={() => {
               setEditId(null);
@@ -201,43 +262,10 @@ export default function CategoriesPage() {
               setIsActive(true);
               setShowModal(true);
             }}
-            className="order-1 lg:order-last bg-indigo-600 text-white shadow font-semibold px-3 py-1.5 rounded-md text-sm hover:bg-indigo-700 active:scale-[0.98] lg:px-4 lg:py-2 lg:rounded-lg"
+            className="px-2.5 py-1.5 rounded-md text-xs font-semibold leading-none bg-indigo-600 text-white shadow hover:bg-indigo-700 active:scale-[0.98] transition-colors"
           >
             + Add Category
           </button>
-
-          <div className="order-2 lg:order-first flex flex-wrap justify-end gap-1.5 lg:gap-2">
-            {["all", "active", "hidden"].map((f) => (
-              <button
-                key={f}
-                className={`px-2.5 py-1.5 rounded-md border text-xs lg:px-4 lg:py-2 lg:text-base lg:rounded-lg capitalize ${
-                  filter === f
-                    ? f === "all"
-                      ? "bg-indigo-600 text-white"
-                      : f === "active"
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-600 text-white"
-                    : "bg-white"
-                }`}
-                onClick={() => setFilter(f)}
-              >
-                {f}
-              </button>
-            ))}
-
-            {categories.length > 0 && (
-              <button
-                onClick={toggleAllCategories}
-                className={`px-2.5 py-1 rounded-md border text-xs font-semibold text-white lg:px-4 lg:py-2 lg:text-base lg:rounded-lg ${
-                  hasAnyActive
-                    ? "bg-gray-700 hover:bg-gray-800"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
-              >
-                {hasAnyActive ? "Hide All" : "Show All"}
-              </button>
-            )}
-          </div>
         </div>
       </div>
 
@@ -245,7 +273,7 @@ export default function CategoriesPage() {
       {pageLoading ? (
         <CategoriesSkeleton />
       ) : filteredCategories.length === 0 ? (
-        <div className="text-center text-gray-500 py-10">
+        <div className="text-center text-gray-500 dark:text-slate-400 py-10">
           No categories found.
         </div>
       ) : (
@@ -255,8 +283,8 @@ export default function CategoriesPage() {
               key={c._id}
               className={`border p-4 rounded-xl flex flex-col items-center shadow-sm ${
                 c.isActive
-                  ? "bg-white"
-                  : "bg-gray-200 border-gray-400 opacity-80"
+                  ? "bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700"
+                  : "bg-gray-200 dark:bg-slate-800 border-gray-400 dark:border-slate-600 opacity-80"
               }`}
             >
               {c.image && (
@@ -267,19 +295,19 @@ export default function CategoriesPage() {
                 />
               )}
               <h2
-                className={`font-semibold ${!c.isActive ? "text-gray-600" : ""}`}
+                className={`font-semibold ${!c.isActive ? "text-gray-600 dark:text-slate-400" : "text-gray-900 dark:text-slate-100"}`}
               >
                 {c.name}
               </h2>
-              <div className="text-sm text-gray-700 mt-1">
+              <div className="text-sm text-gray-700 dark:text-slate-300 mt-1">
                 Serial: <b>{c.order}</b>
               </div>
               <div className="text-sm mt-1">
                 Status:{" "}
                 {c.isActive ? (
-                  <span className="text-green-600 font-semibold">Active</span>
+                  <span className="text-green-600 dark:text-green-400 font-semibold">Active</span>
                 ) : (
-                  <span className="text-gray-600 font-semibold">Hidden</span>
+                  <span className="text-gray-600 dark:text-slate-400 font-semibold">Hidden</span>
                 )}
               </div>
               <div className="mt-3 flex gap-2">
@@ -324,19 +352,19 @@ export default function CategoriesPage() {
       {/* DELETE MODAL */}
       {deleteModal && (
         <>
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-40" />
+          <div className="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-40" />
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 rounded-xl shadow-xl border w-full max-w-sm">
-              <h2 className="text-xl font-bold text-red-600 mb-3">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-xl border border-gray-200 dark:border-slate-700 w-full max-w-sm">
+              <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-3">
                 ⚠ Delete Category
               </h2>
-              <p className="mb-6">
+              <p className="mb-6 text-gray-700 dark:text-slate-300">
                 Delete <b>{deleteModal.name}</b>?
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setDeleteModal(null)}
-                  className="px-4 py-2 border rounded"
+                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded text-gray-700 dark:text-slate-300"
                 >
                   Cancel
                 </button>

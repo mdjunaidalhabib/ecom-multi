@@ -22,12 +22,21 @@ export default function CategoriesSkeleton() {
           background-size: 800px 104px;
           animation: shimmer 1.3s linear infinite;
         }
+        :global(.dark) .shimmer {
+          background: linear-gradient(
+            to right,
+            #1e293b 8%,
+            #334155 18%,
+            #1e293b 33%
+          );
+          background-size: 800px 104px;
+        }
       `}</style>
 
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="border border-gray-200 bg-white rounded-xl p-4 shadow-sm flex flex-col items-center space-y-3"
+          className="border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm flex flex-col items-center space-y-3"
         >
           <div className="w-24 h-24 shimmer rounded-full"></div>
           <div className="w-1/2 h-4 shimmer rounded"></div>

@@ -26,18 +26,29 @@ export default function ProductCard({ product, onEdit, onDelete }) {
   const displayImage = product?.image || "";
   const hasDiscount = !!product?.oldPrice;
 
+  // ✅ Admin-only ক্রয় মূল্য ও profit margin — public API তে costPrice কখনো
+  // আসে না, তাই এখানে undefined হলে ব্লক render করা হয় না।
+  const hasCostPrice =
+    product?.costPrice !== undefined &&
+    product?.costPrice !== null &&
+    product?.costPrice !== "";
+  const costPrice = hasCostPrice ? Number(product.costPrice) : 0;
+  const sellPrice = Number(product?.price || 0);
+  const profit = sellPrice - costPrice;
+  const profitPct = costPrice > 0 ? Math.round((profit / costPrice) * 100) : null;
+
   return (
     <div
       className={`group relative flex flex-col rounded-xl border overflow-hidden transition-all duration-200
         ${
           isHidden
-            ? "bg-gray-50 border-gray-200 opacity-75"
-            : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-md"
+            ? "bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 opacity-75"
+            : "bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 hover:shadow-md"
         }
       `}
     >
       {/* 🖼️ Image */}
-      <div className="relative w-full aspect-square bg-gray-50">
+      <div className="relative w-full aspect-square bg-gray-50 dark:bg-slate-800">
         {displayImage ? (
           <img
             src={displayImage}
@@ -47,7 +58,7 @@ export default function ProductCard({ product, onEdit, onDelete }) {
             `}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs font-medium">
+          <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-slate-600 text-xs font-medium">
             No Image
           </div>
         )}
@@ -70,17 +81,17 @@ export default function ProductCard({ product, onEdit, onDelete }) {
 
         {/* Bottom-left: color variant dots */}
         {totalVariants > 0 && (
-          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-white/85 backdrop-blur-sm px-1.5 py-1 rounded-full shadow-sm">
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm px-1.5 py-1 rounded-full shadow-sm">
             {product.colors.slice(0, 4).map((c, i) => (
               <span
                 key={i}
-                className="w-2.5 h-2.5 rounded-full border border-white ring-1 ring-gray-300"
+                className="w-2.5 h-2.5 rounded-full border border-white dark:border-slate-800 ring-1 ring-gray-300 dark:ring-slate-600"
                 style={{ backgroundColor: c.name?.toLowerCase() }}
                 title={c.name}
               />
             ))}
             {totalVariants > 4 && (
-              <span className="text-[9px] font-bold text-gray-600 pr-0.5">
+              <span className="text-[9px] font-bold text-gray-600 dark:text-slate-400 pr-0.5">
                 +{totalVariants - 4}
               </span>
             )}
@@ -93,17 +104,17 @@ export default function ProductCard({ product, onEdit, onDelete }) {
         {/* Name + Price — same line */}
         <div className="flex items-start justify-between gap-1.5">
           <h2
-            className="font-semibold text-[13px] leading-snug text-gray-900 truncate"
+            className="font-semibold text-[13px] leading-snug text-gray-900 dark:text-slate-100 truncate"
             title={product.name}
           >
             {product.name}
           </h2>
           <div className="flex items-baseline gap-1 shrink-0">
-            <span className="text-sm font-bold text-gray-900">
+            <span className="text-sm font-bold text-gray-900 dark:text-slate-100">
               ৳{product.price}
             </span>
             {hasDiscount && (
-              <span className="text-[10px] line-through text-gray-400">
+              <span className="text-[10px] line-through text-gray-400 dark:text-slate-500">
                 ৳{product.oldPrice}
               </span>
             )}
@@ -111,19 +122,38 @@ export default function ProductCard({ product, onEdit, onDelete }) {
         </div>
 
         {/* Stock + Total Sold */}
-        <div className="flex items-center justify-between text-[10px] text-gray-500">
+        <div className="flex items-center justify-between text-[10px] text-gray-500 dark:text-slate-400">
           <span>স্টক: {totalStock}</span>
           <span>Total Sold: {totalSold}</span>
         </div>
 
+        {/* 🔒 Admin-only ক্রয় মূল্য / প্রফিট — কাস্টমার কখনো দেখতে পাবে না */}
+        {hasCostPrice && (
+          <div className="flex items-center justify-between gap-1 rounded-md border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-1">
+            <span className="flex items-center gap-1 text-[9px] font-semibold text-amber-700 dark:text-amber-400">
+              🔒 ক্রয়: ৳{costPrice}
+            </span>
+            <span
+              className={`text-[9px] font-bold ${
+                profit >= 0
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              লাভ: ৳{profit}
+              {profitPct !== null && <> ({profitPct}%)</>}
+            </span>
+          </div>
+        )}
+
         {/* Variant wise Sold List */}
         {totalVariants > 0 && (
-          <div className="bg-gray-50 border border-gray-100 rounded-md p-1">
+          <div className="bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700/60 rounded-md p-1">
             <div className="flex flex-wrap gap-1">
               {product.colors.map((v, idx) => (
                 <span
                   key={idx}
-                  className="text-[9px] px-1 py-0.5 rounded-full border border-gray-200 bg-white text-gray-700"
+                  className="text-[9px] px-1 py-0.5 rounded-full border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300"
                   title={`${v.name} sold`}
                 >
                   {v.name}: <b>{Number(v?.sold || 0)}</b>
@@ -135,35 +165,35 @@ export default function ProductCard({ product, onEdit, onDelete }) {
 
         {/* Variants count (only, since Serial/Active moved to image) */}
         {totalVariants > 0 && (
-          <span className="self-start px-1.5 py-[1px] rounded-full bg-purple-50 border border-purple-200 text-purple-600 text-[9px] font-medium">
+          <span className="self-start px-1.5 py-[1px] rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-purple-600 dark:text-purple-400 text-[9px] font-medium">
             {totalVariants} Variants
           </span>
         )}
 
         {/* Category + Rating */}
-        <div className="flex items-center justify-between gap-1 text-[10px] text-gray-500">
+        <div className="flex items-center justify-between gap-1 text-[10px] text-gray-500 dark:text-slate-400">
           <span className="flex flex-wrap items-center gap-1 min-w-0">
             {cats.length > 0 ? (
               <>
                 {cats.slice(0, 2).map((c) => (
                   <span
                     key={c._id}
-                    className="font-medium text-gray-700 truncate max-w-[5.5rem]"
+                    className="font-medium text-gray-700 dark:text-slate-300 truncate max-w-[5.5rem]"
                   >
                     {c.name}
                   </span>
                 ))}
                 {cats.length > 2 && (
-                  <span className="font-semibold text-gray-500">
+                  <span className="font-semibold text-gray-500 dark:text-slate-400">
                     +{cats.length - 2}
                   </span>
                 )}
               </>
             ) : (
-              <span className="text-gray-400">ক্যাটাগরি নেই</span>
+              <span className="text-gray-400 dark:text-slate-500">ক্যাটাগরি নেই</span>
             )}
           </span>
-          <span className="flex items-center gap-0.5 shrink-0 text-gray-600 font-medium">
+          <span className="flex items-center gap-0.5 shrink-0 text-gray-600 dark:text-slate-400 font-medium">
             ⭐ {product.rating || 0}
           </span>
         </div>

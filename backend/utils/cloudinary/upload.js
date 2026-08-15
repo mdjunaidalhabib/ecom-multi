@@ -110,4 +110,45 @@ export const teamPhotoUpload = multer({
   },
 });
 
+/* ================== ✅ LANDING PAGE HERO IMAGE UPLOAD ==================
+   INPUT : jpeg/png/webp allowed
+   OUTPUT: controller resizes to fit within 1600×1600 (aspect preserved,
+   NOT force-cropped like product/category images — ad hero images vary
+   widely in shape) under ~250KB WEBP
+================================================== */
+export const landingHeroUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024, files: 5 }, // ✅ input can be larger (server will compress)
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/webp", "image/jpeg", "image/png"];
+    if (!allowed.includes(file.mimetype)) {
+      return cb(
+        new Error("Only jpeg/png/webp allowed (Auto convert to WEBP)"),
+        false
+      );
+    }
+    cb(null, true);
+  },
+});
+
+/* ================== ✅ INVOICE BACKGROUND UPLOAD ==================
+   INPUT : jpeg/png/webp allowed
+   OUTPUT: controller resizes to fit within an A4-ish 1240×1754 box
+   (aspect preserved) under ~300KB WEBP
+================================================== */
+export const invoiceBgUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // ✅ input can be larger (server will compress)
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/webp", "image/jpeg", "image/png"];
+    if (!allowed.includes(file.mimetype)) {
+      return cb(
+        new Error("Only jpeg/png/webp allowed (Auto convert to WEBP)"),
+        false
+      );
+    }
+    cb(null, true);
+  },
+});
+
 export default upload;

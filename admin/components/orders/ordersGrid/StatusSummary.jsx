@@ -9,11 +9,11 @@ export default function StatusSummary({
   statusCount,
 }) {
   return (
-    <div className="sticky top-0 z-30 bg-white border-b px-2 py-2">
+    <div className="sticky top-0 z-30 bg-white dark:bg-slate-900 border-b dark:border-slate-700 px-2 py-2">
       <select
         value={tabStatus}
         onChange={(e) => setTabStatus(e.target.value)}
-        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-bold bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full border border-gray-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm font-bold bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         {/* 'All' অপশন যা সব অর্ডারের সংখ্যা দেখাবে */}
         <option value="">ALL ({orders.length})</option>

@@ -80,14 +80,14 @@ export default function EditOrderModal({
   };
 
   const fieldClass = (hasError) =>
-    `border rounded px-3 py-2 w-full outline-none transition ${
+    `border rounded px-3 py-2 w-full outline-none transition bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${
       hasError
-        ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200"
-        : "border-gray-300 focus:ring-2 focus:ring-green-200"
+        ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/30"
+        : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-500/30"
     }`;
 
   const labelClass = (hasError) =>
-    `block text-sm font-medium mb-1 ${hasError ? "text-red-600" : ""}`;
+    `block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300 ${hasError ? "text-red-600 dark:text-red-400" : ""}`;
 
   const handleSave = async () => {
     setSubmitted(true);
@@ -131,16 +131,16 @@ export default function EditOrderModal({
       )}
 
       <ModalWrapper open={open}>
-        <h2 className="text-xl font-bold text-blue-600 mb-3">✏️ Edit Order</h2>
+        <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3">✏️ Edit Order</h2>
 
         <div className="space-y-3 mb-6">
           {/* Payment */}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
               Payment Method
             </label>
             <select
-              className="border rounded px-3 py-2 w-full"
+              className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded px-3 py-2 w-full"
               value={form.paymentMethod}
               onChange={(e) =>
                 setForm((prev) => ({
@@ -156,11 +156,11 @@ export default function EditOrderModal({
 
           {/* Tracking */}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
               Tracking ID
             </label>
             <input
-              className="border rounded px-3 py-2 w-full"
+              className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded px-3 py-2 w-full"
               value={form.trackingId || ""}
               onChange={(e) =>
                 setForm((prev) => ({
@@ -204,8 +204,8 @@ export default function EditOrderModal({
           )}
 
           {/* Billing */}
-          <div className="border rounded p-3">
-            <p className="font-semibold text-sm mb-2">Customer</p>
+          <div className="border border-gray-300 dark:border-slate-700 rounded p-3">
+            <p className="font-semibold text-sm mb-2 text-gray-900 dark:text-slate-100">Customer</p>
 
             <div className="mb-2">
               <label
@@ -242,7 +242,7 @@ export default function EditOrderModal({
                 onChange={(e) => handleBillingChange("phone", e.target.value)}
               />
               {(submitted || touched.phone) && errors.phone && (
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                   01 দিয়ে শুরু হওয়া 11 ডিজিট নাম্বার দিন
                 </p>
               )}
@@ -278,7 +278,7 @@ export default function EditOrderModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2 border rounded"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
           >
             Cancel
           </button>

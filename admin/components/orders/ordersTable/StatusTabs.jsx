@@ -9,10 +9,10 @@ export default function StatusTabs({ tabStatus, setTabStatus }) {
     <>
       <button
         onClick={() => setTabStatus("")}
-        className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition ${
+        className={`px-3 py-1.5 rounded-full text-sm font-semibold border dark:border-slate-600 transition ${
           tabStatus === ""
-            ? "bg-gray-900 text-white"
-            : "bg-white hover:bg-gray-50"
+            ? "bg-gray-900 dark:bg-slate-700 text-white"
+            : "bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
         }`}
       >
         All
@@ -22,10 +22,10 @@ export default function StatusTabs({ tabStatus, setTabStatus }) {
         <button
           key={s}
           onClick={() => setTabStatus(s)}
-          className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition ${
+          className={`px-3 py-1.5 rounded-full text-sm font-semibold border dark:border-slate-600 transition ${
             tabStatus === s
               ? "bg-blue-600 text-white"
-              : `bg-white hover:bg-gray-50 ${STATUS_TEXT_COLOR[s]}`
+              : `bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 ${STATUS_TEXT_COLOR[s]}`
           }`}
         >
           {STATUS_LABEL[s]}

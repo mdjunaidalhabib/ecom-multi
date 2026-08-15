@@ -29,11 +29,11 @@ export default function LiveDateTime() {
   });
 
   return (
-    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">
-      <Clock size={14} className="text-indigo-500" />
+    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-slate-700">
+      <Clock size={14} className="text-rose-500 dark:text-rose-400" />
       <span>{dateStr}</span>
-      <span className="w-px h-3 bg-slate-300" />
-      <span className="tabular-nums text-slate-700">{timeStr}</span>
+      <span className="w-px h-3 bg-slate-300 dark:bg-slate-600" />
+      <span className="tabular-nums text-slate-700 dark:text-slate-200">{timeStr}</span>
     </div>
   );
 }

@@ -7,31 +7,31 @@ export default function ReviewsSection({
   errors = {},
   setErrors = () => {},
 }) {
-  const base = "w-full border p-2 rounded transition focus:outline-none";
-  const ok = "border-gray-300 focus:ring-2 focus:ring-indigo-200";
-  const err = "border-red-500 focus:ring-2 focus:ring-red-200";
+  const base = "w-full border p-2 rounded transition focus:outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100";
+  const ok = "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-500/30";
+  const err = "border-red-500 dark:border-red-500/60 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/30";
 
   return (
-    <section className="bg-gray-50 rounded-xl p-4 space-y-4">
+    <section className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 space-y-4">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="font-bold">⭐ রিভিউ</h2>
+        <h2 className="font-bold text-gray-900 dark:text-slate-100">⭐ রিভিউ</h2>
         <button
           type="button"
           onClick={addReview}
-          className="text-indigo-600 text-sm font-semibold"
+          className="text-indigo-600 dark:text-indigo-400 text-sm font-semibold"
         >
           + নতুন
         </button>
       </div>
 
       {/* Average Rating */}
-      <div className="bg-white p-3 border rounded">
-        <label className="text-sm font-semibold">Average Rating</label>
+      <div className="bg-white dark:bg-slate-900 p-3 border dark:border-slate-700 rounded">
+        <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">Average Rating</label>
         <input
           value={averageRating}
           disabled
-          className="w-full border bg-gray-100 p-2 rounded mt-1"
+          className="w-full border dark:border-slate-700 bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-slate-100 p-2 rounded mt-1"
         />
       </div>
 
@@ -40,10 +40,10 @@ export default function ReviewsSection({
         const ratingError = errors[`reviewRating_${i}`];
 
         return (
-          <div key={i} className="bg-white p-3 border rounded space-y-3">
+          <div key={i} className="bg-white dark:bg-slate-900 p-3 border dark:border-slate-700 rounded space-y-3">
             {/* Name */}
             <div>
-              <label className="text-xs font-semibold">নাম</label>
+              <label className="text-xs font-semibold text-gray-700 dark:text-slate-300">নাম</label>
               <input
                 value={r.user}
                 placeholder="নাম"
@@ -54,9 +54,9 @@ export default function ReviewsSection({
 
             {/* Rating */}
             <div>
-              <label className="text-xs font-semibold">
-                Rating <span className="text-red-500">*</span>{" "}
-                <span className="text-gray-400">(0 – 5)</span>
+              <label className="text-xs font-semibold text-gray-700 dark:text-slate-300">
+                Rating <span className="text-red-500 dark:text-red-400">*</span>{" "}
+                <span className="text-gray-400 dark:text-slate-500">(0 – 5)</span>
               </label>
               <input
                 type="number"
@@ -109,13 +109,13 @@ export default function ReviewsSection({
               />
 
               {ratingError && (
-                <p className="text-xs text-red-600 mt-1">{ratingError}</p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{ratingError}</p>
               )}
             </div>
 
             {/* Comment */}
             <div>
-              <label className="text-xs font-semibold">Comment</label>
+              <label className="text-xs font-semibold text-gray-700 dark:text-slate-300">Comment</label>
               <textarea
                 value={r.comment}
                 placeholder="Comment"
@@ -130,7 +130,7 @@ export default function ReviewsSection({
             <button
               type="button"
               onClick={() => removeReview(i)}
-              className="text-red-600 text-xs font-semibold"
+              className="text-red-600 dark:text-red-400 text-xs font-semibold"
             >
               Remove
             </button>

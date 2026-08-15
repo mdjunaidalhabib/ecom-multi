@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
   Store,
+  Users,
 } from "lucide-react";
 
 axios.defaults.withCredentials = true;
@@ -19,13 +20,29 @@ axios.defaults.withCredentials = true;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const NOTICE_STORAGE_KEY = "shop_access_notice";
 
+const ACCENT_RGB = "225,29,72"; // rose-600
+
+const softPanel = () =>
+  `radial-gradient(circle at 15% 10%, rgba(${ACCENT_RGB},0.14), transparent 45%), ` +
+  `radial-gradient(circle at 90% 85%, rgba(${ACCENT_RGB},0.12), transparent 45%), ` +
+  `linear-gradient(160deg, #ffffff 0%, #fff5f6 45%, rgba(${ACCENT_RGB},0.08) 100%)`;
+
 const FEATURES = [
   { icon: ShieldCheck, label: "পুরো প্ল্যাটফর্মের নিরাপদ নিয়ন্ত্রণ" },
   { icon: Store, label: "সব শপ ও অ্যাডমিন এক জায়গায় পরিচালনা" },
   { icon: Sparkles, label: "রিয়েল-টাইম মনিটরিং ও ইনসাইট" },
 ];
 
+const ORBIT_ICONS = [
+  { icon: Store, className: "left-0 top-2" },
+  { icon: Users, className: "right-0 top-8" },
+  { icon: Sparkles, className: "bottom-6 left-6" },
+  { icon: ShieldCheck, className: "bottom-0 right-8" },
+];
+
 export default function LoginPortal({ title, subtitle, endpoint, successPath }) {
+  const panelBg = softPanel();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -88,23 +105,24 @@ export default function LoginPortal({ title, subtitle, endpoint, successPath }) 
   };
 
   return (
-    <main className="flex min-h-screen bg-slate-50">
+    <main className="relative flex min-h-screen bg-slate-50">
       {/* Left brand panel */}
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden border-r border-slate-200 bg-gradient-to-br from-orange-50 via-white to-slate-50 p-12 lg:flex">
-        <div className="pointer-events-none absolute -top-28 -left-28 h-96 w-96 rounded-full bg-[#f75605]/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-[#f75605]/10 blur-3xl" />
+      <div
+        className="relative hidden w-1/2 flex-col justify-between overflow-hidden p-12 text-slate-900 lg:flex"
+        style={{ background: panelBg }}
+      >
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.4]"
+          className="pointer-events-none absolute inset-0 opacity-[0.5]"
           style={{
             backgroundImage:
-              "radial-gradient(circle, #f7560522 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
+              "radial-gradient(circle, rgba(15,23,42,0.05) 1px, transparent 1px)",
+            backgroundSize: "26px 26px",
           }}
         />
 
         <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f75605] shadow-sm shadow-[#f75605]/30">
-            <ShieldCheck size={22} className="text-white" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-md shadow-slate-900/5">
+            <ShieldCheck size={22} className="text-rose-600" />
           </div>
           <span className="text-lg font-semibold tracking-wide text-slate-800">
             Super Admin Portal
@@ -115,27 +133,53 @@ export default function LoginPortal({ title, subtitle, endpoint, successPath }) 
           <h2 className="text-3xl font-bold leading-snug text-slate-900">
             পুরো প্ল্যাটফর্ম, একই ড্যাশবোর্ডে।
           </h2>
-          <p className="mt-3 max-w-sm text-sm text-slate-500">
+          <p className="mt-3 max-w-sm text-sm text-slate-600">
             সব শপ, অ্যাডমিন ও কার্যক্রম এক জায়গা থেকে সহজে তদারকি ও
             নিয়ন্ত্রণ করুন।
           </p>
 
-          <ul className="mt-8 space-y-3">
-            {FEATURES.map(({ icon: Icon, label }) => (
-              <li
-                key={label}
-                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm shadow-sm backdrop-blur-sm"
+          {/* Decorative orbit illustration — brand mark, not real data */}
+          <div className="relative mx-auto mt-10 h-56 w-56">
+            <div
+              className="absolute inset-0 rounded-full border border-dashed"
+              style={{ borderColor: `rgba(${ACCENT_RGB},0.35)` }}
+            />
+            <div
+              className="absolute -inset-8 rounded-full border border-dashed"
+              style={{ borderColor: `rgba(${ACCENT_RGB},0.18)` }}
+            />
+
+            <div
+              className="absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-xl"
+              style={{ boxShadow: `0 20px 45px -15px rgba(${ACCENT_RGB},0.45)` }}
+            >
+              <ShieldCheck size={34} className="text-rose-600" />
+            </div>
+
+            {ORBIT_ICONS.map(({ icon: Icon, className }, index) => (
+              <div
+                key={index}
+                className={`absolute flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-lg ${className}`}
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f75605]/10 text-[#f75605]">
-                  <Icon size={16} />
-                </span>
-                <span className="text-slate-700">{label}</span>
-              </li>
+                <Icon size={18} className="text-rose-600" />
+              </div>
             ))}
-          </ul>
+          </div>
+
+          <div className="mt-8 flex flex-wrap justify-center gap-2">
+            {FEATURES.map(({ icon: Icon, label }) => (
+              <span
+                key={label}
+                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs text-slate-700 shadow-sm backdrop-blur-sm"
+              >
+                <Icon size={13} className="text-rose-600" />
+                {label}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <p className="relative text-xs text-slate-400">
+        <p className="relative text-xs text-slate-500">
           © {new Date().getFullYear()} Super Admin Portal. সর্বস্বত্ব সংরক্ষিত।
         </p>
       </div>
@@ -147,9 +191,7 @@ export default function LoginPortal({ title, subtitle, endpoint, successPath }) 
           className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-900/5 sm:p-9"
         >
           <div className="mb-7 text-center">
-            <div
-              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f75605] text-white shadow-lg lg:hidden"
-            >
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-600 text-white shadow-lg lg:hidden">
               <ShieldCheck size={28} />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
@@ -198,7 +240,7 @@ export default function LoginPortal({ title, subtitle, endpoint, successPath }) 
               type="email"
               autoComplete="email"
               placeholder="you@example.com"
-              className="w-full rounded-lg border border-gray-300 p-3 pl-10 outline-none transition focus:border-[#f75605] focus:ring-4 focus:ring-[#f75605]/20"
+              className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 p-3 pl-10 outline-none transition focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
@@ -217,7 +259,7 @@ export default function LoginPortal({ title, subtitle, endpoint, successPath }) 
               type={showPass ? "text" : "password"}
               autoComplete="current-password"
               placeholder="••••••••"
-              className="w-full rounded-lg border border-gray-300 p-3 pl-10 pr-11 outline-none transition focus:border-[#f75605] focus:ring-4 focus:ring-[#f75605]/20"
+              className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 p-3 pl-10 pr-11 outline-none transition focus:border-rose-500 focus:ring-4 focus:ring-rose-500/20"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
@@ -235,7 +277,7 @@ export default function LoginPortal({ title, subtitle, endpoint, successPath }) 
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#f75605] py-3 font-semibold text-white shadow-md transition hover:bg-[#df4c02] active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-400"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 py-3 font-semibold text-white shadow-md transition active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-400"
           >
             {loading && <Loader2 className="animate-spin" size={18} />}
             {loading ? "Logging in..." : "Login"}

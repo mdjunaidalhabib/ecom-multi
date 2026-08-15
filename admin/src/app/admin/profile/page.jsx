@@ -40,8 +40,8 @@ export default function AdminProfilePage() {
   // ✅ Skeleton while loading
   if (loading) return <AdminProfileSkeleton />;
 
-  if (error) return <div className="p-6 text-red-500">{error}</div>;
-  if (!admin) return <div className="p-6">No admin found</div>;
+  if (error) return <div className="p-6 text-red-500 dark:text-red-400">{error}</div>;
+  if (!admin) return <div className="p-6 text-gray-900 dark:text-slate-100">No admin found</div>;
 
   const locationText = admin.lastLoginLocation
     ? [
@@ -56,30 +56,30 @@ export default function AdminProfilePage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       {/* ✅ Header (Desktop same, Mobile compact like sidebar + name/email centered) */}
-      <div className="bg-white shadow rounded-2xl p-5">
+      <div className="bg-white dark:bg-slate-900 shadow rounded-2xl p-5">
         <div className="flex items-start justify-between gap-4 sm:items-center sm:justify-start sm:gap-4">
           {/* Avatar */}
           <img
-            src={admin.avatar || "/default-avatar.png"}
+            src={admin.avatar || "/default-avatar.svg"}
             alt="avatar"
-            className="w-20 h-20 rounded-full object-cover border shrink-0"
+            className="w-20 h-20 rounded-full object-cover border border-gray-200 dark:border-slate-700 shrink-0"
           />
 
           {/* ✅ Desktop text block (name/email centered) */}
           <div className="hidden sm:block flex-1 text-center">
-            <h1 className="text-2xl font-bold">{admin.name}</h1>
-            <p className="text-gray-600">{admin.email}</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{admin.name}</h1>
+            <p className="text-gray-600 dark:text-slate-400">{admin.email}</p>
 
             <div className="mt-1 flex gap-2 text-sm justify-center">
-              <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-violet-50 text-violet-700 border border-violet-200">
+              <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20">
                 Role: Super Admin
               </span>
 
               <span
                 className={`px-2 py-0.5 rounded ${
                   admin.status === "suspended"
-                    ? "bg-red-100 text-red-700"
-                    : "bg-green-100 text-green-700"
+                    ? "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"
+                    : "bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400"
                 }`}
               >
                 {admin.status || "active"}
@@ -89,15 +89,15 @@ export default function AdminProfilePage() {
 
           {/* ✅ Mobile right-side badges */}
           <div className="flex flex-col items-end gap-1 sm:hidden">
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 text-violet-700 border border-violet-200">
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20">
               Role: Super Admin
             </span>
 
             <span
               className={`px-2 py-0.5 rounded text-[11px] font-medium ${
                 admin.status === "suspended"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-green-100 text-green-700"
+                  ? "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"
+                  : "bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400"
               }`}
             >
               {admin.status || "active"}
@@ -107,8 +107,8 @@ export default function AdminProfilePage() {
 
         {/* ✅ Mobile full width name/email center */}
         <div className="mt-3 sm:hidden text-center">
-          <h1 className="text-xl font-bold truncate">{admin.name}</h1>
-          <p className="text-sm text-gray-600 truncate">{admin.email}</p>
+          <h1 className="text-xl font-bold truncate text-gray-900 dark:text-slate-100">{admin.name}</h1>
+          <p className="text-sm text-gray-600 dark:text-slate-400 truncate">{admin.email}</p>
         </div>
       </div>
 
@@ -129,7 +129,7 @@ export default function AdminProfilePage() {
       </div>
 
       {/* Body */}
-      <div className="mt-4 bg-white shadow rounded-2xl p-6">
+      <div className="mt-4 bg-white dark:bg-slate-900 shadow rounded-2xl p-6">
         {tab === "view" && (
           <div className="grid md:grid-cols-2 gap-4 text-sm">
             <Info label="Name" value={admin.name} />
@@ -182,7 +182,9 @@ function TabButton({ active, children, ...props }) {
     <button
       {...props}
       className={`px-4 py-2 rounded-xl text-sm font-medium ${
-        active ? "bg-black text-white" : "bg-gray-100 hover:bg-gray-200"
+        active
+          ? "bg-black dark:bg-slate-700 text-white"
+          : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700"
       }`}
     >
       {children}
@@ -192,9 +194,9 @@ function TabButton({ active, children, ...props }) {
 
 function Info({ label, value }) {
   return (
-    <div className="bg-gray-50 rounded-xl p-3">
-      <p className="text-gray-500">{label}</p>
-      <p className="font-medium break-words">{value}</p>
+    <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-3">
+      <p className="text-gray-500 dark:text-slate-400">{label}</p>
+      <p className="font-medium break-words text-gray-900 dark:text-slate-200">{value}</p>
     </div>
   );
 }

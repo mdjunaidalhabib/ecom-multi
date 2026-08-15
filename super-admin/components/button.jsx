@@ -17,14 +17,14 @@ const baseStyles =
 
 
 const variantStyles = {
-default: "bg-gray-900 text-white hover:bg-gray-800 focus-visible:ring-gray-900",
+default: "bg-gray-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-gray-800 dark:hover:bg-white focus-visible:ring-gray-900 dark:focus-visible:ring-slate-100",
 secondary:
-"bg-gray-100 text-gray-900 hover:bg-gray-200 focus-visible:ring-gray-300",
+"bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-slate-100 hover:bg-gray-200 dark:hover:bg-slate-700 focus-visible:ring-gray-300 dark:focus-visible:ring-slate-600",
 outline:
-"border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 focus-visible:ring-gray-300",
-ghost: "bg-transparent hover:bg-gray-100 text-gray-900",
+"border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 hover:bg-gray-50 dark:hover:bg-slate-800 focus-visible:ring-gray-300 dark:focus-visible:ring-slate-600",
+ghost: "bg-transparent hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-100",
 destructive: "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-600",
-link: "bg-transparent underline-offset-4 hover:underline text-blue-600",
+link: "bg-transparent underline-offset-4 hover:underline text-rose-600 dark:text-rose-400",
 };
 
 

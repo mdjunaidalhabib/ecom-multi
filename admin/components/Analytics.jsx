@@ -26,14 +26,14 @@ const Dashboard = () => {
   }, [API_URL]);
 
   if (upgradeMessage)
-    return <div className="p-10 text-center text-lg text-gray-600">{upgradeMessage}</div>;
+    return <div className="p-10 text-center text-lg text-gray-600 dark:text-slate-400">{upgradeMessage}</div>;
 
   if (!data)
-    return <div className="p-10 text-center text-lg">Loading analytics...</div>;
+    return <div className="p-10 text-center text-lg text-gray-900 dark:text-slate-100">Loading analytics...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-3xl font-bold mb-10">📊 Visitor Dashboard</h1>
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 p-8">
+      <h1 className="text-3xl font-bold mb-10 text-gray-900 dark:text-slate-100">📊 Visitor Dashboard</h1>
 
       {/* MAIN STATS */}
       <div className="grid md:grid-cols-4 gap-6">

@@ -1,15 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, Store } from "lucide-react";
 
 import MenuBar from "./MenuBar";
 import { navItems, settingsChildren } from "./menuConfig";
-import { useShopFeatures, filterByFeature } from "../hooks/useShopFeatures";
+import {
+  useShopFeatures,
+  filterByFeature,
+  filterByRole,
+  filterByPermission,
+} from "../hooks/useShopFeatures";
+import { useCurrentAdmin } from "../hooks/useCurrentAdmin";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const features = useShopFeatures();
+  const admin = useCurrentAdmin();
 
   // Restore collapsed state from previous session
   useEffect(() => {
@@ -25,24 +32,57 @@ export default function Sidebar() {
     });
   };
 
-  const asideClass = `hidden md:flex flex-col h-screen bg-white shadow-lg relative transition-all duration-300 ${
-    collapsed ? "w-16 p-3" : "w-60 p-4"
+  const asideClass = `hidden md:flex flex-col h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 shadow-xl transition-all duration-300 ${
+    collapsed ? "w-16 p-3" : "w-64 p-4"
   }`;
 
   return (
     <aside className={asideClass}>
-      <button
-        onClick={toggleCollapsed}
-        title={collapsed ? "সাইডবার বড় করুন" : "সাইডবার ছোট করুন"}
-        className="absolute -right-3.5 top-9 z-20 flex items-center justify-center w-7 h-7 rounded-full bg-white border border-gray-300 shadow-md text-gray-600 hover:text-white hover:bg-rose-500 hover:border-rose-500 transition-colors"
+      {/* ✅ Brand + collapse toggle — সাইডবারের ভেতরেই থাকে, বাইরে বেরোয় না */}
+      <div
+        className={`flex items-center shrink-0 ${
+          collapsed ? "flex-col gap-2 pb-3" : "justify-between gap-2 px-1 pb-4"
+        }`}
       >
-        {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-950/50">
+            <Store size={18} className="text-white" />
+          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-white leading-tight truncate">
+                Shop Console
+              </p>
+              <p className="text-[11px] text-slate-500 leading-tight">
+                Admin Panel
+              </p>
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={toggleCollapsed}
+          title={collapsed ? "সাইডবার বড় করুন" : "সাইডবার ছোট করুন"}
+          className="flex items-center justify-center h-7 w-7 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 shrink-0"
+        >
+          <ChevronLeft
+            size={16}
+            className={`transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
+      <div className="mx-1 border-b border-white/10" />
 
       <div className="flex-1 flex flex-col min-h-0">
         <MenuBar
-          items={filterByFeature(navItems, features)}
-          settingsChildren={filterByFeature(settingsChildren, features)}
+          items={filterByPermission(
+            filterByRole(filterByFeature(navItems, features), admin?.role),
+            admin,
+          )}
+          settingsChildren={filterByPermission(
+            filterByRole(filterByFeature(settingsChildren, features), admin?.role),
+            admin,
+          )}
           vertical={true}
           collapsed={collapsed}
         />

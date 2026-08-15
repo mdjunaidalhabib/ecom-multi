@@ -1,6 +1,7 @@
 import { CartProvider } from "../../../../context/CartContext";
 import { UserProvider } from "../../../../context/UserContext";
 import FloatingActionButton from "../../../../components/home/FloatingActionButton";
+import StorefrontChrome from "../../../../components/StorefrontChrome";
 import { getShopInfo } from "../../../../lib/serverApi";
 import { getTheme } from "../../../../lib/themeRegistry";
 
@@ -44,12 +45,14 @@ export default async function ShopLayout({ children }) {
   return (
     <UserProvider>
       <CartProvider>
-        <Navbar />
-        <main className={`flex-grow ${mainClassName}`}>
-          <div className="mx-auto w-full">{children}</div>
-        </main>
-        <Footer />
-        <FloatingActionButton />
+        <StorefrontChrome
+          navbar={<Navbar />}
+          footer={<Footer />}
+          floatingActionButton={<FloatingActionButton />}
+          mainClassName={mainClassName}
+        >
+          {children}
+        </StorefrontChrome>
       </CartProvider>
     </UserProvider>
   );

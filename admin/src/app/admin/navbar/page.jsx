@@ -121,7 +121,7 @@ export default function NavbarAdminPanel() {
           value={tempItem ?? ""}
           onChange={(e) => setTempItem(e.target.value)}
           placeholder="Set value..."
-          className="flex-1 p-2 border rounded"
+          className="flex-1 p-2 border rounded dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
           disabled={saving}
         />
 
@@ -157,7 +157,7 @@ export default function NavbarAdminPanel() {
       </>
     ) : (
       <>
-        <p className="flex-1">
+        <p className="flex-1 text-gray-700 dark:text-slate-300">
           <strong>{field}:</strong> {value || "Not set"}
         </p>
 
@@ -193,7 +193,7 @@ export default function NavbarAdminPanel() {
     );
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded shadow space-y-6">
+    <div className="max-w-2xl mx-auto p-6 bg-white dark:bg-slate-900 rounded shadow space-y-6 transition-colors">
       <Toaster
         position="top-right"
         toastOptions={{
@@ -218,13 +218,13 @@ export default function NavbarAdminPanel() {
         }}
       />
 
-      <h2 className="text-xl font-bold">🛠 Navbar Admin Panel</h2>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">🛠 Navbar Admin Panel</h2>
 
       {/* BRAND INFO */}
-      <div className="space-y-2 border p-3 rounded">
-        <h3 className="font-semibold">Brand Info</h3>
+      <div className="space-y-2 border dark:border-slate-700 p-3 rounded">
+        <h3 className="font-semibold text-gray-900 dark:text-slate-100">Brand Info</h3>
 
-        <div className="flex justify-between items-center gap-4 border-b py-1">
+        <div className="flex justify-between items-center gap-4 border-b dark:border-slate-700 py-1">
           {renderFieldEditor("brand", "name", navbar.brand?.name || "")}
         </div>
 
@@ -236,7 +236,7 @@ export default function NavbarAdminPanel() {
               <img
                 src={navbar.brand.logo}
                 alt="Logo"
-                className="h-16 rounded border"
+                className="h-16 rounded border dark:border-slate-700"
               />
               <button
                 disabled={saving}
@@ -263,7 +263,7 @@ export default function NavbarAdminPanel() {
       </div>
 
       {saving && (
-        <p className="text-sm text-gray-500 italic">Saving changes...</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 italic">Saving changes...</p>
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import HeaderSerialStatus from "./HeaderSerialStatus";
 import BasicInfoCategory from "./BasicInfoCategory";
 import VariantSection from "./VariantSection";
 import ReviewsSection from "./ReviewsSection";
+import { useShopFeatures } from "../../hooks/useShopFeatures";
 
 const normalizeCategories = (categories) =>
   Array.isArray(categories)
@@ -45,6 +46,12 @@ export default function ProductForm({
   const [variantMode, setVariantMode] = useState("default");
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
+  const shopFeatures = useShopFeatures();
+  // ✅ fullStorefront:false (landing-page-only প্ল্যান) শপে ক্যাটাগরি
+  // বাধ্যতামূলক না — backend স্বয়ংক্রিয়ভাবে hidden default category বসিয়ে
+  // দেয় (দেখুন product.controller.js#createProduct)। features লোড হওয়ার
+  // আগে (null) নিরাপদ ডিফল্ট হিসেবে true ধরা হচ্ছে।
+  const fullStorefront = shopFeatures?.fullStorefront !== false;
   const [homeBadges, setHomeBadges] = useState([]);
 
   // drafts (mode switch data safe)
@@ -68,6 +75,7 @@ export default function ProductForm({
     freeDelivery: false,
     bestDiscount: false,
     cartvanBox: false,
+    costPrice: "",
     variants: [EMPTY_DEFAULT_VARIANT],
     reviews: [],
   });
@@ -111,6 +119,7 @@ export default function ProductForm({
       freeDelivery: !!f?.freeDelivery,
       bestDiscount: !!f?.bestDiscount,
       cartvanBox: !!f?.cartvanBox,
+      costPrice: f?.costPrice ?? "",
       variants: safeVariants,
       reviews: safeReviews,
     };
@@ -182,6 +191,7 @@ export default function ProductForm({
         freeDelivery: false,
         bestDiscount: false,
         cartvanBox: false,
+        costPrice: "",
         variants: [{ ...EMPTY_DEFAULT_VARIANT }],
         reviews: [],
       });
@@ -230,6 +240,7 @@ export default function ProductForm({
         freeDelivery: product.freeDelivery ?? false,
         bestDiscount: product.bestDiscount ?? false,
         cartvanBox: product.cartvanBox ?? false,
+        costPrice: product.costPrice ?? "",
         variants: mappedVariants,
         reviews: product.reviews || [],
       });
@@ -265,6 +276,7 @@ export default function ProductForm({
       freeDelivery: product.freeDelivery ?? false,
       bestDiscount: product.bestDiscount ?? false,
       cartvanBox: product.cartvanBox ?? false,
+      costPrice: product.costPrice ?? "",
       variants: [base],
       reviews: product.reviews || [],
     });
@@ -294,7 +306,10 @@ export default function ProductForm({
   const validateForm = () => {
     const e = {};
     if (!form.name?.trim()) e.name = "প্রোডাক্ট নাম দিতে হবে";
-    if (!Array.isArray(form.categories) || form.categories.length === 0)
+    if (
+      fullStorefront &&
+      (!Array.isArray(form.categories) || form.categories.length === 0)
+    )
       e.categories = "ক্যাটাগরি নির্বাচন করুন";
 
     const list = Array.isArray(form.variants) ? form.variants : [];
@@ -387,7 +402,12 @@ export default function ProductForm({
     try {
       const formData = new FormData();
       formData.append("name", form.name);
-      formData.append("categories", JSON.stringify(form.categories || []));
+      // ✅ fullStorefront:false শপে categories ফিল্ডটাই পাঠানো হয় না, তাই
+      // updateProduct-এর `if (categories !== undefined)` ব্লক স্কিপ হয়ে
+      // প্রোডাক্টের আগে থেকে বসানো hidden default category অক্ষত থাকে
+      if (fullStorefront) {
+        formData.append("categories", JSON.stringify(form.categories || []));
+      }
       formData.append("description", form.description || "");
       formData.append("additionalInfo", form.additionalInfo || "");
       formData.append("order", String(form.order));
@@ -395,6 +415,12 @@ export default function ProductForm({
       formData.append("freeDelivery", form.freeDelivery ? "true" : "false");
       formData.append("bestDiscount", form.bestDiscount ? "true" : "false");
       formData.append("cartvanBox", form.cartvanBox ? "true" : "false");
+      formData.append(
+        "costPrice",
+        form.costPrice !== "" && form.costPrice !== null && form.costPrice !== undefined
+          ? String(form.costPrice)
+          : "",
+      );
       formData.append("rating", String(averageRating));
       formData.append("reviews", JSON.stringify(form.reviews || []));
 
@@ -480,20 +506,20 @@ export default function ProductForm({
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
       <form
         onSubmit={handleSubmit}
-        className="relative bg-white rounded-2xl w-full max-w-5xl max-h-[98vh] overflow-y-auto shadow-xl"
+        className="relative bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl max-h-[98vh] overflow-y-auto shadow-xl"
       >
         {/* Sticky header */}
-        <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b">
+        <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b dark:border-slate-700">
           <div className="flex items-center justify-between px-6 py-3">
-            <div className="text-sm font-bold text-gray-700 flex items-center gap-2">
+            <div className="text-sm font-bold text-gray-700 dark:text-slate-300 flex items-center gap-2">
               {product ? "✏️ Edit Product" : "➕ Add Product"}
               {!isDirty && (
-                <span className="text-[11px] font-semibold text-gray-400">
+                <span className="text-[11px] font-semibold text-gray-400 dark:text-slate-500">
                   (No changes)
                 </span>
               )}
               {!filesReady && (
-                <span className="text-[11px] font-semibold text-orange-500">
+                <span className="text-[11px] font-semibold text-orange-500 dark:text-orange-400">
                   (Images loading…)
                 </span>
               )}
@@ -504,10 +530,10 @@ export default function ProductForm({
                 type="button"
                 onClick={onClose}
                 disabled={processing}
-                className={`px-4 py-2 rounded-xl font-bold text-sm border bg-white active:scale-[0.99] ${
+                className={`px-4 py-2 rounded-xl font-bold text-sm border dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 active:scale-[0.99] ${
                   processing
                     ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-gray-50"
+                    : "hover:bg-gray-50 dark:hover:bg-slate-700"
                 }`}
               >
                 ✖ Cancel
@@ -518,7 +544,7 @@ export default function ProductForm({
                 disabled={processing || !filesReady || !isDirty}
                 className={`px-5 py-2 rounded-xl text-white font-bold text-sm transition-all ${
                   processing || !filesReady || !isDirty
-                    ? "bg-gray-400 cursor-not-allowed"
+                    ? "bg-gray-400 dark:bg-slate-600 cursor-not-allowed"
                     : "bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99]"
                 }`}
               >
@@ -538,10 +564,10 @@ export default function ProductForm({
 
         <div className="relative">
           {processing && (
-            <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/60 backdrop-blur-[2px] rounded-b-2xl cursor-not-allowed">
+            <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/60 dark:bg-slate-900/70 backdrop-blur-[2px] rounded-b-2xl cursor-not-allowed">
               <div className="flex flex-col items-center gap-2">
                 <div className="h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm font-bold text-indigo-700">
+                <span className="text-sm font-bold text-indigo-700 dark:text-indigo-400">
                   প্রসেসিং হচ্ছে... অপেক্ষা করুন
                 </span>
               </div>
@@ -561,16 +587,16 @@ export default function ProductForm({
           />
 
           {/* ✅ Offer Badge Options */}
-          <div className="bg-gray-50 border rounded-xl p-4">
+          <div className="bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-bold text-gray-700">
+              <p className="text-sm font-bold text-gray-700 dark:text-slate-300">
                 🏷️ Offer Badge
               </p>
               <a
                 href="/admin/home-badges"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-indigo-600 hover:underline"
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
               >
                 নাম/আইকন এডিট করুন →
               </a>
@@ -585,7 +611,7 @@ export default function ProductForm({
                   }
                   className="w-4 h-4 accent-orange-500"
                 />
-                <span className="text-sm font-medium text-orange-600">
+                <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
                   🚚 {getBadgeLabel("freeDelivery", "Free Delivery")}
                 </span>
               </label>
@@ -599,7 +625,7 @@ export default function ProductForm({
                   }
                   className="w-4 h-4 accent-blue-500"
                 />
-                <span className="text-sm font-medium text-blue-600">
+                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                   🛍️ {getBadgeLabel("bestDiscount", "Best Discount")}
                 </span>
               </label>
@@ -613,7 +639,7 @@ export default function ProductForm({
                   }
                   className="w-4 h-4 accent-rose-500"
                 />
-                <span className="text-sm font-medium text-rose-600">
+                <span className="text-sm font-medium text-rose-600 dark:text-rose-400">
                   🎁 {getBadgeLabel("cartvanBox", "Gift Box")}
                 </span>
               </label>
@@ -626,16 +652,17 @@ export default function ProductForm({
             categories={categories}
             errors={errors}
             setErrors={setErrors}
+            fullStorefront={fullStorefront}
           />
 
-          <div className="flex p-1 bg-gray-100 rounded-xl w-fit border">
+          <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-xl w-fit border dark:border-slate-700">
             <button
               type="button"
               onClick={handleDefaultMode}
               className={`px-8 py-2.5 rounded-lg font-bold text-sm transition-all ${
                 variantMode === "default"
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-gray-500"
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-gray-500 dark:text-slate-400"
               }`}
             >
               Default Mode
@@ -647,7 +674,7 @@ export default function ProductForm({
               className={`px-8 py-2.5 rounded-lg font-bold text-sm transition-all ${
                 variantMode === "variant"
                   ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-gray-500"
+                  : "text-gray-500 dark:text-slate-400"
               }`}
             >
               Enable Variants

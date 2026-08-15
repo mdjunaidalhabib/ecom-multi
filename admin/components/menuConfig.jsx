@@ -5,7 +5,6 @@ import {
   ShoppingCart,
   ChartBarStacked,
   SlidersHorizontal,
-  User,
   Eye,
   Settings,
   LayoutDashboard,
@@ -13,52 +12,125 @@ import {
   Wallet,
   BadgePercent,
   CreditCard,
+  UserCog,
+  Megaphone,
+  FileText,
 } from "lucide-react";
 
+// ✅ প্রতিটা আইটেমে `section` — Sidebar/mobile drawer এ এই কী অনুযায়ী গ্রুপ
+// করে দেখানো হয় (উপরে ছোট uppercase লেবেল সহ), দেখুন MenuBar.jsx।
 export const navItems = [
   {
     icon: <CircleGauge size={18} />,
     label: "Dashboard",
     href: "/admin/dashboard",
+    section: "Overview",
   },
-  { icon: <ShoppingCart size={18} />, label: "Orders", href: "/admin/orders" },
-  { icon: <Wallet size={18} />, label: "Payments", href: "/admin/payments" },
-  { icon: <CreditCard size={18} />, label: "Plan", href: "/admin/plan" },
-  { icon: <Package size={18} />, label: "Products", href: "/admin/products" },
+  {
+    icon: <ShoppingCart size={18} />,
+    label: "Orders",
+    href: "/admin/orders",
+    permission: "orders",
+    section: "Sales",
+  },
+  {
+    icon: <Wallet size={18} />,
+    label: "Payments",
+    href: "/admin/payments",
+    feature: "payment",
+    permission: "payments",
+    section: "Sales",
+  },
   {
     icon: <BadgePercent size={18} />,
     label: "Promo Codes",
     href: "/admin/promos",
     feature: "promo",
+    permission: "promos",
+    section: "Sales",
+  },
+  {
+    icon: <CreditCard size={18} />,
+    label: "Plan",
+    href: "/admin/plan",
+    permission: "plan",
+    section: "Sales",
+  },
+  {
+    icon: <FileText size={18} />,
+    label: "Invoice Design",
+    href: "/admin/invoice-design",
+    feature: "invoiceCustomization",
+    permission: "invoiceDesign",
+    section: "Sales",
+  },
+  {
+    icon: <Package size={18} />,
+    label: "Products",
+    href: "/admin/products",
+    permission: "products",
+    section: "Catalog",
+  },
+  {
+    icon: <Megaphone size={18} />,
+    label: "Landing Pages",
+    href: "/admin/landing-pages",
+    feature: "landingPages",
+    permission: "landingPages",
+    section: "Catalog",
   },
   {
     icon: <ChartBarStacked size={18} />,
     label: "Category",
     href: "/admin/category",
+    feature: "fullStorefront",
+    permission: "categories",
+    section: "Catalog",
   },
-  { icon: <Users size={18} />, label: "Users", href: "/admin/users" },
   {
-    icon: <SlidersHorizontal size={18} />, // lucide-react icon
+    icon: <SlidersHorizontal size={18} />,
     label: "Sliders",
     href: "/admin/sliders",
+    feature: "fullStorefront",
+    permission: "sliders",
+    section: "Catalog",
   },
-
   {
-    icon: <User size={18} />,
-    label: "Profile",
-    href: "/admin/profile",
+    icon: <Users size={18} />,
+    label: "Users",
+    href: "/admin/users",
+    permission: "users",
+    section: "Team",
   },
-
+  {
+    icon: <UserCog size={18} />,
+    label: "Staff",
+    href: "/admin/staff",
+    roles: ["admin"],
+    section: "Team",
+  },
   {
     icon: <Eye size={18} />,
     label: "Visitor",
     href: "/admin/analytics",
     feature: "analytics",
+    permission: "analytics",
+    section: "Insights",
   },
-
-  { icon: <Trash2 size={18} />, label: "Trash", href: "/admin/trash" },
-
-  { icon: <Settings size={18} />, label: "Settings", href: "/admin/settings" },
+  {
+    icon: <Trash2 size={18} />,
+    label: "Trash",
+    href: "/admin/trash",
+    permission: "trash",
+    section: "System",
+  },
+  {
+    icon: <Settings size={18} />,
+    label: "Settings",
+    href: "/admin/settings",
+    permission: "settings",
+    section: "System",
+  },
 ];
 
 export const settingsChildren = [
@@ -66,11 +138,13 @@ export const settingsChildren = [
     icon: <LayoutDashboard size={16} />,
     label: "Navbar",
     href: "/admin/navbar",
+    feature: "fullStorefront",
   },
   {
     icon: <LayoutDashboard size={16} />,
     label: "Footer",
     href: "/admin/footer",
+    feature: "fullStorefront",
   },
   {
     icon: <LayoutDashboard size={16} />,
@@ -101,16 +175,19 @@ export const settingsChildren = [
     icon: <LayoutDashboard size={16} />,
     label: "Action Button",
     href: "/admin/floatingActionButton",
+    feature: "fullStorefront",
   },
   {
     icon: <LayoutDashboard size={16} />,
     label: "Homepage Popup",
     href: "/admin/homepagePopup",
+    feature: "fullStorefront",
   },
   {
     icon: <LayoutDashboard size={16} />,
     label: "Facebook Group",
     href: "/admin/facebookGroup",
+    feature: "fullStorefront",
   },
   {
     icon: <LayoutDashboard size={16} />,
@@ -126,6 +203,7 @@ export const settingsChildren = [
     icon: <LayoutDashboard size={16} />,
     label: "Home Badges",
     href: "/admin/home-badges",
+    feature: "fullStorefront",
   },
   {
     icon: <LayoutDashboard size={16} />,
@@ -142,4 +220,4 @@ export const settingsChildren = [
     label: "Courier Setup",
     href: "/admin/courier-setup",
   },
-];
+].map((item) => ({ ...item, permission: "settings" }));

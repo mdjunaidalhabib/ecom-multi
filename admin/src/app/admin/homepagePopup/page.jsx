@@ -84,20 +84,20 @@ export default function HomepagePopupAdmin() {
     handleSave({ removeImage: true });
   };
 
-  if (loading) return <p className="text-center py-10">Loading...</p>;
+  if (loading) return <p className="text-center py-10 text-gray-600 dark:text-slate-400">Loading...</p>;
   if (!config) return null;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white shadow p-4 md:p-6 rounded-lg space-y-6">
+    <div className="max-w-2xl mx-auto bg-white dark:bg-slate-900 shadow p-4 md:p-6 rounded-lg space-y-6">
       <Toaster position="top-right" />
 
-      <h2 className="text-xl md:text-2xl font-bold">🖼️ Homepage Popup</h2>
+      <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-slate-100">🖼️ Homepage Popup</h2>
 
       {/* TOGGLE */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border p-4 rounded-lg">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border dark:border-slate-700 p-4 rounded-lg">
         <div>
-          <p className="font-semibold">Popup Status</p>
-          <p className="text-sm text-gray-500">
+          <p className="font-semibold text-gray-900 dark:text-slate-100">Popup Status</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
             {config.enabled ? "Visible ✅" : "Hidden 🚫"}
           </p>
         </div>
@@ -106,7 +106,7 @@ export default function HomepagePopupAdmin() {
           onClick={toggleEnabled}
           disabled={saving}
           className={`relative inline-flex h-7 w-14 items-center rounded-full transition ${
-            config.enabled ? "bg-green-500" : "bg-gray-300"
+            config.enabled ? "bg-green-500" : "bg-gray-300 dark:bg-slate-700"
           }`}
         >
           <span
@@ -118,15 +118,15 @@ export default function HomepagePopupAdmin() {
       </div>
 
       {/* IMAGE */}
-      <div className="border p-4 rounded-lg space-y-3">
-        <h3 className="font-semibold">Popup Image (1:1)</h3>
+      <div className="border dark:border-slate-700 p-4 rounded-lg space-y-3">
+        <h3 className="font-semibold text-gray-900 dark:text-slate-100">Popup Image (1:1)</h3>
 
         {config.image && !imageFile ? (
           <div className="flex items-center gap-3">
             <img
               src={config.image}
               alt="Homepage Popup"
-              className="h-24 w-24 rounded border object-cover"
+              className="h-24 w-24 rounded border dark:border-slate-700 object-cover"
             />
             <button
               disabled={saving}

@@ -147,7 +147,7 @@ export default function OrdersPage() {
     <div className="space-y-4 px-2 sm:px-4">
       {/* TOP BAR */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-lg font-bold">Orders</h1>
+        <h1 className="text-lg font-bold text-gray-900 dark:text-slate-100">Orders</h1>
 
         <div className="flex gap-2">
           {/* ✅ NEW ORDER BUTTON */}
@@ -180,7 +180,7 @@ export default function OrdersPage() {
             className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition ${
               saleChannel === c.key
                 ? `${c.active} text-white`
-                : "bg-white border-gray-200 hover:bg-gray-50"
+                : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
             }`}
           >
             {c.label}

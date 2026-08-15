@@ -29,7 +29,7 @@ function Skeleton() {
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-3">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />
+        <div key={i} className="h-16 bg-gray-200 dark:bg-slate-700 rounded-xl animate-pulse" />
       ))}
     </div>
   );
@@ -231,10 +231,10 @@ export default function HomeBadgesPage() {
       {/* ✅ Header: stacks on mobile, row on larger screens */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-6">
         <div>
-          <h1 className="text-lg sm:text-xl font-bold text-gray-800">
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-slate-100">
             🏷️ হোমপেজ অফার ব্যাজ
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
             হোমপেজে স্লাইডারের নিচে যে ৩টা বাটন দেখা যায় (Free Delivery / Best
             Discount / Gift Box) — এখান থেকে নাম, আইকন, ক্রম এবং visibility
             control করুন।
@@ -253,13 +253,13 @@ export default function HomeBadgesPage() {
 
       {/* ✅ Add Form */}
       {showAdd && (
-        <div className="mb-6 bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-bold text-indigo-800">
+        <div className="mb-6 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-bold text-indigo-800 dark:text-indigo-400">
             নতুন Badge যোগ করুন
           </p>
 
           <div>
-            <label className="text-xs font-medium text-gray-600">
+            <label className="text-xs font-medium text-gray-600 dark:text-slate-400">
               ধরন (Field)
             </label>
             <select
@@ -267,7 +267,7 @@ export default function HomeBadgesPage() {
               onChange={(e) =>
                 setAddDraft((p) => ({ ...p, field: e.target.value }))
               }
-              className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm truncate"
+              className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm truncate dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
             >
               <option value="">-- সিলেক্ট করুন --</option>
               {availableFields.map((f) => (
@@ -277,14 +277,14 @@ export default function HomeBadgesPage() {
               ))}
             </select>
             {addDraft.field && FIELD_LABELS[addDraft.field] && (
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
                 {FIELD_LABELS[addDraft.field]}
               </p>
             )}
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-600">নাম</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-slate-400">নাম</label>
             <input
               type="text"
               value={addDraft.name}
@@ -292,18 +292,18 @@ export default function HomeBadgesPage() {
                 setAddDraft((p) => ({ ...p, name: e.target.value }))
               }
               placeholder="যেমন: Gift Box"
-              className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm"
+              className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-600">আইকন</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-slate-400">আইকন</label>
             <select
               value={addDraft.icon}
               onChange={(e) =>
                 setAddDraft((p) => ({ ...p, icon: e.target.value }))
               }
-              className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm"
+              className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
             >
               {ICON_OPTIONS.map((i) => (
                 <option key={i.value} value={i.value}>
@@ -317,7 +317,7 @@ export default function HomeBadgesPage() {
           <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
             <button
               onClick={() => setShowAdd(false)}
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 active:bg-gray-200"
+              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 active:bg-gray-200 dark:active:bg-slate-700"
             >
               বাতিল
             </button>
@@ -335,7 +335,7 @@ export default function HomeBadgesPage() {
       {/* ✅ Badge List */}
       <div className="space-y-3">
         {badges.length === 0 && (
-          <p className="text-sm text-gray-400 text-center py-10">
+          <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-10">
             কোনো badge নেই।
           </p>
         )}
@@ -349,17 +349,17 @@ export default function HomeBadgesPage() {
           return (
             <div
               key={badge._id}
-              className={`border rounded-xl p-3.5 sm:p-4 ${
-                badge.isActive ? "bg-white" : "bg-gray-50 opacity-70"
+              className={`border dark:border-slate-700 rounded-xl p-3.5 sm:p-4 ${
+                badge.isActive ? "bg-white dark:bg-slate-900" : "bg-gray-50 dark:bg-slate-800 opacity-70"
               }`}
             >
               {!isEditing ? (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-bold text-gray-800 truncate">
+                    <p className="font-bold text-gray-800 dark:text-slate-200 truncate">
                       {iconLabel?.split(" ")[0]} {badge.name}
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                       Field: {badge.field} • Order: {badge.order ?? 0} •{" "}
                       {badge.isActive ? "✅ Visible" : "🙈 Hidden"}
                     </p>
@@ -369,19 +369,19 @@ export default function HomeBadgesPage() {
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <button
                       onClick={() => toggleActive(badge)}
-                      className="flex-1 sm:flex-none text-xs font-semibold px-2.5 py-2 sm:py-1.5 rounded-md border text-gray-600 hover:bg-gray-100 active:bg-gray-200"
+                      className="flex-1 sm:flex-none text-xs font-semibold px-2.5 py-2 sm:py-1.5 rounded-md border dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 active:bg-gray-200 dark:active:bg-slate-700"
                     >
                       {badge.isActive ? "Hide" : "Show"}
                     </button>
                     <button
                       onClick={() => startEdit(badge)}
-                      className="flex-1 sm:flex-none text-xs font-semibold px-2.5 py-2 sm:py-1.5 rounded-md border text-indigo-600 hover:bg-indigo-50 active:bg-indigo-100"
+                      className="flex-1 sm:flex-none text-xs font-semibold px-2.5 py-2 sm:py-1.5 rounded-md border dark:border-slate-600 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 active:bg-indigo-100 dark:active:bg-indigo-500/20"
                     >
                       ✏️ Edit
                     </button>
                     <button
                       onClick={() => setDeleteTarget(badge)}
-                      className="flex-1 sm:flex-none text-xs font-semibold px-2.5 py-2 sm:py-1.5 rounded-md border text-red-600 hover:bg-red-50 active:bg-red-100"
+                      className="flex-1 sm:flex-none text-xs font-semibold px-2.5 py-2 sm:py-1.5 rounded-md border dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 active:bg-red-100 dark:active:bg-red-500/20"
                     >
                       🗑️ Delete
                     </button>
@@ -390,7 +390,7 @@ export default function HomeBadgesPage() {
               ) : (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-medium text-gray-600">
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400">
                       নাম
                     </label>
                     <input
@@ -399,14 +399,14 @@ export default function HomeBadgesPage() {
                       onChange={(e) =>
                         setEditDraft((p) => ({ ...p, name: e.target.value }))
                       }
-                      className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm"
+                      className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                     />
                   </div>
 
                   {/* ✅ Icon + order: stack on very small screens */}
                   <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-medium text-gray-600">
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-400">
                         আইকন
                       </label>
                       <select
@@ -414,7 +414,7 @@ export default function HomeBadgesPage() {
                         onChange={(e) =>
                           setEditDraft((p) => ({ ...p, icon: e.target.value }))
                         }
-                        className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm"
+                        className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                       >
                         {ICON_OPTIONS.map((i) => (
                           <option key={i.value} value={i.value}>
@@ -424,7 +424,7 @@ export default function HomeBadgesPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-gray-600">
+                      <label className="text-xs font-medium text-gray-600 dark:text-slate-400">
                         ক্রম (Order)
                       </label>
                       <select
@@ -435,7 +435,7 @@ export default function HomeBadgesPage() {
                             order: Number(e.target.value),
                           }))
                         }
-                        className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm"
+                        className="w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                       >
                         {badges.map((_, idx) => {
                           const serial = idx + 1;
@@ -446,7 +446,7 @@ export default function HomeBadgesPage() {
                           );
                         })}
                       </select>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
                         এই ক্রম আগে থেকেই অন্য badge-এ থাকলে, সেই badge-টা অটো
                         এই badge-এর আগের ক্রমে চলে যাবে।
                       </p>
@@ -456,7 +456,7 @@ export default function HomeBadgesPage() {
                   <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
                     <button
                       onClick={cancelEdit}
-                      className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 active:bg-gray-200"
+                      className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 active:bg-gray-200 dark:active:bg-slate-700"
                     >
                       বাতিল
                     </button>
@@ -478,16 +478,16 @@ export default function HomeBadgesPage() {
       {/* ✅ Delete Confirm Modal */}
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-5 max-w-sm w-full">
-            <p className="font-bold text-gray-800 mb-2">Badge Delete করবেন?</p>
-            <p className="text-sm text-gray-500 mb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 max-w-sm w-full">
+            <p className="font-bold text-gray-800 dark:text-slate-200 mb-2">Badge Delete করবেন?</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
               "{deleteTarget.name}" badge টি হোমপেজ থেকে সম্পূর্ণ মুছে যাবে। পরে
               চাইলে আবার নতুন করে যোগ করতে পারবেন।
             </p>
             <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 active:bg-gray-200"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 active:bg-gray-200 dark:active:bg-slate-700"
               >
                 বাতিল
               </button>

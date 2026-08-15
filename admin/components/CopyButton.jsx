@@ -45,8 +45,8 @@ export default function CopyButton({ value, onCopied, className = "" }) {
       title="Copy"
       className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border transition shrink-0 ${
         copied
-          ? "bg-green-50 text-green-600 border-green-200"
-          : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+          ? "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20"
+          : "bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700"
       } disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
     >
       {copied ? "Copied ✓" : "Copy"}

@@ -1,5 +1,20 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import {
+  STAFF_PERMISSION_MODULES,
+  STAFF_PERMISSION_ACTIONS,
+} from "../constants/staffPermissions.js";
+
+// ✅ প্রতিটা module (orders, products, ...) এর জন্য view/add/edit/delete —
+// এই ৪টা আলাদা boolean flag থাকে।
+const actionFlags = Object.fromEntries(
+  STAFF_PERMISSION_ACTIONS.map((action) => [action, { type: Boolean, default: false }]),
+);
+
+const staffPermissionsSchema = new mongoose.Schema(
+  Object.fromEntries(STAFF_PERMISSION_MODULES.map((moduleKey) => [moduleKey, actionFlags])),
+  { _id: false },
+);
 
 const adminSchema = new mongoose.Schema(
   {
@@ -30,6 +45,16 @@ const adminSchema = new mongoose.Schema(
     ],
 
     status: { type: String, enum: ["active", "suspended"], default: "active" },
+
+    // ✅ শুধু role: "staff" এর জন্য প্রযোজ্য — শপ owner (role: "admin") ঠিক
+    // করে দেয় staff কোন কোন সেকশনে (orders, products, ...) view/add/edit/
+    // delete করতে পারবে। owner/superadmin এর ক্ষেত্রে এই ফিল্ড ignore করা
+    // হয় (তারা সব সেকশনে সবসময় সব কাজ করতে পারে) — দেখুন
+    // STAFF_PERMISSION_MODULES এবং requirePermission middleware।
+    permissions: {
+      type: staffPermissionsSchema,
+      default: () => ({}),
+    },
 
     // ✅ Last login info
     lastLoginAt: { type: Date },

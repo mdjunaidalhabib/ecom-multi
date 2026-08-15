@@ -5,6 +5,7 @@ import { apiFetch } from "../../../../utils/api";
 import Toast from "../../../../components/Toast";
 import ConfirmDialog from "../../../../components/ConfirmDialog";
 import Pagination from "../../../../components/Pagination";
+import RequireFeature from "../../../../components/RequireFeature";
 import { formatDateTime } from "../../../../lib/utils";
 
 /* =========================================================
@@ -14,7 +15,7 @@ function RowsSkeleton() {
   return (
     <div className="space-y-3">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
+        <div key={i} className="h-16 bg-gray-100 dark:bg-slate-700 rounded-xl animate-pulse" />
       ))}
     </div>
   );
@@ -62,8 +63,8 @@ function CopyButton({ value, showToast }) {
       title="Copy TrxID"
       className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border transition ${
         copied
-          ? "bg-green-50 text-green-600 border-green-200"
-          : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+          ? "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20"
+          : "bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700"
       } disabled:opacity-40 disabled:cursor-not-allowed`}
     >
       {copied ? "Copied ✓" : "Copy"}
@@ -119,7 +120,7 @@ function PendingVerificationTab({ showToast }) {
 
   if (!orders.length) {
     return (
-      <div className="text-center py-16 text-gray-400">
+      <div className="text-center py-16 text-gray-400 dark:text-slate-500">
         <p className="text-3xl mb-2">🎉</p>
         <p className="text-sm font-medium">
           Verify করার মতো কোনো Pending Payment নেই।
@@ -134,31 +135,31 @@ function PendingVerificationTab({ showToast }) {
         {orders.map((o) => (
           <div
             key={o._id}
-            className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+            className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3"
           >
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold text-gray-800">
+                <span className="text-xs font-bold text-gray-800 dark:text-slate-200">
                   #{o.orderNumber}
                 </span>
-                <span className="text-[10px] font-bold uppercase bg-pink-50 text-pink-600 border border-pink-100 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold uppercase bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-100 dark:border-pink-500/20 px-2 py-0.5 rounded-full">
                   {o.paymentMethod}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-slate-400">
                   {o.billing?.name} · {o.billing?.phone}
                 </span>
               </div>
 
-              <div className="text-xs text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+              <div className="text-xs text-gray-600 dark:text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
                 <span>
                   Sender:{" "}
-                  <b className="text-gray-800">
+                  <b className="text-gray-800 dark:text-slate-200">
                     {o.paymentDetails?.senderNumber || "—"}
                   </b>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   TrxID:{" "}
-                  <b className="text-gray-800 tracking-wide">
+                  <b className="text-gray-800 dark:text-slate-200 tracking-wide">
                     {o.paymentDetails?.transactionId || "—"}
                   </b>
                   <CopyButton
@@ -167,11 +168,11 @@ function PendingVerificationTab({ showToast }) {
                   />
                 </span>
                 <span>
-                  Amount: <b className="text-gray-800">৳{o.deliveryCharge}</b>
+                  Amount: <b className="text-gray-800 dark:text-slate-200">৳{o.deliveryCharge}</b>
                 </span>
               </div>
 
-              <p className="text-[10px] text-gray-400">
+              <p className="text-[10px] text-gray-400 dark:text-slate-500">
                 {formatDateTime(o.createdAt)}
               </p>
             </div>
@@ -186,7 +187,7 @@ function PendingVerificationTab({ showToast }) {
                     label: `অর্ডার #${o.orderNumber} এর payment Reject করবেন?`,
                   })
                 }
-                className="px-3 py-2 text-xs font-bold rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-50"
+                className="px-3 py-2 text-xs font-bold rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 disabled:opacity-50"
               >
                 ❌ Reject
               </button>
@@ -296,7 +297,7 @@ function VerifiedPaymentsTab({ showToast }) {
   return (
     <div>
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-        <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
+        <div className="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-1 w-fit">
           {[
             { key: "all", label: "সব" },
             { key: "paid", label: "✅ Accepted" },
@@ -307,8 +308,8 @@ function VerifiedPaymentsTab({ showToast }) {
               onClick={() => setFilter(t.key)}
               className={`px-3 py-1.5 text-xs font-bold rounded-md transition ${
                 filter === t.key
-                  ? "bg-white shadow text-pink-600"
-                  : "text-gray-500"
+                  ? "bg-white dark:bg-slate-700 shadow text-pink-600 dark:text-pink-400"
+                  : "text-gray-500 dark:text-slate-400"
               }`}
             >
               {t.label}
@@ -321,8 +322,8 @@ function VerifiedPaymentsTab({ showToast }) {
           onClick={() => setShowHidden((v) => !v)}
           className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition ${
             showHidden
-              ? "bg-gray-800 text-white border-gray-800"
-              : "bg-white text-gray-500 border-gray-300 hover:bg-gray-50"
+              ? "bg-gray-800 dark:bg-slate-700 text-white border-gray-800 dark:border-slate-600"
+              : "bg-white dark:bg-slate-900 text-gray-500 dark:text-slate-400 border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800"
           }`}
         >
           {showHidden ? "🗂️ Normal View দেখাও" : "🙈 Removed Items দেখাও"}
@@ -332,7 +333,7 @@ function VerifiedPaymentsTab({ showToast }) {
       {loading ? (
         <RowsSkeleton />
       ) : !orders.length ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-400 dark:text-slate-500">
           <p className="text-3xl mb-2">{showHidden ? "🙈" : "📄"}</p>
           <p className="text-sm font-medium">
             {showHidden
@@ -345,40 +346,40 @@ function VerifiedPaymentsTab({ showToast }) {
           {orders.map((o) => (
             <div
               key={o._id}
-              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-gray-800">
+                  <span className="text-xs font-bold text-gray-800 dark:text-slate-200">
                     #{o.orderNumber}
                   </span>
-                  <span className="text-[10px] font-bold uppercase bg-pink-50 text-pink-600 border border-pink-100 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold uppercase bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-100 dark:border-pink-500/20 px-2 py-0.5 rounded-full">
                     {o.paymentMethod}
                   </span>
                   <span
                     className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
                       o.paymentStatus === "paid"
-                        ? "bg-green-50 text-green-600 border-green-200"
-                        : "bg-red-50 text-red-600 border-red-200"
+                        ? "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20"
+                        : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20"
                     }`}
                   >
                     {o.paymentStatus === "paid" ? "Accepted" : "Rejected"}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-slate-400">
                     {o.billing?.name} · {o.billing?.phone}
                   </span>
                 </div>
 
-                <div className="text-xs text-gray-600 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <div className="text-xs text-gray-600 dark:text-slate-400 flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span>
                     Sender:{" "}
-                    <b className="text-gray-800">
+                    <b className="text-gray-800 dark:text-slate-200">
                       {o.paymentDetails?.senderNumber || "—"}
                     </b>
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     TrxID:{" "}
-                    <b className="text-gray-800 tracking-wide">
+                    <b className="text-gray-800 dark:text-slate-200 tracking-wide">
                       {o.paymentDetails?.transactionId || "—"}
                     </b>
                     <CopyButton
@@ -387,11 +388,11 @@ function VerifiedPaymentsTab({ showToast }) {
                     />
                   </span>
                   <span>
-                    Amount: <b className="text-gray-800">৳{o.deliveryCharge}</b>
+                    Amount: <b className="text-gray-800 dark:text-slate-200">৳{o.deliveryCharge}</b>
                   </span>
                 </div>
 
-                <p className="text-[10px] text-gray-400">
+                <p className="text-[10px] text-gray-400 dark:text-slate-500">
                   Verified: {formatDateTime(o.updatedAt)}
                 </p>
               </div>
@@ -401,7 +402,7 @@ function VerifiedPaymentsTab({ showToast }) {
                   <button
                     disabled={busyId === o._id}
                     onClick={() => setVisibility(o._id, false)}
-                    className="px-3 py-2 text-xs font-bold rounded-lg bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 disabled:opacity-50"
+                    className="px-3 py-2 text-xs font-bold rounded-lg bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/20 hover:bg-green-100 dark:hover:bg-green-500/20 disabled:opacity-50"
                   >
                     {busyId === o._id ? "..." : "♻️ Restore"}
                   </button>
@@ -409,7 +410,7 @@ function VerifiedPaymentsTab({ showToast }) {
                   <button
                     disabled={busyId === o._id}
                     onClick={() => setConfirmTarget(o)}
-                    className="px-3 py-2 text-xs font-bold rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-50"
+                    className="px-3 py-2 text-xs font-bold rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 disabled:opacity-50"
                   >
                     {busyId === o._id ? "..." : "🗑️ Remove"}
                   </button>
@@ -559,21 +560,21 @@ function PaymentMethodsTab({ showToast }) {
   }
 
   const inputClass =
-    "mt-1 w-full p-2 border rounded-md border-gray-300 outline-none text-sm focus:ring-2 focus:ring-pink-200";
+    "mt-1 w-full p-2 border rounded-md border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 outline-none text-sm focus:ring-2 focus:ring-pink-200 dark:focus:ring-pink-500/30";
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       {/* Form */}
       <form
         onSubmit={submitForm}
-        className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-4 space-y-3 h-fit"
+        className="lg:col-span-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 space-y-3 h-fit"
       >
-        <h3 className="font-bold text-gray-800 text-sm">
+        <h3 className="font-bold text-gray-800 dark:text-slate-200 text-sm">
           {editingId ? "✏️ Method এডিট করুন" : "➕ নতুন Method যোগ করুন"}
         </h3>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700 dark:text-slate-300">
             নাম * (যেমন: bKash, Nagad, Rocket)
           </span>
           <input
@@ -585,7 +586,7 @@ function PaymentMethodsTab({ showToast }) {
         </label>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700 dark:text-slate-300">
             নাম্বার * (Merchant/Personal)
           </span>
           <input
@@ -597,7 +598,7 @@ function PaymentMethodsTab({ showToast }) {
         </label>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700 dark:text-slate-300">
             Account Type
           </span>
           <select
@@ -625,7 +626,7 @@ function PaymentMethodsTab({ showToast }) {
         </label>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700 dark:text-slate-300">
             কাস্টমারকে কোন Action করতে বলবেন? *
           </span>
           <input
@@ -636,7 +637,7 @@ function PaymentMethodsTab({ showToast }) {
             className={inputClass}
             placeholder="Send Money / Payment / Cash Out"
           />
-          <p className="text-[10px] text-gray-400 mt-1">
+          <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">
             Personal নাম্বারে সাধারণত "Send Money", Merchant নাম্বারে "Payment",
             Agent নাম্বারে "Cash Out" — checkout পেজে ঠিক এই শব্দটাই কাস্টমারকে
             দেখানো হবে।
@@ -644,7 +645,7 @@ function PaymentMethodsTab({ showToast }) {
         </label>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700 dark:text-slate-300">
             Instructions (কাস্টমারকে দেখাবে)
           </span>
           <textarea
@@ -665,7 +666,7 @@ function PaymentMethodsTab({ showToast }) {
               setForm((f) => ({ ...f, active: e.target.checked }))
             }
           />
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700 dark:text-slate-300">
             Active (checkout-এ দেখাবে)
           </span>
         </label>
@@ -682,7 +683,7 @@ function PaymentMethodsTab({ showToast }) {
             <button
               type="button"
               onClick={resetForm}
-              className="px-3 py-2 text-sm font-bold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
+              className="px-3 py-2 text-sm font-bold rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600"
             >
               Cancel
             </button>
@@ -695,7 +696,7 @@ function PaymentMethodsTab({ showToast }) {
         {loading ? (
           <RowsSkeleton />
         ) : !methods.length ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-gray-400 dark:text-slate-500">
             <p className="text-3xl mb-2">💳</p>
             <p className="text-sm font-medium">
               এখনো কোনো Payment Method যোগ করা হয়নি।
@@ -705,24 +706,24 @@ function PaymentMethodsTab({ showToast }) {
           methods.map((m) => (
             <div
               key={m._id}
-              className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-3"
+              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between gap-3"
             >
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-gray-800 text-sm">
+                  <span className="font-bold text-gray-800 dark:text-slate-200 text-sm">
                     {m.name}
                   </span>
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
                       m.active
-                        ? "bg-green-50 text-green-600 border border-green-200"
-                        : "bg-gray-100 text-gray-400 border border-gray-200"
+                        ? "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/20"
+                        : "bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 border border-gray-200 dark:border-slate-600"
                     }`}
                   >
                     {m.active ? "Active" : "Inactive"}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
                   {m.number} · {m.accountType} · &ldquo;
                   {m.actionLabel || "Send Money"}&rdquo;
                 </p>
@@ -731,19 +732,19 @@ function PaymentMethodsTab({ showToast }) {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => toggleActive(m)}
-                  className="text-[11px] font-bold text-gray-600 border border-gray-300 rounded-md px-2 py-1 hover:bg-gray-50"
+                  className="text-[11px] font-bold text-gray-600 dark:text-slate-300 border border-gray-300 dark:border-slate-600 rounded-md px-2 py-1 hover:bg-gray-50 dark:hover:bg-slate-800"
                 >
                   {m.active ? "Deactivate" : "Activate"}
                 </button>
                 <button
                   onClick={() => startEdit(m)}
-                  className="text-[11px] font-bold text-pink-600 border border-pink-300 rounded-md px-2 py-1 hover:bg-pink-50"
+                  className="text-[11px] font-bold text-pink-600 dark:text-pink-400 border border-pink-300 dark:border-pink-500/30 rounded-md px-2 py-1 hover:bg-pink-50 dark:hover:bg-pink-500/10"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => setDeleteTarget(m)}
-                  className="text-[11px] font-bold text-red-600 border border-red-300 rounded-md px-2 py-1 hover:bg-red-50"
+                  className="text-[11px] font-bold text-red-600 dark:text-red-400 border border-red-300 dark:border-red-500/30 rounded-md px-2 py-1 hover:bg-red-50 dark:hover:bg-red-500/10"
                 >
                   Delete
                 </button>
@@ -767,7 +768,7 @@ function PaymentMethodsTab({ showToast }) {
 /* =========================================================
    ✅ MAIN PAGE
 ========================================================= */
-export default function PaymentsPage() {
+function PaymentsPage() {
   const [tab, setTab] = useState("pending"); // "pending" | "methods"
   const [toast, setToast] = useState(null);
 
@@ -786,15 +787,15 @@ export default function PaymentsPage() {
       )}
 
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h2 className="text-2xl font-bold text-gray-800">💳 Payments</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100">💳 Payments</h2>
 
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
           <button
             onClick={() => setTab("pending")}
             className={`px-4 py-2 text-sm font-bold rounded-md transition ${
               tab === "pending"
-                ? "bg-white shadow text-pink-600"
-                : "text-gray-500"
+                ? "bg-white dark:bg-slate-700 shadow text-pink-600 dark:text-pink-400"
+                : "text-gray-500 dark:text-slate-400"
             }`}
           >
             Pending Verification
@@ -803,8 +804,8 @@ export default function PaymentsPage() {
             onClick={() => setTab("verified")}
             className={`px-4 py-2 text-sm font-bold rounded-md transition ${
               tab === "verified"
-                ? "bg-white shadow text-pink-600"
-                : "text-gray-500"
+                ? "bg-white dark:bg-slate-700 shadow text-pink-600 dark:text-pink-400"
+                : "text-gray-500 dark:text-slate-400"
             }`}
           >
             Verified / TrxID
@@ -813,8 +814,8 @@ export default function PaymentsPage() {
             onClick={() => setTab("methods")}
             className={`px-4 py-2 text-sm font-bold rounded-md transition ${
               tab === "methods"
-                ? "bg-white shadow text-pink-600"
-                : "text-gray-500"
+                ? "bg-white dark:bg-slate-700 shadow text-pink-600 dark:text-pink-400"
+                : "text-gray-500 dark:text-slate-400"
             }`}
           >
             Payment Methods
@@ -830,5 +831,13 @@ export default function PaymentsPage() {
         <PaymentMethodsTab showToast={showToast} />
       )}
     </div>
+  );
+}
+
+export default function PaymentsPageGate() {
+  return (
+    <RequireFeature feature="payment">
+      <PaymentsPage />
+    </RequireFeature>
   );
 }

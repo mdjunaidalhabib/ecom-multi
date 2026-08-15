@@ -6,7 +6,7 @@ export const getProductsAdmin = async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 50, 2000); // cap max page size (raised so tools like the admin order picker can fetch the full catalog)
     const skip = (page - 1) * limit;
 
-    const { status, badge } = req.query; // status: active|hidden ; badge: freeDelivery|bestDiscount|cartvanBox
+    const { status, badge, search } = req.query; // status: active|hidden ; badge: freeDelivery|bestDiscount|cartvanBox
 
     const filter = {};
     if (status === "active") filter.isActive = true;
@@ -14,6 +14,13 @@ export const getProductsAdmin = async (req, res) => {
     if (badge === "freeDelivery") filter.freeDelivery = true;
     if (badge === "bestDiscount") filter.bestDiscount = true;
     if (badge === "cartvanBox") filter.cartvanBox = true;
+
+    // ✅ product name diye quick search (case-insensitive, partial match)
+    const q = typeof search === "string" ? search.trim() : "";
+    if (q) {
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filter.name = { $regex: escaped, $options: "i" };
+    }
 
     const [
       products,

@@ -39,6 +39,10 @@ export default function OrderCard({
 
   // ✅ NEW: parent থেকে courier final sync handler পাঠাবেন
   onFinalStatusSync,
+
+  onDownloadInvoice,
+  invoiceReady,
+  downloadingInvoice,
 }) {
   const locked = LOCKED_STATUSES.includes(o.status);
   const paymentHold = !locked && needsPaymentVerification(o);
@@ -64,15 +68,15 @@ export default function OrderCard({
 
   return (
     <div
-      className={`border-b last:border-none transition-colors ${
-        expanded ? "bg-gray-50/50" : "bg-white"
+      className={`border-b dark:border-slate-700 last:border-none transition-colors ${
+        expanded ? "bg-gray-50/50 dark:bg-slate-800/60" : "bg-white dark:bg-slate-800"
       }`}
     >
       {/* ===== COMPACT HEADER ===== */}
-      <div className="px-2 py-2 flex gap-2 items-center bg-white">
+      <div className="px-2 py-2 flex gap-2 items-center bg-white dark:bg-slate-800">
         <input
           type="checkbox"
-          className="h-3.5 w-3.5 rounded border-gray-300"
+          className="h-3.5 w-3.5 rounded border-gray-300 dark:border-slate-600"
           checked={selected.includes(o._id)}
           onChange={() => toggleOne(o._id)}
           disabled={locked}
@@ -86,7 +90,7 @@ export default function OrderCard({
           <div className="flex-1 min-w-0 pr-1">
             {/* NAME + STATUS */}
             <div className="flex items-center gap-1.5 flex-wrap leading-none">
-              <span className="text-[13px] font-bold text-gray-900 capitalize truncate">
+              <span className="text-[13px] font-bold text-gray-900 dark:text-slate-100 capitalize truncate">
                 {o.billing?.name || "Unknown"}
               </span>
 
@@ -95,7 +99,7 @@ export default function OrderCard({
               </div>
 
               {o.saleChannel === "offline" && (
-                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 leading-none">
+                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20 leading-none">
                   🏬 Offline
                 </span>
               )}
@@ -103,15 +107,15 @@ export default function OrderCard({
 
             {/* Cancel Reason */}
             {o.status === "cancelled" && o.cancelReason && (
-              <div className="text-[11px] text-red-600 leading-none mt-0.5">
+              <div className="text-[11px] text-red-600 dark:text-red-400 leading-none mt-0.5">
                 <span className="font-semibold">Reason:</span> {o.cancelReason}
               </div>
             )}
 
             {/* META ROW */}
-            <div className="flex items-center flex-wrap gap-x-2 gap-y-0 text-[10px] text-gray-400 leading-none mt-0.5">
+            <div className="flex items-center flex-wrap gap-x-2 gap-y-0 text-[10px] text-gray-400 dark:text-slate-500 leading-none mt-0.5">
               {isAdminCreated && (
-                <span className="text-blue-700 font-semibold">
+                <span className="text-blue-700 dark:text-blue-400 font-semibold">
                   Created by : {o?.createdByName || "Admin"}
                 </span>
               )}
@@ -126,12 +130,12 @@ export default function OrderCard({
 
           {/* RIGHT */}
           <div className="text-right shrink-0 flex flex-col items-end">
-            <div className="text-[14px] font-black text-gray-900 leading-tight">
+            <div className="text-[14px] font-black text-gray-900 dark:text-slate-100 leading-tight">
               ৳{o.total}
             </div>
             <div
               className={`flex items-center gap-0.5 text-[9px] font-bold uppercase leading-none ${
-                expanded ? "text-blue-600" : "text-gray-400"
+                expanded ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-slate-500"
               }`}
             >
               {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -144,23 +148,23 @@ export default function OrderCard({
       {expanded && (
         <div className="px-3 pb-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-5 rounded-lg bg-white border border-gray-100 p-2 shadow-sm">
-              <div className="text-[9px] font-bold text-gray-400 uppercase mb-1">
+            <div className="col-span-5 rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-2 shadow-sm">
+              <div className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase mb-1">
                 Customer
               </div>
-              <div className="font-bold text-gray-800 text-[11px] truncate">
+              <div className="font-bold text-gray-800 dark:text-slate-200 text-[11px] truncate">
                 {o.billing?.name}
               </div>
-              <div className="text-[10px] text-gray-600">
+              <div className="text-[10px] text-gray-600 dark:text-slate-400">
                 {o.billing?.phone}
               </div>
-              <div className="text-[10px] text-gray-500 line-clamp-2 mt-1 italic">
+              <div className="text-[10px] text-gray-500 dark:text-slate-400 line-clamp-2 mt-1 italic">
                 {o.billing?.address}
               </div>
             </div>
 
-            <div className="col-span-7 rounded-lg bg-white border border-gray-100 p-2 shadow-sm">
-              <div className="flex justify-between text-[9px] font-bold text-gray-400 uppercase mb-1">
+            <div className="col-span-7 rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-2 shadow-sm">
+              <div className="flex justify-between text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase mb-1">
                 <span>Items</span>
                 <span>{o.items?.length || 0} total</span>
               </div>
@@ -169,14 +173,14 @@ export default function OrderCard({
                   <div key={idx} className="flex items-center gap-2">
                     <img
                       src={it.image || "/placeholder.png"}
-                      className="w-7 h-7 rounded border object-cover"
+                      className="w-7 h-7 rounded border dark:border-slate-600 object-cover"
                       alt=""
                     />
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold truncate leading-tight">
+                      <p className="text-[10px] font-bold truncate leading-tight text-gray-900 dark:text-slate-100">
                         {it.name}
                       </p>
-                      <p className="text-[9px] text-gray-500">
+                      <p className="text-[9px] text-gray-500 dark:text-slate-400">
                         Qty: {it.qty} • ৳{it.price}
                       </p>
                     </div>
@@ -184,7 +188,7 @@ export default function OrderCard({
                 ))}
 
                 {moreCount > 0 && (
-                  <p className="text-[9px] text-blue-500 font-medium">
+                  <p className="text-[9px] text-blue-500 dark:text-blue-400 font-medium">
                     + {moreCount} more items
                   </p>
                 )}
@@ -192,30 +196,30 @@ export default function OrderCard({
             </div>
           </div>
 
-          <div className="bg-gray-100/50 rounded-lg p-2 text-[11px] space-y-1">
-            <div className="flex justify-between text-gray-600">
+          <div className="bg-gray-100/50 dark:bg-slate-700/40 rounded-lg p-2 text-[11px] space-y-1">
+            <div className="flex justify-between text-gray-600 dark:text-slate-400">
               <span>Subtotal</span>
               <span>৳{o.subtotal}</span>
             </div>
-            <div className="flex justify-between text-gray-600">
+            <div className="flex justify-between text-gray-600 dark:text-slate-400">
               <span>Delivery</span>
               <span>৳{o.deliveryCharge}</span>
             </div>
             {!!o.discount && (
-              <div className="flex justify-between text-red-500 font-medium">
+              <div className="flex justify-between text-red-500 dark:text-red-400 font-medium">
                 <span>Discount{o.promo?.code ? ` (${o.promo.code})` : ""}</span>
                 <span>-৳{o.discount}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-gray-900 border-t border-gray-200 pt-1 mt-1 text-sm">
+            <div className="flex justify-between font-bold text-gray-900 dark:text-slate-100 border-t border-gray-200 dark:border-slate-700 pt-1 mt-1 text-sm">
               <span>Total</span>
               <span>৳{o.total}</span>
             </div>
           </div>
 
-          <div className="rounded-lg bg-white border border-gray-100 p-2 shadow-sm text-[11px] space-y-1">
+          <div className="rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-2 shadow-sm text-[11px] space-y-1">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[9px] font-bold text-gray-400 uppercase">
+              <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase">
                 Payment
               </span>
               <Badge>{paymentMethodLabel(o)}</Badge>
@@ -223,10 +227,10 @@ export default function OrderCard({
                 <span
                   className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${
                     o.paymentStatus === "paid"
-                      ? "bg-green-50 text-green-700 border-green-200"
+                      ? "bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/20"
                       : o.paymentStatus === "failed"
-                        ? "bg-red-50 text-red-700 border-red-200"
-                        : "bg-amber-50 text-amber-700 border-amber-200"
+                        ? "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20"
+                        : "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20"
                   }`}
                 >
                   {o.paymentStatus === "paid"
@@ -239,9 +243,9 @@ export default function OrderCard({
             </div>
 
             {o.paymentMethod !== "cod" && o.paymentDetails?.transactionId && (
-              <div className="flex items-center gap-1 text-gray-600">
-                <span className="text-gray-400">TrxID:</span>
-                <span className="font-mono font-semibold text-gray-800 truncate">
+              <div className="flex items-center gap-1 text-gray-600 dark:text-slate-400">
+                <span className="text-gray-400 dark:text-slate-500">TrxID:</span>
+                <span className="font-mono font-semibold text-gray-800 dark:text-slate-200 truncate">
                   {o.paymentDetails.transactionId}
                 </span>
                 <CopyButton value={o.paymentDetails.transactionId} />
@@ -249,14 +253,14 @@ export default function OrderCard({
             )}
 
             {o.paymentMethod !== "cod" && o.paymentDetails?.senderNumber && (
-              <div className="text-gray-500">
+              <div className="text-gray-500 dark:text-slate-400">
                 Sender: {o.paymentDetails.senderNumber}
               </div>
             )}
           </div>
 
           {paymentHold && (
-            <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+            <div className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg px-2 py-1.5">
               ⏳ Payment verify হয়নি — status hold করা আছে। Payments পেজ থেকে Accept/Reject করুন।
             </div>
           )}
@@ -264,12 +268,12 @@ export default function OrderCard({
           <div className="flex items-center gap-2 w-full overflow-x-auto">
             {/* STATUS */}
             {paymentHold ? (
-              <div className="h-10 min-w-[140px] flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-[11px] font-bold text-amber-700 shadow-sm">
+              <div className="h-10 min-w-[140px] flex items-center justify-center rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 px-3 text-[11px] font-bold text-amber-700 dark:text-amber-400 shadow-sm">
                 🔒 Payment Pending
               </div>
             ) : (
               <select
-                className="h-10 min-w-[140px] rounded-lg border border-gray-200 px-3 text-[11px] font-bold bg-white focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
+                className="h-10 min-w-[140px] rounded-lg border border-gray-200 dark:border-slate-600 px-3 text-[11px] font-bold bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
                 value={o.status}
                 disabled={locked || updatingId === o._id}
                 onChange={(e) => handleStatusUpdate(o._id, e.target.value, o)}
@@ -318,14 +322,14 @@ export default function OrderCard({
                 </IconBtn>
               )}
 
-              <a
-                href={`/api/invoice/${o._id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="bg-blue-600 hover:bg-blue-700 text-white p-3  rounded-lg transition flex items-center justify-center"
+              <button
+                type="button"
+                onClick={() => onDownloadInvoice?.(o)}
+                disabled={!invoiceReady || downloadingInvoice}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white p-3 rounded-lg transition flex items-center justify-center"
               >
                 <FileText size={16} />
-              </a>
+              </button>
             </div>
           </div>
 
@@ -346,7 +350,7 @@ export default function OrderCard({
 
           {/* ✅ Cancel reason (Expanded section-এও চাইলে দেখাতে পারেন) */}
           {o.status === "cancelled" && o.cancelReason && (
-            <div className="text-[11px] text-red-600">
+            <div className="text-[11px] text-red-600 dark:text-red-400">
               <span className="font-semibold">Reason:</span> {o.cancelReason}
             </div>
           )}

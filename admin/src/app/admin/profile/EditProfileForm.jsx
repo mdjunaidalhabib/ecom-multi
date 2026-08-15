@@ -139,7 +139,7 @@ export default function EditProfileForm({ admin, onSuccess }) {
       <Field label="Avatar Photo">
         {avatarPreview && !avatarFile ? (
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-16 w-16 flex items-center justify-center bg-gray-100 rounded-full overflow-hidden border">
+            <div className="h-16 w-16 flex items-center justify-center bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden border border-gray-200 dark:border-slate-700">
               <img
                 src={avatarPreview}
                 alt="Profile"
@@ -151,7 +151,7 @@ export default function EditProfileForm({ admin, onSuccess }) {
               type="button"
               onClick={handleRemoveAvatar}
               disabled={saving}
-              className="bg-red-600 text-white px-3 py-1 rounded text-sm disabled:opacity-60"
+              className="bg-red-600 dark:bg-red-700 text-white px-3 py-1 rounded text-sm disabled:opacity-60"
             >
               Remove
             </button>
@@ -180,7 +180,7 @@ export default function EditProfileForm({ admin, onSuccess }) {
       <button
         type="submit"
         disabled={saving}
-        className="px-5 py-2 rounded-xl bg-black text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+        className="px-5 py-2 rounded-xl bg-black dark:bg-slate-700 text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
       >
         {saving ? "Saving..." : "Save Changes"}
       </button>
@@ -192,10 +192,21 @@ export default function EditProfileForm({ admin, onSuccess }) {
           padding: 10px 12px;
           border-radius: 12px;
           outline: none;
+          background: #fff;
+          color: #111827;
         }
         .input:focus {
           border-color: #111827;
           box-shadow: 0 0 0 2px #11182710;
+        }
+        .dark .input {
+          border-color: #475569;
+          background: #1e293b;
+          color: #f1f5f9;
+        }
+        .dark .input:focus {
+          border-color: #cbd5e1;
+          box-shadow: 0 0 0 2px #cbd5e11a;
         }
       `}</style>
     </form>
@@ -205,7 +216,7 @@ export default function EditProfileForm({ admin, onSuccess }) {
 function Field({ label, children }) {
   return (
     <div>
-      <label className="text-sm text-gray-600">{label}</label>
+      <label className="text-sm text-gray-600 dark:text-slate-400">{label}</label>
       <div className="mt-1">{children}</div>
     </div>
   );

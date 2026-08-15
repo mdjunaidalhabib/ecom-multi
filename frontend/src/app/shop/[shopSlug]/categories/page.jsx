@@ -1,5 +1,6 @@
 import CategoryBrowserClient from "../../../../../components/categories/CategoryBrowserClient";
 import { serverFetch } from "../../../../../lib/serverApi";
+import { requireFullStorefront } from "../../../../../lib/requireFullStorefront";
 
 async function getCategoriesData() {
   let categories = [];
@@ -30,7 +31,10 @@ async function getCategoriesData() {
   return { categories, selectedCategoryId: firstCategoryId, products };
 }
 
-export default async function CategoryPage() {
+export default async function CategoryPage({ params }) {
+  const { shopSlug } = await params;
+  await requireFullStorefront(shopSlug);
+
   const { categories, selectedCategoryId, products } =
     await getCategoriesData();
 

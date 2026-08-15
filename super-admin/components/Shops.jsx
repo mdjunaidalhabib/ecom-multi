@@ -23,30 +23,33 @@ import {
 import Toast from "./Toast";
 
 const STATUS_STYLES = {
-  active: "bg-green-100 text-green-700 border-green-300",
-  trial: "bg-amber-100 text-amber-700 border-amber-300",
-  suspended: "bg-red-100 text-red-700 border-red-300",
+  active: "bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-300 border-green-300 dark:border-green-500/30",
+  trial: "bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/30",
+  suspended: "bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-300 dark:border-red-500/30",
 };
 
 const DOMAIN_STATUS_STYLES = {
-  verified: { icon: CheckCircle2, className: "text-green-600" },
-  pending_dns: { icon: Clock, className: "text-amber-600" },
-  failed: { icon: XCircle, className: "text-red-600" },
+  verified: { icon: CheckCircle2, className: "text-green-600 dark:text-green-400" },
+  pending_dns: { icon: Clock, className: "text-amber-600 dark:text-amber-400" },
+  failed: { icon: XCircle, className: "text-red-600 dark:text-red-400" },
 };
 
-const PLAN_LABELS = { free: "Free", starter: "Starter", pro: "Pro" };
-const PLAN_STYLES = {
-  free: "bg-gray-100 text-gray-700 border-gray-300",
-  starter: "bg-blue-100 text-blue-700 border-blue-300",
-  pro: "bg-purple-100 text-purple-700 border-purple-300",
-};
+// ✅ প্ল্যান এখন super-admin থেকে dynamically যোগ/এডিট/ডিলিট করা যায় (দেখুন
+// Plans পেজ), তাই এখানে fixed free/starter/pro constants নেই — badge রঙ
+// একটা ছোট rotating palette থেকে index অনুযায়ী বসে
+const PLAN_BADGE_PALETTE = [
+  "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 border-gray-300 dark:border-slate-600",
+  "bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-500/30",
+  "bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-500/30",
+  "bg-teal-100 dark:bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-500/30",
+];
 const THEME_LABELS = { classic: "Classic", aurora: "Aurora", terra: "Terra" };
 
 export default function Shops() {
   const [shops, setShops] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [toast, setToast] = useState(null);
-  const [planThemeMap, setPlanThemeMap] = useState({});
+  const [plans, setPlans] = useState([]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingShop, setEditingShop] = useState(null); // null = creating new
@@ -88,13 +91,20 @@ export default function Shops() {
 
   useEffect(() => {
     loadShops();
-    // ✅ কোনো শপের branding.theme override না থাকলে effective theme বের
-    // করার জন্য plan-এর default theme mapping লাগে (দেখুন Settings > Themes)
-    fetch("/api/admin/theme-settings")
+    // ✅ প্ল্যান লিস্ট — dropdown, badge label এবং effective theme (branding.theme
+    // override না থাকলে) সবকিছুর জন্যই লাগে (দেখুন Plans পেজ)
+    fetch("/api/admin/plans")
       .then((res) => res.json())
-      .then((data) => setPlanThemeMap(data.planThemeMap || {}))
+      .then((data) => setPlans(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, []);
+
+  const getPlan = (key) => plans.find((p) => p.key === key);
+  const getPlanLabel = (key) => getPlan(key)?.name || key;
+  const getPlanBadgeStyle = (key) => {
+    const index = plans.findIndex((p) => p.key === key);
+    return PLAN_BADGE_PALETTE[index >= 0 ? index % PLAN_BADGE_PALETTE.length : 0];
+  };
 
   // ================== MODAL HELPERS ==================
   // Backend normalizeSlug()-এর সাথে মিলিয়ে রাখা — শুধু preview-এর জন্য,
@@ -394,19 +404,19 @@ export default function Shops() {
     <div>
       {/* HEADER */}
       <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-slate-100">
           <Store size={24} /> Shops
         </h1>
         <div className="lg:ml-auto flex flex-wrap gap-2">
           <Link
             href="/trash"
-            className="flex items-center gap-1.5 border border-red-200 bg-red-50 text-red-700 shadow-sm font-semibold px-4 py-2 rounded-lg text-sm hover:bg-red-100 active:scale-[0.98]"
+            className="flex items-center gap-1.5 border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 shadow-sm font-semibold px-4 py-2 rounded-lg text-sm hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-[0.98]"
           >
             <Trash2 size={16} /> Shop Trash
           </Link>
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-1.5 bg-indigo-600 text-white shadow font-semibold px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 active:scale-[0.98]"
+            className="flex items-center gap-1.5 bg-rose-600 text-white shadow font-semibold px-4 py-2 rounded-lg text-sm hover:bg-rose-700 active:scale-[0.98]"
           >
             <Plus size={16} /> নতুন শপ তৈরি করুন
           </button>
@@ -415,9 +425,9 @@ export default function Shops() {
 
       {/* LIST */}
       {pageLoading ? (
-        <div className="text-center text-gray-500 py-10">লোড হচ্ছে...</div>
+        <div className="text-center text-gray-500 dark:text-slate-400 py-10">লোড হচ্ছে...</div>
       ) : shops.length === 0 ? (
-        <div className="text-center text-gray-500 py-10">
+        <div className="text-center text-gray-500 dark:text-slate-400 py-10">
           এখনো কোনো শপ তৈরি হয়নি। "নতুন শপ তৈরি করুন" চাপুন।
         </div>
       ) : (
@@ -427,18 +437,18 @@ export default function Shops() {
               DOMAIN_STATUS_STYLES[shop.domainStatus] || DOMAIN_STATUS_STYLES.pending_dns;
             const DomainIcon = domainInfo.icon;
             const effectiveTheme =
-              shop.branding?.theme || planThemeMap[shop.plan] || "classic";
+              shop.branding?.theme || getPlan(shop.plan)?.theme || "classic";
             const themeIsOverridden = !!shop.branding?.theme;
 
             return (
               <div
                 key={shop._id}
-                className="border rounded-xl p-4 shadow-sm bg-white flex flex-col gap-3"
+                className="border border-gray-200 dark:border-slate-700 rounded-xl p-4 shadow-sm dark:shadow-black/20 bg-white dark:bg-slate-900 flex flex-col gap-3"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <h2 className="font-bold text-lg">{shop.name}</h2>
-                    <div className="flex items-center gap-1 text-sm text-gray-500 mt-0.5">
+                    <h2 className="font-bold text-lg text-gray-900 dark:text-slate-100">{shop.name}</h2>
+                    <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mt-0.5">
                       <Globe size={14} />
                       {shop.domain || `/shop/${shop.slug}`}
                     </div>
@@ -454,14 +464,12 @@ export default function Shops() {
 
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span
-                    className={`text-xs font-semibold px-2 py-1 rounded-full border ${
-                      PLAN_STYLES[shop.plan] || PLAN_STYLES.free
-                    }`}
+                    className={`text-xs font-semibold px-2 py-1 rounded-full border ${getPlanBadgeStyle(shop.plan)}`}
                   >
-                    {PLAN_LABELS[shop.plan] || shop.plan} প্ল্যান
+                    {getPlanLabel(shop.plan)} প্ল্যান
                   </span>
                   <span
-                    className="text-xs font-semibold px-2 py-1 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200"
+                    className="text-xs font-semibold px-2 py-1 rounded-full border bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30"
                     title={themeIsOverridden ? "এই শপে নিজস্ব override করা theme" : "প্ল্যানের default theme"}
                   >
                     {THEME_LABELS[effectiveTheme] || effectiveTheme} থিম
@@ -481,7 +489,7 @@ export default function Shops() {
                       onClick={() => handleVerifyDomain(shop)}
                       disabled={verifyingId === shop._id}
                       title="আবার চেক করুন"
-                      className="ml-auto text-gray-400 hover:text-indigo-600"
+                      className="ml-auto text-gray-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400"
                     >
                       <RefreshCw
                         size={14}
@@ -490,15 +498,15 @@ export default function Shops() {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                  <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-slate-400">
                     <Globe size={15} />
                     কাস্টম ডোমেইন নেই — শপের নিজস্ব লিংক দিয়ে চলছে
                   </div>
                 )}
 
                 {shop.status === "suspended" && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-red-500">
+                  <div className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-3 py-2 text-sm text-red-800 dark:text-red-300">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-red-500 dark:text-red-400">
                       Suspension reason
                     </p>
                     <p className="mt-1 whitespace-pre-wrap break-words font-medium">
@@ -507,28 +515,28 @@ export default function Shops() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-2 text-center text-xs bg-gray-50 rounded-lg py-2">
+                <div className="grid grid-cols-3 gap-2 text-center text-xs bg-gray-50 dark:bg-slate-800 rounded-lg py-2">
                   <div className="flex flex-col items-center gap-0.5">
-                    <Package size={14} className="text-gray-500" />
-                    <b>{shop.stats?.products ?? 0}</b>
-                    <span className="text-gray-500">Products</span>
+                    <Package size={14} className="text-gray-500 dark:text-slate-400" />
+                    <b className="text-gray-900 dark:text-slate-100">{shop.stats?.products ?? 0}</b>
+                    <span className="text-gray-500 dark:text-slate-400">Products</span>
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
-                    <ShoppingCart size={14} className="text-gray-500" />
-                    <b>{shop.stats?.orders ?? 0}</b>
-                    <span className="text-gray-500">Orders</span>
+                    <ShoppingCart size={14} className="text-gray-500 dark:text-slate-400" />
+                    <b className="text-gray-900 dark:text-slate-100">{shop.stats?.orders ?? 0}</b>
+                    <span className="text-gray-500 dark:text-slate-400">Orders</span>
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
-                    <Users size={14} className="text-gray-500" />
-                    <b>{shop.stats?.admins ?? 0}</b>
-                    <span className="text-gray-500">Admins</span>
+                    <Users size={14} className="text-gray-500 dark:text-slate-400" />
+                    <b className="text-gray-900 dark:text-slate-100">{shop.stats?.admins ?? 0}</b>
+                    <span className="text-gray-500 dark:text-slate-400">Admins</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   <button
                     onClick={() => openAdminsModal(shop)}
-                    className="flex-1 flex items-center justify-center gap-1 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded text-sm hover:bg-indigo-200"
+                    className="flex-1 flex items-center justify-center gap-1 bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 px-3 py-1.5 rounded text-sm hover:bg-rose-200 dark:hover:bg-rose-500/25"
                   >
                     <UserPlus size={14} /> Admins
                   </button>
@@ -555,7 +563,7 @@ export default function Shops() {
                   )}
                   <button
                     onClick={() => setDeleteModal(shop)}
-                    className="flex items-center justify-center gap-1 bg-red-50 border border-red-200 text-red-700 px-3 py-1.5 rounded text-sm hover:bg-red-100"
+                    className="flex items-center justify-center gap-1 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400 px-3 py-1.5 rounded text-sm hover:bg-red-100 dark:hover:bg-red-500/20"
                   >
                     <Trash2 size={14} /> Delete
                   </button>
@@ -569,19 +577,19 @@ export default function Shops() {
       {/* CREATE / EDIT MODAL */}
       {showModal && (
         <>
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-40" onClick={closeModal} />
+          <div className="fixed inset-0 bg-white/50 dark:bg-black/60 backdrop-blur-sm z-40" onClick={closeModal} />
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
             <form
               onSubmit={handleSubmit}
               noValidate
-              className="bg-white p-6 rounded-xl shadow-xl border w-full max-w-md space-y-4"
+              className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-xl dark:shadow-black/40 border border-gray-200 dark:border-slate-700 w-full max-w-md space-y-4"
             >
-              <h2 className="text-xl font-bold">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">
                 {editingShop ? "শপ এডিট করুন" : "নতুন শপ তৈরি করুন"}
               </h2>
 
               <div>
-                <label className="text-sm font-medium">শপের নাম <span className="text-red-600">*</span></label>
+                <label className="text-sm font-medium text-gray-700 dark:text-slate-300">শপের নাম <span className="text-red-600">*</span></label>
                 <input
                   required
                   value={form.name}
@@ -598,13 +606,13 @@ export default function Shops() {
                       setShopErrors((prev) => ({ ...prev, slug: false }));
                     }
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none ${shopErrors.name ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${shopErrors.name ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20" : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"}`}
                   placeholder="Cartvan Fashion"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium">Slug <span className="text-red-600">*</span></label>
+                <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Slug <span className="text-red-600">*</span></label>
                 <input
                   required
                   value={form.slug}
@@ -614,33 +622,33 @@ export default function Shops() {
                     setForm((f) => ({ ...f, slug }));
                     if (slug) setShopErrors((prev) => ({ ...prev, slug: false }));
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none font-mono text-sm ${shopErrors.slug ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none font-mono text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${shopErrors.slug ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20" : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"}`}
                   placeholder="cartvan-fashion"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                   শপের নিজস্ব লিংকে ব্যবহার হবে: /shop/{form.slug || "..."} — শুধু ছোট হাতের অক্ষর, সংখ্যা, হাইফেন
                 </p>
               </div>
 
               <div>
-                <label className="text-sm font-medium">কাস্টম ডোমেইন <span className="text-gray-400 font-normal">(ঐচ্ছিক)</span></label>
+                <label className="text-sm font-medium text-gray-700 dark:text-slate-300">কাস্টম ডোমেইন <span className="text-gray-400 font-normal">(ঐচ্ছিক)</span></label>
                 <input
                   value={form.domain}
                   onChange={(e) => {
                     setForm((f) => ({ ...f, domain: e.target.value }));
                     if (e.target.value.trim()) setShopErrors((prev) => ({ ...prev, domain: false }));
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none ${shopErrors.domain ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${shopErrors.domain ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20" : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"}`}
                   placeholder="shop1.com"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                   https://, www. লাগবে না — শুধু ডোমেইন নেম (যেমন: shop1.com)। খালি রাখলে শপ platform-এর নিজস্ব লিংক (/shop/slug) দিয়ে চলবে, পরে যেকোনো সময় কাস্টম ডোমেইন যোগ করা যাবে।
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium">Contact Email</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Contact Email</label>
                   <input
                     type="email"
                     value={form.contactEmail}
@@ -650,57 +658,59 @@ export default function Shops() {
                         setShopErrors((prev) => ({ ...prev, contactEmail: false }));
                       }
                     }}
-                    className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none ${shopErrors.contactEmail ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
+                    className={`w-full border rounded-lg px-3 py-2 mt-1 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${shopErrors.contactEmail ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20" : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"}`}
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Contact Phone</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Contact Phone</label>
                   <input
                     value={form.contactPhone}
                     onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 mt-1"
+                    className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium">Plan</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Plan</label>
                 <select
                   value={form.plan}
                   onChange={(e) => setForm((f) => ({ ...f, plan: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 mt-1"
+                  className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1"
                 >
-                  <option value="free">Free</option>
-                  <option value="starter">Starter</option>
-                  <option value="pro">Pro</option>
+                  {plans.map((plan) => (
+                    <option key={plan.key} value={plan.key}>
+                      {plan.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-sm font-medium">Theme override</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Theme override</label>
                 <select
                   value={form.theme}
                   onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 mt-1"
+                  className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1"
                 >
                   <option value="">Plan অনুযায়ী default</option>
                   <option value="classic">Classic</option>
                   <option value="aurora">Aurora</option>
                   <option value="terra">Terra</option>
                 </select>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
                   খালি রাখলে Settings → Themes-এ ঠিক করা plan-এর default theme ব্যবহার হবে।
                 </p>
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={closeModal} className="px-4 py-2 border rounded-lg">
+                <button type="button" onClick={closeModal} className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg">
                   বাতিল
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+                  className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-60"
                 >
                   {saving ? "সেভ হচ্ছে..." : editingShop ? "আপডেট করুন" : "তৈরি করুন"}
                 </button>
@@ -713,11 +723,11 @@ export default function Shops() {
       {/* SUSPEND CONFIRM MODAL */}
       {suspendModal && (
         <>
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-40" />
+          <div className="fixed inset-0 bg-white/50 dark:bg-black/60 backdrop-blur-sm z-40" />
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 rounded-xl shadow-xl border w-full max-w-sm">
-              <h2 className="text-xl font-bold text-red-600 mb-3">⚠ শপ সাসপেন্ড করবেন?</h2>
-              <p className="mb-3">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-xl dark:shadow-black/40 border border-gray-200 dark:border-slate-700 w-full max-w-sm">
+              <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-3">⚠ শপ সাসপেন্ড করবেন?</h2>
+              <p className="mb-3 text-gray-700 dark:text-slate-300">
                 <b>{suspendModal.name}</b> সাসপেন্ড করলে এই শপের কাস্টমার-ফেসিং সাইট বন্ধ হয়ে যাবে।
               </p>
               <textarea
@@ -727,15 +737,15 @@ export default function Shops() {
                   if (e.target.value.trim()) setSuspendReasonError(false);
                 }}
                 placeholder="কেন শপটি সাসপেন্ড করা হচ্ছে লিখুন"
-                className={`w-full rounded-lg border px-3 py-2 text-sm outline-none ${
+                className={`w-full rounded-lg border px-3 py-2 text-sm outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${
                   suspendReasonError
-                    ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200"
-                    : "border-gray-300 focus:ring-2 focus:ring-red-100"
+                    ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20"
+                    : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-red-100 dark:focus:ring-red-500/20"
                 }`}
                 rows={3}
               />
               {suspendReasonError && (
-                <p className="mb-4 mt-1 text-xs font-medium text-red-600">
+                <p className="mb-4 mt-1 text-xs font-medium text-red-600 dark:text-red-400">
                   সাসপেন্ড করার কারণ লিখতে হবে।
                 </p>
               )}
@@ -747,13 +757,13 @@ export default function Shops() {
                     setSuspendReason("");
                     setSuspendReasonError(false);
                   }}
-                  className="px-4 py-2 border rounded-lg"
+                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg"
                 >
                   বাতিল
                 </button>
                 <button
                   onClick={handleSuspend}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg"
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 >
                   সাসপেন্ড করুন
                 </button>
@@ -766,16 +776,16 @@ export default function Shops() {
       {/* DELETE SHOP CONFIRM MODAL */}
       {deleteModal && (
         <>
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-40" />
+          <div className="fixed inset-0 bg-white/50 dark:bg-black/60 backdrop-blur-sm z-40" />
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 rounded-xl shadow-xl border w-full max-w-sm">
-              <h2 className="text-xl font-bold text-red-600 mb-3">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-xl dark:shadow-black/40 border border-gray-200 dark:border-slate-700 w-full max-w-sm">
+              <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-3">
                 🗑️ Shop Trash-এ পাঠাবেন?
               </h2>
-              <p className="text-gray-700 mb-3">
+              <p className="text-gray-700 dark:text-slate-300 mb-3">
                 <b>{deleteModal.name}</b> এখনই active shop list থেকে সরানো হবে।
               </p>
-              <p className="text-sm text-gray-500 mb-5">
+              <p className="text-sm text-gray-500 dark:text-slate-400 mb-5">
                 ৩ দিনের মধ্যে Shop Trash থেকে Restore করা যাবে। কোনো action না নিলে Shop এবং এর সব data permanently delete হবে।
               </p>
               <div className="flex justify-end gap-3">
@@ -783,7 +793,7 @@ export default function Shops() {
                   type="button"
                   disabled={deletingShop}
                   onClick={() => setDeleteModal(null)}
-                  className="px-4 py-2 border rounded-lg disabled:opacity-60"
+                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg disabled:opacity-60"
                 >
                   বাতিল
                 </button>
@@ -791,7 +801,7 @@ export default function Shops() {
                   type="button"
                   disabled={deletingShop}
                   onClick={handleDeleteShop}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg disabled:opacity-60"
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-60"
                 >
                   {deletingShop ? "Trash-এ পাঠানো হচ্ছে..." : "Trash-এ পাঠান"}
                 </button>
@@ -804,14 +814,14 @@ export default function Shops() {
       {/* ADMINS MANAGEMENT MODAL */}
       {adminsModal && (
         <>
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-40" onClick={closeAdminsModal} />
+          <div className="fixed inset-0 bg-white/50 dark:bg-black/60 backdrop-blur-sm z-40" onClick={closeAdminsModal} />
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl border w-full max-w-lg max-h-[85vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-5 border-b">
-                <h2 className="text-lg font-bold flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl dark:shadow-black/40 border border-gray-200 dark:border-slate-700 w-full max-w-lg max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-slate-700">
+                <h2 className="text-lg font-bold flex items-center gap-2 text-gray-900 dark:text-slate-100">
                   <UserPlus size={18} /> {adminsModal.name} — Admins
                 </h2>
-                <button onClick={closeAdminsModal} className="text-gray-400 hover:text-gray-700">
+                <button onClick={closeAdminsModal} className="text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300">
                   <X size={20} />
                 </button>
               </div>
@@ -819,13 +829,13 @@ export default function Shops() {
               <div className="p-5 space-y-5">
                 {/* Existing admins list */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-600 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400 mb-2">
                     বর্তমানে assign করা আছে
                   </h3>
                   {adminsLoading ? (
-                    <div className="text-sm text-gray-500">লোড হচ্ছে...</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">লোড হচ্ছে...</div>
                   ) : shopAdmins.length === 0 ? (
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-slate-400">
                       এই শপে এখনো কোনো admin assign করা হয়নি।
                     </div>
                   ) : (
@@ -833,18 +843,18 @@ export default function Shops() {
                       {shopAdmins.map((a) => (
                         <div
                           key={a._id}
-                          className="flex items-center justify-between border rounded-lg px-3 py-2"
+                          className="flex items-center justify-between border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2"
                         >
                           <div>
-                            <div className="font-medium text-sm">{a.name}</div>
-                            <div className="text-xs text-gray-500">
+                            <div className="font-medium text-sm text-gray-900 dark:text-slate-100">{a.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400">
                               {a.email} · <span className="capitalize">{a.role}</span>
                             </div>
                           </div>
                           <button
                             onClick={() => handleRemoveAdmin(a._id)}
                             title="এই শপ থেকে unassign করুন"
-                            className="text-red-500 hover:text-red-700 p-1"
+                            className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -855,13 +865,13 @@ export default function Shops() {
                 </div>
 
                 {/* Invite / assign form */}
-                <div className="border-t pt-4">
-                  <h3 className="text-sm font-semibold text-gray-600 mb-2">
+                <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
+                  <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400 mb-2">
                     নতুন Admin যোগ করুন
                   </h3>
                   <form onSubmit={handleInviteAdmin} className="space-y-3" noValidate>
                     <div>
-                      <label className="text-sm font-medium">ইমেইল <span className="text-red-600">*</span></label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-slate-300">ইমেইল <span className="text-red-600">*</span></label>
                       <input
                         type="email"
                         value={adminForm.email}
@@ -869,22 +879,22 @@ export default function Shops() {
                           setAdminForm((f) => ({ ...f, email: e.target.value }));
                           if (e.target.value.trim()) setAdminErrors((prev) => ({ ...prev, email: false }));
                         }}
-                        className={`w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none ${adminErrors.email ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
+                        className={`w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${adminErrors.email ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20" : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"}`}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">নাম <span className="text-red-600">*</span></label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-slate-300">নাম <span className="text-red-600">*</span></label>
                       <input
                         value={adminForm.name}
                         onChange={(e) => {
                           setAdminForm((f) => ({ ...f, name: e.target.value }));
                           if (e.target.value.trim()) setAdminErrors((prev) => ({ ...prev, name: false }));
                         }}
-                        className={`w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none ${adminErrors.name ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
+                        className={`w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${adminErrors.name ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20" : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"}`}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">পাসওয়ার্ড <span className="text-red-600">*</span></label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-slate-300">পাসওয়ার্ড <span className="text-red-600">*</span></label>
                       <input
                         type="password"
                         value={adminForm.password}
@@ -892,15 +902,15 @@ export default function Shops() {
                           setAdminForm((f) => ({ ...f, password: e.target.value }));
                           if (e.target.value.length >= 6) setAdminErrors((prev) => ({ ...prev, password: false }));
                         }}
-                        className={`w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none ${adminErrors.password ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200" : "border-gray-300 focus:ring-2 focus:ring-indigo-200"}`}
+                        className={`w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${adminErrors.password ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20" : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"}`}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">ভূমিকা <span className="text-red-600">*</span></label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-slate-300">ভূমিকা <span className="text-red-600">*</span></label>
                       <select
                         value={adminForm.role}
                         onChange={(e) => setAdminForm((f) => ({ ...f, role: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 mt-1 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                        className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1 text-sm outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
                       >
                       <option value="admin">Admin (ফুল অ্যাক্সেস)</option>
                       <option value="staff">Staff (সীমিত)</option>
@@ -909,7 +919,7 @@ export default function Shops() {
                     <button
                       type="submit"
                       disabled={invitingAdmin}
-                      className="w-full bg-indigo-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60"
+                      className="w-full bg-rose-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-rose-700 disabled:opacity-60"
                     >
                       {invitingAdmin ? "যোগ করা হচ্ছে..." : "Assign করুন"}
                     </button>

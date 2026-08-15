@@ -5,11 +5,11 @@ import Toast from "../../../../components/Toast";
 
 function Skeleton() {
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow rounded-xl mt-10">
-      <div className="h-5 w-44 bg-gray-200 rounded mb-6 animate-pulse" />
-      <div className="h-4 w-20 bg-gray-200 rounded mb-2 animate-pulse" />
-      <div className="h-10 w-full bg-gray-200 rounded mb-5 animate-pulse" />
-      <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+    <div className="max-w-md mx-auto p-6 bg-white dark:bg-slate-900 shadow rounded-xl mt-10">
+      <div className="h-5 w-44 bg-gray-200 dark:bg-slate-700 rounded mb-6 animate-pulse" />
+      <div className="h-4 w-20 bg-gray-200 dark:bg-slate-700 rounded mb-2 animate-pulse" />
+      <div className="h-10 w-full bg-gray-200 dark:bg-slate-700 rounded mb-5 animate-pulse" />
+      <div className="h-10 w-full bg-gray-200 dark:bg-slate-700 rounded animate-pulse" />
     </div>
   );
 }
@@ -111,11 +111,11 @@ export default function AdminDeliveryChargePage() {
       {loading ? (
         <Skeleton />
       ) : (
-        <div className="max-w-md mx-auto p-6 bg-white shadow rounded-xl mt-10">
+        <div className="max-w-md mx-auto p-6 bg-white dark:bg-slate-900 shadow rounded-xl mt-10">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold mb-1">🚚 Delivery Charge</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-lg font-bold mb-1 text-gray-900 dark:text-slate-100">🚚 Delivery Charge</h2>
+              <p className="text-sm text-gray-500 dark:text-slate-400">
                 Update the delivery charge for all customers.
               </p>
             </div>
@@ -124,7 +124,7 @@ export default function AdminDeliveryChargePage() {
             {!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
-                className="text-sm font-semibold text-pink-600 hover:text-pink-700"
+                className="text-sm font-semibold text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300"
               >
                 ✏️ Edit
               </button>
@@ -132,7 +132,7 @@ export default function AdminDeliveryChargePage() {
               <button
                 onClick={cancelEdit}
                 disabled={saving}
-                className="text-sm font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                className="text-sm font-semibold text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 disabled:opacity-50"
               >
                 ❌ Cancel
               </button>
@@ -142,19 +142,19 @@ export default function AdminDeliveryChargePage() {
           {/* ✅ READ MODE */}
           {!isEditing ? (
             <div className="mt-6">
-              <div className="flex items-center justify-between bg-gray-50 border rounded-lg p-2">
-                <span className="text-sm font-medium text-gray-700">
+              <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg p-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
                   Charge
                 </span>
-                <span className="text-lg font-bold text-gray-900">৳ {fee}</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-slate-100">৳ {fee}</span>
               </div>
-              <div className="flex items-center justify-between bg-gray-50 border rounded-lg p-2 mt-2">
-                <span className="text-sm font-medium text-gray-700">Text</span>
-                <span className="text-sm font-semibold text-gray-900 text-right">
+              <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg p-2 mt-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Text</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-slate-100 text-right">
                   {label}
                 </span>
               </div>
-              <p className="mt-3 text-xs text-gray-400">
+              <p className="mt-3 text-xs text-gray-400 dark:text-slate-500">
                 Click <span className="font-semibold">Edit</span> to update.
               </p>
             </div>
@@ -162,7 +162,7 @@ export default function AdminDeliveryChargePage() {
             /* ✅ EDIT MODE */
             <div className="mt-6">
               <label className="block mb-4">
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
                   Charge (৳)
                 </span>
                 <input
@@ -170,12 +170,12 @@ export default function AdminDeliveryChargePage() {
                   value={fee}
                   min={0}
                   onChange={(e) => setFee(Number(e.target.value))}
-                  className="mt-1 w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  className="mt-1 w-full border dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
                 />
               </label>
 
               <label className="block mb-4">
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
                   Text (checkout পেজে দেখাবে)
                 </span>
                 <input
@@ -183,9 +183,9 @@ export default function AdminDeliveryChargePage() {
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
                   placeholder={DEFAULT_LABEL}
-                  className="mt-1 w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  className="mt-1 w-full border dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400"
                 />
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-gray-400 dark:text-slate-500">
                   যেমন: &ldquo;🚚 ডেলিভারি চার্জ&rdquo; — checkout পেজে এই টেক্সট ও
                   পাশে চার্জ দেখানো হবে।
                 </p>
@@ -196,7 +196,7 @@ export default function AdminDeliveryChargePage() {
                 disabled={saving || isUnchanged}
                 className={`w-full text-white py-2 rounded-md font-bold transition ${
                   saving || isUnchanged
-                    ? "bg-pink-400 cursor-not-allowed"
+                    ? "bg-pink-400 dark:bg-pink-500/40 cursor-not-allowed"
                     : "bg-pink-600 hover:bg-pink-700"
                 }`}
               >
@@ -204,7 +204,7 @@ export default function AdminDeliveryChargePage() {
               </button>
 
               {isUnchanged && (
-                <p className="text-xs text-gray-400 mt-2 text-center">
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-2 text-center">
                   No changes to save.
                 </p>
               )}

@@ -125,8 +125,8 @@ export default function FooterAdminPanel() {
     toast.error("❌ Logo removed");
   };
 
-  if (loading) return <p className="text-center py-10">Loading...</p>;
-  if (error) return <p className="text-red-500 text-center">{error}</p>;
+  if (loading) return <p className="text-center py-10 text-gray-500 dark:text-slate-400">Loading...</p>;
+  if (error) return <p className="text-red-500 dark:text-red-400 text-center">{error}</p>;
   if (!footer) return null;
 
   const renderFieldEditor = (section, field, value) => {
@@ -136,7 +136,7 @@ export default function FooterAdminPanel() {
         <input
           value={tempItem ?? ""}
           onChange={(e) => setTempItem(e.target.value)}
-          className="w-full md:flex-1 p-2 border rounded"
+          className="w-full md:flex-1 p-2 border dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded"
         />
         <div className="flex gap-2">
           <button
@@ -163,7 +163,7 @@ export default function FooterAdminPanel() {
       </div>
     ) : (
       <div className="flex flex-col md:flex-row gap-2">
-        <p className="flex-1 break-words text-sm">
+        <p className="flex-1 break-words text-sm text-gray-700 dark:text-slate-300">
           <strong>{field}:</strong> {value || "Not set"}
         </p>
         <div className="flex gap-2">
@@ -234,21 +234,21 @@ export default function FooterAdminPanel() {
   const available = ALL_PLATFORMS.filter((p) => !used.includes(p));
 
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow p-4 md:p-6 rounded-lg space-y-6">
+    <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900 shadow p-4 md:p-6 rounded-lg space-y-6">
       <Toaster position="top-right" />
 
-      <h2 className="text-xl md:text-2xl font-bold">🛠 Footer Admin Panel</h2>
+      <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-slate-100">🛠 Footer Admin Panel</h2>
 
       {/* BRAND */}
-      <div className="border p-3 rounded space-y-3">
-        <h3 className="font-semibold">Brand</h3>
+      <div className="border dark:border-slate-700 p-3 rounded space-y-3">
+        <h3 className="font-semibold text-gray-900 dark:text-slate-100">Brand</h3>
 
         {renderFieldEditor("brand", "title", footer.brand?.title)}
         {renderFieldEditor("brand", "about", footer.brand?.about)}
 
         {/* ✅ Logo Section */}
-        <div className="pt-2 border-t">
-          <p className="text-sm font-medium mb-2">Logo</p>
+        <div className="pt-2 border-t dark:border-slate-700">
+          <p className="text-sm font-medium mb-2 text-gray-700 dark:text-slate-300">Logo</p>
 
           {/* existing logo আছে এবং নতুন file select হয়নি */}
           {footer.brand?.logo && !logoFile ? (
@@ -256,7 +256,7 @@ export default function FooterAdminPanel() {
               <img
                 src={footer.brand.logo}
                 alt="Footer Logo"
-                className="h-16 rounded border object-contain"
+                className="h-16 rounded border dark:border-slate-700 object-contain"
               />
               <button
                 disabled={saving}
@@ -284,8 +284,8 @@ export default function FooterAdminPanel() {
       </div>
 
       {/* SOCIAL */}
-      <div className="border p-3 rounded space-y-2">
-        <h3 className="font-semibold">Social Links</h3>
+      <div className="border dark:border-slate-700 p-3 rounded space-y-2">
+        <h3 className="font-semibold text-gray-900 dark:text-slate-100">Social Links</h3>
 
         {footer.socialLinks.map((s, i) => {
           const meta = PLATFORM_META[s.platform];
@@ -294,9 +294,9 @@ export default function FooterAdminPanel() {
           return (
             <div
               key={i}
-              className="flex flex-col md:flex-row gap-2 border-b py-2"
+              className="flex flex-col md:flex-row gap-2 border-b dark:border-slate-700 py-2"
             >
-              <div className="flex items-center gap-2 md:w-40">
+              <div className="flex items-center gap-2 md:w-40 text-gray-700 dark:text-slate-300">
                 <span>{meta?.emoji}</span>
                 <span>{meta?.label}</span>
               </div>
@@ -306,7 +306,7 @@ export default function FooterAdminPanel() {
                   <input
                     value={tempItem ?? ""}
                     onChange={(e) => setTempItem(e.target.value)}
-                    className="w-full md:flex-1 p-2 border rounded"
+                    className="w-full md:flex-1 p-2 border dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded"
                   />
                   <button
                     onClick={() => handleUpdateSocialUrl(i, tempItem)}
@@ -317,7 +317,7 @@ export default function FooterAdminPanel() {
                 </>
               ) : (
                 <>
-                  <p className="flex-1 break-all text-sm">{s.url}</p>
+                  <p className="flex-1 break-all text-sm text-gray-700 dark:text-slate-300">{s.url}</p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
@@ -347,7 +347,7 @@ export default function FooterAdminPanel() {
             <select
               value={newPlatform}
               onChange={(e) => setNewPlatform(e.target.value)}
-              className="border p-2 rounded w-full md:w-auto"
+              className="border dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 p-2 rounded w-full md:w-auto"
             >
               <option value="">Select platform</option>
               {available.map((p) => (
@@ -361,7 +361,7 @@ export default function FooterAdminPanel() {
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
               placeholder="https://..."
-              className="border p-2 rounded w-full md:flex-1"
+              className="border dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 p-2 rounded w-full md:flex-1"
             />
 
             <button
@@ -375,14 +375,14 @@ export default function FooterAdminPanel() {
       </div>
 
       {/* CONTACT */}
-      <div className="border p-3 rounded space-y-2">
-        <h3 className="font-semibold">Contact</h3>
+      <div className="border dark:border-slate-700 p-3 rounded space-y-2">
+        <h3 className="font-semibold text-gray-900 dark:text-slate-100">Contact</h3>
         {CONTACT_FIELDS.map((f) =>
           renderFieldEditor("contact", f, footer.contact?.[f]),
         )}
       </div>
 
-      {saving && <p className="text-sm text-gray-400">Saving...</p>}
+      {saving && <p className="text-sm text-gray-400 dark:text-slate-500">Saving...</p>}
     </div>
   );
 }

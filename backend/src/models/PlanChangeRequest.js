@@ -14,14 +14,14 @@ const planChangeRequestSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    // plan key এখন dynamic Plan কালেকশন থেকে আসে (দেখুন models/Plan.js),
+    // তাই এখানে enum নেই — বৈধতা planRequest.admin.controller.js-এ যাচাই হয়
     currentPlan: {
       type: String,
-      enum: ["free", "starter", "pro"],
       required: true,
     },
     requestedPlan: {
       type: String,
-      enum: ["free", "starter", "pro"],
       required: true,
     },
     note: { type: String, trim: true, default: "" },

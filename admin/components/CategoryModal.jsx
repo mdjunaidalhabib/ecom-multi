@@ -53,25 +53,25 @@ export default function CategoryModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-40" />
+      <div className="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-40" />
 
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl">
-          <h2 className="text-xl font-bold mb-4 text-center">
+        <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl p-6 shadow-xl">
+          <h2 className="text-xl font-bold mb-4 text-center text-gray-900 dark:text-slate-100">
             {editId ? "✏️ Edit Category" : "➕ Add Category"}
           </h2>
 
           <form onSubmit={onSubmit} className="space-y-3">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
                 Category Name
               </label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Category name"
-                className="border w-full p-2 rounded"
+                className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
                 required
               />
             </div>
@@ -79,13 +79,13 @@ export default function CategoryModal({
             {/* Serial + Status */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
                   Serial No
                 </label>
                 <select
                   value={order}
                   onChange={(e) => setOrder(Number(e.target.value))}
-                  className="border w-full p-2 rounded bg-white"
+                  className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                 >
                   {Array.from({ length: maxSerial }, (_, i) => i + 1).map(
                     (num) => (
@@ -98,11 +98,11 @@ export default function CategoryModal({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">Status</label>
                 <select
                   value={isActive ? "active" : "hidden"}
                   onChange={(e) => setIsActive(e.target.value === "active")}
-                  className="border w-full p-2 rounded bg-white"
+                  className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                 >
                   <option value="active">Active</option>
                   <option value="hidden">Hidden</option>
@@ -126,7 +126,7 @@ export default function CategoryModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border rounded"
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded text-gray-700 dark:text-slate-300"
                 disabled={loading}
               >
                 Cancel
@@ -136,7 +136,7 @@ export default function CategoryModal({
                 type="submit"
                 className={`px-4 py-2 rounded text-white ${
                   loading
-                    ? "bg-gray-400 cursor-not-allowed"
+                    ? "bg-gray-400 dark:bg-slate-600 cursor-not-allowed"
                     : "bg-green-600 hover:bg-green-700"
                 }`}
                 disabled={loading}

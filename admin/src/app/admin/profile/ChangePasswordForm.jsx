@@ -64,8 +64,8 @@ export default function ChangePasswordForm({ onSuccess }) {
 
   return (
     <form onSubmit={submit} className="space-y-4 max-w-md">
-      {err && <div className="text-red-500 text-sm">{err}</div>}
-      {msg && <div className="text-green-600 text-sm">{msg}</div>}
+      {err && <div className="text-red-500 dark:text-red-400 text-sm">{err}</div>}
+      {msg && <div className="text-green-600 dark:text-green-400 text-sm">{msg}</div>}
 
       {/* ✅ Current Password */}
       <Field label="Current Password">
@@ -81,7 +81,7 @@ export default function ChangePasswordForm({ onSuccess }) {
           <button
             type="button"
             onClick={() => setShow((s) => ({ ...s, current: !s.current }))}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
             aria-label={
               show.current ? "Hide current password" : "Show current password"
             }
@@ -105,7 +105,7 @@ export default function ChangePasswordForm({ onSuccess }) {
           <button
             type="button"
             onClick={() => setShow((s) => ({ ...s, new: !s.new }))}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
             aria-label={show.new ? "Hide new password" : "Show new password"}
           >
             {show.new ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -127,7 +127,7 @@ export default function ChangePasswordForm({ onSuccess }) {
           <button
             type="button"
             onClick={() => setShow((s) => ({ ...s, confirm: !s.confirm }))}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
             aria-label={
               show.confirm ? "Hide confirm password" : "Show confirm password"
             }
@@ -139,7 +139,7 @@ export default function ChangePasswordForm({ onSuccess }) {
 
       <button
         disabled={saving}
-        className="px-5 py-2 rounded-xl bg-black text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+        className="px-5 py-2 rounded-xl bg-black dark:bg-slate-700 text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
       >
         {saving ? "Updating..." : "Update Password"}
       </button>
@@ -151,10 +151,21 @@ export default function ChangePasswordForm({ onSuccess }) {
           padding: 10px 12px;
           border-radius: 12px;
           outline: none;
+          background: #fff;
+          color: #111827;
         }
         .input:focus {
           border-color: #111827;
           box-shadow: 0 0 0 2px #11182710;
+        }
+        .dark .input {
+          border-color: #475569;
+          background: #1e293b;
+          color: #f1f5f9;
+        }
+        .dark .input:focus {
+          border-color: #cbd5e1;
+          box-shadow: 0 0 0 2px #cbd5e11a;
         }
       `}</style>
     </form>
@@ -164,7 +175,7 @@ export default function ChangePasswordForm({ onSuccess }) {
 function Field({ label, children }) {
   return (
     <div>
-      <label className="text-sm text-gray-600">{label}</label>
+      <label className="text-sm text-gray-600 dark:text-slate-400">{label}</label>
       <div className="mt-1">{children}</div>
     </div>
   );

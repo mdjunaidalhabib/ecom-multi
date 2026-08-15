@@ -15,18 +15,18 @@ export default function ConfirmModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-sm w-full p-6">
         <div className="flex items-start gap-3">
           <div
             className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-              danger ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600"
+              danger ? "bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400" : "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
             }`}
           >
             <AlertTriangle size={20} />
           </div>
           <div className="min-w-0">
-            <h3 className="font-bold text-gray-900">{title}</h3>
-            <p className="mt-1 text-sm text-gray-600 whitespace-pre-line">
+            <h3 className="font-bold text-gray-900 dark:text-slate-100">{title}</h3>
+            <p className="mt-1 text-sm text-gray-600 dark:text-slate-400 whitespace-pre-line">
               {message}
             </p>
           </div>
@@ -35,7 +35,7 @@ export default function ConfirmModal({
         <div className="mt-6 flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-md transition"
+            className="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md transition"
           >
             {cancelText}
           </button>

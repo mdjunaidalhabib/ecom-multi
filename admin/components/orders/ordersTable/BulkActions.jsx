@@ -42,7 +42,7 @@ export default function BulkActions({
       )}
 
       {/* BULK BAR (ALWAYS VISIBLE) */}
-      <div className="flex items-center gap-2 bg-gray-50 border rounded-full px-3 py-1.5 shadow-sm mr-2">
+      <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full px-3 py-1.5 shadow-sm mr-2">
         {/* SELECTED COUNT */}
         <span className="text-xs font-semibold bg-blue-600 text-white px-2 py-0.5 rounded-full">
           {selected.length} Selected
@@ -51,7 +51,7 @@ export default function BulkActions({
         {/* PAYMENT HOLD NOTICE */}
         {hasPaymentHold && (
           <span
-            className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5"
+            className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-full px-2 py-0.5"
             title="Selected এর মধ্যে কিছু order এর Payment এখনো verify করা হয়নি"
           >
             ⏳ Payment Pending
@@ -61,7 +61,7 @@ export default function BulkActions({
         {/* BULK STATUS (ALWAYS RENDER, SOMETIMES DISABLED) */}
         {sameStatus && bulkStatus && (
           <select
-            className="rounded-full px-2 py-1 text-xs bg-white border"
+            className="rounded-full px-2 py-1 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 border border-gray-300 dark:border-slate-600"
             value={bulkStatus}
             disabled={disabled || hasPaymentHold}
             onChange={async (e) => {
@@ -132,7 +132,7 @@ export default function BulkActions({
           }}
           className={`px-3 py-1 rounded-full text-xs text-white ${
             disabled
-              ? "bg-red-300 cursor-not-allowed"
+              ? "bg-red-300 dark:bg-red-800/60 cursor-not-allowed"
               : "bg-red-600 hover:bg-red-700"
           }`}
         >

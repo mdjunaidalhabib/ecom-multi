@@ -14,7 +14,7 @@ export default function FormButtons({
         type="submit"
         disabled={disabled}
         className={`w-full py-3 rounded-xl text-white ${
-          disabled ? "bg-gray-400 cursor-not-allowed" : "bg-green-600"
+          disabled ? "bg-gray-400 dark:bg-slate-600 cursor-not-allowed" : "bg-green-600"
         }`}
       >
         {processing
@@ -29,7 +29,7 @@ export default function FormButtons({
       <button
         type="button"
         onClick={onClose}
-        className="w-full py-2 bg-gray-100 rounded-xl"
+        className="w-full py-2 bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-slate-100 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-xl transition-colors"
       >
         Cancel
       </button>

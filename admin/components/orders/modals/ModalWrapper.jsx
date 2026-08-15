@@ -10,7 +10,7 @@ export default function ModalWrapper({ open, children }) {
 
       {/* Modal container */}
       <div className="fixed inset-0 flex justify-center items-center z-50 p-4">
-        <div className="bg-white p-6 rounded-xl w-full max-w-sm shadow">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl w-full max-w-sm shadow border border-transparent dark:border-slate-700">
           {children}
         </div>
       </div>

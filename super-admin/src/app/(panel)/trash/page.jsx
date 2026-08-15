@@ -121,10 +121,10 @@ export default function ShopTrashPage() {
     <div className="p-3 sm:p-6">
       <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold sm:text-3xl">
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-slate-100 sm:text-3xl">
             <Trash2 size={28} /> Shop Trash
           </h1>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
             Deleted shops remain here for {TTL_DAYS} days. Restore করলে shop এবং আগের assigned admins ফিরে আসবে। কোনো action না নিলে shop ও তার সব data permanently delete হবে।
           </p>
         </div>
@@ -132,7 +132,7 @@ export default function ShopTrashPage() {
         <div className="flex gap-2 lg:ml-auto">
           <Link
             href="/shops"
-            className="flex items-center gap-1.5 rounded-lg border bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
           >
             <ArrowLeft size={16} /> Shops
           </Link>
@@ -149,7 +149,7 @@ export default function ShopTrashPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-gray-500">Loading...</div>
+        <div className="py-12 text-center text-gray-500 dark:text-slate-400">Loading...</div>
       ) : items.length ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((item) => (
@@ -163,22 +163,22 @@ export default function ShopTrashPage() {
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed bg-white py-14 text-center text-gray-500">
+        <div className="rounded-xl border border-dashed border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 py-14 text-center text-gray-500 dark:text-slate-400">
           Shop Trash is empty.
         </div>
       )}
 
       {confirmModal && (
         <>
-          <div className="fixed inset-0 z-40 bg-white/50 backdrop-blur-sm" />
+          <div className="fixed inset-0 z-40 bg-white/50 dark:bg-black/60 backdrop-blur-sm" />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-xl border bg-white p-6 shadow-xl">
+            <div className="w-full max-w-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-xl dark:shadow-black/40">
               {confirmModal.mode === "restore" && (
                 <>
-                  <h2 className="mb-3 text-xl font-bold text-green-600">
+                  <h2 className="mb-3 text-xl font-bold text-green-600 dark:text-green-400">
                     ♻️ Restore Shop
                   </h2>
-                  <p className="mb-6 text-gray-700">
+                  <p className="mb-6 text-gray-700 dark:text-slate-300">
                     <b>{confirmModal.item?.data?.name}</b> এবং আগের admin assignments Restore করবেন?
                   </p>
                 </>
@@ -186,10 +186,10 @@ export default function ShopTrashPage() {
 
               {confirmModal.mode === "delete" && (
                 <>
-                  <h2 className="mb-3 text-xl font-bold text-red-600">
+                  <h2 className="mb-3 text-xl font-bold text-red-600 dark:text-red-400">
                     ⚠ Delete Forever
                   </h2>
-                  <p className="mb-6 text-gray-700">
+                  <p className="mb-6 text-gray-700 dark:text-slate-300">
                     <b>{confirmModal.item?.data?.name}</b>, products, orders, users, settings এবং related assets permanently delete হবে। এটি undo করা যাবে না।
                   </p>
                 </>
@@ -197,10 +197,10 @@ export default function ShopTrashPage() {
 
               {confirmModal.mode === "empty" && (
                 <>
-                  <h2 className="mb-3 text-xl font-bold text-red-600">
+                  <h2 className="mb-3 text-xl font-bold text-red-600 dark:text-red-400">
                     ⚠ Empty Shop Trash
                   </h2>
-                  <p className="mb-6 text-gray-700">
+                  <p className="mb-6 text-gray-700 dark:text-slate-300">
                     Trash-এর সব {items.length}টি shop এবং তাদের সব data permanently delete হবে।
                   </p>
                 </>
@@ -211,7 +211,7 @@ export default function ShopTrashPage() {
                   type="button"
                   disabled={Boolean(busyId) || emptying}
                   onClick={() => setConfirmModal(null)}
-                  className="rounded-lg border px-4 py-2 disabled:opacity-60"
+                  className="rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 px-4 py-2 disabled:opacity-60"
                 >
                   Cancel
                 </button>

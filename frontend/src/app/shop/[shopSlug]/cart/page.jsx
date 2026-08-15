@@ -10,6 +10,7 @@ import { apiFetch } from "../../../../../utils/api";
 import CheckoutButton from "../../../../../components/home/CheckoutButton";
 import CartSkeleton from "../../../../../components/skeletons/CartSkeleton";
 import useShopPath from "../../../../../hooks/useShopPath";
+import useRequireFullStorefront from "../../../../../hooks/useRequireFullStorefront";
 
 // ✅ Helper: cart key parse (productId|Color)
 const parseCartKey = (key) => {
@@ -186,6 +187,7 @@ const CartItem = memo(
 );
 
 export default function CartPage() {
+  useRequireFullStorefront();
   const {
     cart,
     setCart,

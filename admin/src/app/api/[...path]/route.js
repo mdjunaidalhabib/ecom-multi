@@ -36,6 +36,17 @@ function copyRequestHeaders(req) {
   return headers;
 }
 
+// ✅ Shop switcher (Header.jsx) ব্রাউজারে `active_shop_id` কুকিতে বেছে নেওয়া
+// শপ রাখে — সেটাকে backend-এর বোঝা `x-active-shop-id` হেডারে রূপান্তর করে
+// দেওয়া হয় এখানে, যাতে axios/fetch দিয়ে যেকোনো জায়গা থেকে কল করলেও
+// প্রতিটা admin request একই active শপে scope হয় (দেখুন requireShopContext)।
+function applyActiveShopHeader(headers, req) {
+  const activeShopId = req.cookies.get("active_shop_id")?.value;
+  if (activeShopId) {
+    headers.set("x-active-shop-id", activeShopId);
+  }
+}
+
 function rewriteLocationHeader(location, req) {
   if (!location) return location;
 
@@ -64,6 +75,8 @@ async function proxy(req, context) {
 
     if (path === "admin/login") {
       headers.delete("cookie");
+    } else {
+      applyActiveShopHeader(headers, req);
     }
 
     const init = {

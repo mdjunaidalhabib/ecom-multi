@@ -1,5 +1,6 @@
 import "./globals.css";
 import AdminPWARegister from "../../components/pwa-register.jsx";
+import ThemeProvider from "../../components/ThemeProvider.jsx";
 
 export const metadata = {
   title: "Dashboard | Admin Panel",
@@ -10,26 +11,34 @@ export const metadata = {
   },
 };
 
+// ✅ React hydrate করার আগেই localStorage থেকে থিম পড়ে html এ dark class
+// বসিয়ে দেয় — এতে পেজ লোডের সময় থিম flash দেখা যায় না। কোনো preference
+// সেভ করা না থাকলে ডিফল্ট সবসময় light (system preference অনুসরণ করা হয় না)।
+const NO_FLASH_THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('admin-theme');if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+
 export default function AdminLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* ✅ admin manifest */}
         <link rel="manifest" href="/admin-manifest.json" />
         <meta name="theme-color" content="#f472b6" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
       </head>
 
-      <body>
-        {/* ✅ SW register component */}
-        <AdminPWARegister />
+      <body suppressHydrationWarning>
+        <ThemeProvider>
+          {/* ✅ SW register component */}
+          <AdminPWARegister />
 
-        <div className="flex h-screen bg-pink-50">
-          <div className="flex-1 flex flex-col">
-            <main>{children}</main>
+          <div className="flex h-screen bg-pink-50 dark:bg-slate-950 transition-colors">
+            <div className="flex-1 flex flex-col">
+              <main>{children}</main>
+            </div>
           </div>
-        </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -10,6 +10,7 @@ import {
   protect,
   superAdminOnly,
 } from "../../middlewares/adminAuthMiddleware.js";
+import { getAdminShopAccess } from "../../utils/adminShopAccess.js";
 
 import {
   loginAdmin,
@@ -32,9 +33,19 @@ router.get("/verify", protect, async (req, res) => {
       return res.status(401).json({ message: "Admin not found" });
     }
 
+    // ✅ একাধিক শপে assigned admin/staff-দের জন্য Header-এ শপ-সুইচার
+    // দেখানোর জন্য এই admin এর ব্যবহারযোগ্য (active/trial) শপের তালিকা।
+    // superadmin-এর নিজস্ব কোনো শপ থাকে না, তাই খালি array।
+    let shops = [];
+    if (freshAdmin.role !== "superadmin") {
+      const { usableShops } = await getAdminShopAccess(freshAdmin);
+      shops = usableShops.map((s) => ({ id: String(s._id), name: s.name }));
+    }
+
     res.json({
       message: "✅ Auth verified",
       admin: freshAdmin,
+      shops,
     });
   } catch (error) {
     console.error("Verify Error:", error);

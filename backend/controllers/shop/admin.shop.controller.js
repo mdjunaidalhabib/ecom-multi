@@ -11,6 +11,7 @@ import {
 import { permanentlyDeleteShopData } from "../../utils/shop/shopTrash.helpers.js";
 import { invalidateShopCache } from "../../src/tenancy/publicShopResolver.js";
 import { getPlanFeatures } from "../../src/services/planFeatureService.js";
+import Plan from "../../src/models/Plan.js";
 
 // frontend/lib/shopMode.js এর DOMAIN_MODE_MARKER — কোনো real শপ এই slug
 // নিতে পারবে না, নাহলে custom-domain routing-এর সাথে conflict করবে
@@ -148,7 +149,11 @@ export const createShop = async (req, res) => {
       return res.status(400).json({ message: "শপের নাম আবশ্যক" });
     }
 
-    const resolvedPlan = plan && ["free", "starter", "pro"].includes(plan) ? plan : "free";
+    let resolvedPlan = "free";
+    if (plan) {
+      const planDoc = await Plan.findOne({ key: plan }).select("key");
+      if (planDoc) resolvedPlan = planDoc.key;
+    }
     const planFeatures = await getPlanFeatures(resolvedPlan);
 
     // ✅ ডোমেইন ঐচ্ছিক — না দিলে শপ শুধু platform-এর slug-based path
@@ -159,7 +164,7 @@ export const createShop = async (req, res) => {
     if (trimmedDomain) {
       if (!planFeatures.customDomain) {
         return res.status(400).json({
-          message: `${resolvedPlan} প্ল্যানে কাস্টম ডোমেইন সুবিধা নেই। প্ল্যান আপগ্রেড করুন অথবা Settings > Plan Features থেকে এই প্ল্যানে ডোমেইন চালু করুন।`,
+          message: `${resolvedPlan} প্ল্যানে কাস্টম ডোমেইন সুবিধা নেই। প্ল্যান আপগ্রেড করুন অথবা Plans পেজ থেকে এই প্ল্যানে ডোমেইন চালু করুন।`,
         });
       }
 
@@ -295,8 +300,9 @@ export const updateShop = async (req, res) => {
       }
     }
 
-    if (plan !== undefined && ["free", "starter", "pro"].includes(plan)) {
-      shop.plan = plan;
+    if (plan !== undefined) {
+      const planDoc = await Plan.findOne({ key: plan }).select("key");
+      if (planDoc) shop.plan = planDoc.key;
     }
 
     if (domain !== undefined && domain.trim()) {
@@ -305,7 +311,7 @@ export const updateShop = async (req, res) => {
         const planFeatures = await getPlanFeatures(shop.plan);
         if (!planFeatures.customDomain) {
           return res.status(400).json({
-            message: `${shop.plan} প্ল্যানে কাস্টম ডোমেইন সুবিধা নেই। প্ল্যান আপগ্রেড করুন অথবা Settings > Plan Features থেকে এই প্ল্যানে ডোমেইন চালু করুন।`,
+            message: `${shop.plan} প্ল্যানে কাস্টম ডোমেইন সুবিধা নেই। প্ল্যান আপগ্রেড করুন অথবা Plans পেজ থেকে এই প্ল্যানে ডোমেইন চালু করুন।`,
           });
         }
 

@@ -83,9 +83,9 @@ export default function ImageUploader({
   return (
     <div className="flex flex-col gap-1">
       {/* Label */}
-      <label className="block text-sm font-medium">
+      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
         {label}
-        <span className="text-[11px] text-gray-500 font-semibold ml-2">
+        <span className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold ml-2">
           (যেকোনো image format → Auto {rule.width}×{rule.height})
         </span>
       </label>
@@ -100,15 +100,15 @@ export default function ImageUploader({
         }
         className={`
           border-2 border-dashed h-32 rounded-lg overflow-hidden
-          flex items-center justify-center cursor-pointer bg-gray-50
-          ${error ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-indigo-400"}
+          flex items-center justify-center cursor-pointer bg-gray-50 dark:bg-slate-800
+          ${error ? "border-red-500 bg-red-50 dark:bg-red-500/10" : "border-gray-300 dark:border-slate-600 hover:border-indigo-400"}
           ${processing ? "opacity-60 cursor-not-allowed" : ""}
         `}
       >
         {preview ? (
           <img src={preview} alt="preview" className={previewClass} />
         ) : (
-          <span className="text-gray-400 text-sm text-center px-4">
+          <span className="text-gray-400 dark:text-slate-500 text-sm text-center px-4">
             {processing
               ? "⏳ Processing..."
               : "Drag & drop বা click করে upload করো"}
@@ -126,18 +126,18 @@ export default function ImageUploader({
 
       {/* Processing */}
       {processing && (
-        <p className="text-[11px] text-orange-600 font-semibold">
+        <p className="text-[11px] text-orange-600 dark:text-orange-400 font-semibold">
           ⏳ Image processing... অপেক্ষা করো।
         </p>
       )}
 
       {/* Error */}
       {error && (
-        <p className="text-[11px] text-red-600 font-semibold">❌ {error}</p>
+        <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold">❌ {error}</p>
       )}
 
       {/* Hint */}
-      {hint && <p className="text-[11px] text-gray-400">{hint}</p>}
+      {hint && <p className="text-[11px] text-gray-400 dark:text-slate-500">{hint}</p>}
     </div>
   );
 }

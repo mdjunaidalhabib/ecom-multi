@@ -12,8 +12,41 @@ import {
   Line,
   CartesianGrid,
   Legend,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import DashboardSkeleton from "../../../../components/Skeleton/DashboardSkeleton.jsx";
+import {
+  STATUS_LABEL,
+  STATUS_BADGE_COLOR,
+} from "../../../../components/orders/shared/constants.js";
+
+// ✅ status অনুযায়ী hex color — donut chart-এ Recharts Cell fill এর জন্য
+// (STATUS_BADGE_COLOR এর tailwind ক্লাসের সাথে hue মিলিয়ে বানানো)
+const STATUS_HEX = {
+  pending: "#f59e0b",
+  ready_to_delivery: "#3b82f6",
+  send_to_courier: "#8b5cf6",
+  delivered: "#10b981",
+  cancelled: "#ef4444",
+};
+
+function GrowthBadge({ value }) {
+  if (value === null || !Number.isFinite(value)) return null;
+  const isUp = value >= 0;
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+        isUp ? "bg-white/25 text-white" : "bg-black/20 text-white"
+      }`}
+    >
+      {isUp ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
+      {Math.abs(value).toFixed(1)}%
+    </span>
+  );
+}
 
 export default function DashboardPage() {
   const API = "/api";
@@ -164,6 +197,61 @@ export default function DashboardPage() {
     return Object.entries(map).map(([month, sales]) => ({ month, sales }));
   }, [orders]);
 
+  // ====== This Month vs Last Month (growth %) ======
+  const monthlyComparison = useMemo(() => {
+    const now = new Date();
+    const keyOf = (d) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const thisMonthKey = keyOf(now);
+    const lastMonthKey = keyOf(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+
+    let thisMonthSales = 0;
+    let thisMonthOrders = 0;
+    let lastMonthSales = 0;
+    let lastMonthOrders = 0;
+
+    orders.forEach((o) => {
+      const key = keyOf(new Date(o.createdAt));
+      if (key === thisMonthKey) {
+        thisMonthSales += o.total || 0;
+        thisMonthOrders += 1;
+      } else if (key === lastMonthKey) {
+        lastMonthSales += o.total || 0;
+        lastMonthOrders += 1;
+      }
+    });
+
+    const growth = (curr, prev) => {
+      if (prev > 0) return ((curr - prev) / prev) * 100;
+      return curr > 0 ? 100 : null;
+    };
+
+    return {
+      thisMonthSales,
+      thisMonthOrders,
+      salesGrowth: growth(thisMonthSales, lastMonthSales),
+      ordersGrowth: growth(thisMonthOrders, lastMonthOrders),
+    };
+  }, [orders]);
+
+  // ====== Recent Orders (latest 6) ======
+  const recentOrders = useMemo(() => {
+    return [...orders]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 6);
+  }, [orders]);
+
+  // ====== Order Status Distribution (donut) ======
+  const statusChartData = useMemo(() => {
+    return ORDER_STATUSES.map((st) => ({
+      key: st,
+      name: STATUS_LABEL[st] || st,
+      value: statusStats[st] || 0,
+    })).filter((d) => d.value > 0);
+  }, [statusStats]);
+
+  const avgOrderValue = stats.totalOrders > 0 ? stats.totalSales / stats.totalOrders : 0;
+
   // ✅ Professional Gradient Cards Config (premium colors)
 const cards = useMemo(() => {
   return [
@@ -174,6 +262,7 @@ const cards = useMemo(() => {
       gradient: "from-indigo-600 via-blue-600 to-cyan-500",
       dot: "bg-white/50",
       sub: "All orders",
+      growth: monthlyComparison.ordersGrowth,
     },
     {
       key: "totalSales",
@@ -182,6 +271,15 @@ const cards = useMemo(() => {
       gradient: "from-emerald-600 via-emerald-600 to-emerald-500",
       dot: "bg-white/50",
       sub: "Total revenue",
+      growth: monthlyComparison.salesGrowth,
+    },
+    {
+      key: "avgOrderValue",
+      label: "Avg Order Value",
+      value: `৳${avgOrderValue.toFixed(0)}`,
+      gradient: "from-fuchsia-600 via-fuchsia-600 to-pink-500",
+      dot: "bg-white/50",
+      sub: "Per order average",
     },
     {
       key: "onlineOrders",
@@ -240,17 +338,17 @@ const cards = useMemo(() => {
       sub: "Stopped orders",
     },
   ];
-}, [stats, statusStats, channelStats]);
+}, [stats, statusStats, channelStats, monthlyComparison, avgOrderValue]);
 
   return (
     <div className="space-y-6 p-3 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">
             Dashboard Overview
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             Overview of orders & sales performance
           </p>
         </div>
@@ -266,11 +364,11 @@ const cards = useMemo(() => {
       {loading ? (
         <DashboardSkeleton />
       ) : err ? (
-        <div className="bg-white shadow rounded-xl p-6 text-red-500">{err}</div>
+        <div className="bg-white dark:bg-slate-900 shadow rounded-xl p-6 text-red-500 dark:text-red-400">{err}</div>
       ) : (
         <>
           {/* ✅ PREMIUM PROFESSIONAL COLOR CARDS */}
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {cards.map((c) => (
               <div
                 key={c.key}
@@ -294,9 +392,12 @@ const cards = useMemo(() => {
                       <p className="text-xs font-semibold uppercase tracking-wide text-white/85">
                         {c.label}
                       </p>
-                      <p className="mt-2 text-3xl font-extrabold leading-none drop-shadow-sm">
-                        {c.value}
-                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <p className="text-3xl font-extrabold leading-none drop-shadow-sm">
+                          {c.value}
+                        </p>
+                        <GrowthBadge value={c.growth ?? null} />
+                      </div>
                     </div>
 
                     {/* Minimal icon circle (pro look) */}
@@ -314,9 +415,124 @@ const cards = useMemo(() => {
             ))}
           </div>
 
+          {/* 🧾 Recent Orders + 🍩 Status Distribution */}
+          <div className="grid lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2 bg-white dark:bg-slate-900 shadow rounded-2xl border border-gray-100 dark:border-slate-700/60 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-slate-100">
+                🧾 Recent Orders
+              </h2>
+
+              {recentOrders.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
+                      <tr>
+                        <th className="p-2 text-left font-semibold">Order</th>
+                        <th className="p-2 text-left font-semibold">Customer</th>
+                        <th className="p-2 text-left font-semibold">Status</th>
+                        <th className="p-2 text-left font-semibold">Amount</th>
+                        <th className="p-2 text-left font-semibold">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentOrders.map((o) => (
+                        <tr key={o._id} className="border-t border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800">
+                          <td className="p-2 font-mono text-xs text-gray-600 dark:text-slate-400">
+                            #{o.orderNumber ?? o._id?.slice(-6)}
+                          </td>
+                          <td className="p-2 text-gray-900 dark:text-slate-200">{o.billing?.name || "—"}</td>
+                          <td className="p-2">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                                STATUS_BADGE_COLOR[o.status] ||
+                                "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-600"
+                              }`}
+                            >
+                              {STATUS_LABEL[o.status] || o.status}
+                            </span>
+                          </td>
+                          <td className="p-2 font-semibold text-emerald-600 dark:text-emerald-400">
+                            ৳{o.total}
+                          </td>
+                          <td className="p-2 text-gray-500 dark:text-slate-400 text-xs">
+                            {o.createdAt
+                              ? new Date(o.createdAt).toLocaleDateString()
+                              : "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 dark:text-slate-400 py-10">
+                  No recent orders
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 shadow rounded-2xl border border-gray-100 dark:border-slate-700/60 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-slate-100">
+                🍩 Order Status
+              </h2>
+
+              {statusChartData.length > 0 ? (
+                <>
+                  <div className="w-full h-52">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={statusChartData}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius="60%"
+                          outerRadius="90%"
+                          paddingAngle={2}
+                        >
+                          {statusChartData.map((d) => (
+                            <Cell key={d.key} fill={STATUS_HEX[d.key] || "#94a3b8"} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "var(--background)",
+                            border: "1px solid rgba(148, 163, 184, 0.3)",
+                            borderRadius: 8,
+                            color: "var(--foreground)",
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="mt-2 space-y-1.5">
+                    {statusChartData.map((d) => (
+                      <div
+                        key={d.key}
+                        className="flex items-center justify-between text-xs"
+                      >
+                        <span className="flex items-center gap-1.5 text-gray-600 dark:text-slate-400">
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: STATUS_HEX[d.key] || "#94a3b8" }}
+                          />
+                          {d.name}
+                        </span>
+                        <span className="font-semibold text-gray-800 dark:text-slate-200">
+                          {d.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center text-gray-500 dark:text-slate-400 py-10">No data</div>
+              )}
+            </div>
+          </div>
+
           {/* 🏆 Top Products */}
-          <div className="bg-white shadow rounded-2xl border border-gray-100 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900">
+          <div className="bg-white dark:bg-slate-900 shadow rounded-2xl border border-gray-100 dark:border-slate-700/60 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-slate-100">
               🏆 Top Selling Products
             </h2>
 
@@ -324,7 +540,7 @@ const cards = useMemo(() => {
               <>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-700">
+                    <thead className="bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
                       <tr>
                         <th className="p-2 text-left font-semibold">Product</th>
                         <th className="p-2 text-left font-semibold">
@@ -335,10 +551,10 @@ const cards = useMemo(() => {
                     </thead>
                     <tbody>
                       {topProducts.map((p, idx) => (
-                        <tr key={idx} className="border-t hover:bg-gray-50">
-                          <td className="p-2">{p.name}</td>
-                          <td className="p-2">{p.qty}</td>
-                          <td className="p-2 font-semibold text-emerald-600">
+                        <tr key={idx} className="border-t border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800">
+                          <td className="p-2 text-gray-900 dark:text-slate-200">{p.name}</td>
+                          <td className="p-2 text-gray-900 dark:text-slate-200">{p.qty}</td>
+                          <td className="p-2 font-semibold text-emerald-600 dark:text-emerald-400">
                             ৳{p.revenue}
                           </td>
                         </tr>
@@ -350,35 +566,49 @@ const cards = useMemo(() => {
                 <div className="mt-6 w-full h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={topProducts}>
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
+                      <XAxis dataKey="name" tick={{ fill: "currentColor" }} className="text-gray-600 dark:text-slate-400" />
+                      <YAxis tick={{ fill: "currentColor" }} className="text-gray-600 dark:text-slate-400" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "var(--background)",
+                          border: "1px solid rgba(148, 163, 184, 0.3)",
+                          borderRadius: 8,
+                          color: "var(--foreground)",
+                        }}
+                      />
                       <Bar dataKey="qty" fill="#10b981" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </>
             ) : (
-              <div className="text-center text-gray-500 py-10">
+              <div className="text-center text-gray-500 dark:text-slate-400 py-10">
                 No product data
               </div>
             )}
           </div>
 
           {/* 📈 Monthly Sales */}
-          <div className="bg-white shadow rounded-2xl border border-gray-100 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900">
+          <div className="bg-white dark:bg-slate-900 shadow rounded-2xl border border-gray-100 dark:border-slate-700/60 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-slate-100">
               📅 Monthly Sales (Last 12 Months)
             </h2>
 
             <div className="w-full h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlySales}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-slate-700" />
+                  <XAxis dataKey="month" tick={{ fill: "currentColor" }} className="text-gray-600 dark:text-slate-400" />
+                  <YAxis tick={{ fill: "currentColor" }} className="text-gray-600 dark:text-slate-400" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--background)",
+                      border: "1px solid rgba(148, 163, 184, 0.3)",
+                      borderRadius: 8,
+                      color: "var(--foreground)",
+                    }}
+                  />
+                  <Legend wrapperStyle={{ color: "currentColor" }} className="text-gray-600 dark:text-slate-400" />
                   <Line
                     type="monotone"
                     dataKey="sales"

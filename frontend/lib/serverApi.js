@@ -56,3 +56,10 @@ export async function serverFetch(path, { revalidate = 30, ...options } = {}) {
 export async function getShopInfo() {
   return serverFetch("/shop-info");
 }
+
+// Single-product ad landing page — publicly readable only when isPublished
+// (backend/controllers/landingPage/public.landingPage.controller.js 404s
+// otherwise). Called from shop/[shopSlug]/lp/[landingSlug]/page.jsx.
+export async function getLandingPageBySlug(slug) {
+  return serverFetch(`/landing-pages/by-slug/${encodeURIComponent(slug)}`);
+}

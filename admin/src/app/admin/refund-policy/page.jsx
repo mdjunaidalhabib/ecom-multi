@@ -23,7 +23,7 @@ function Skeleton() {
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-3">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />
+        <div key={i} className="h-24 bg-gray-200 dark:bg-slate-700 rounded-xl animate-pulse" />
       ))}
     </div>
   );
@@ -31,10 +31,10 @@ function Skeleton() {
 
 function Section({ title, hint, children }) {
   return (
-    <div className="border rounded-xl p-4 sm:p-5 bg-white space-y-4">
+    <div className="border dark:border-slate-700 rounded-xl p-4 sm:p-5 bg-white dark:bg-slate-900 space-y-4">
       <div>
-        <h3 className="font-bold text-gray-800">{title}</h3>
-        {hint && <p className="text-[11px] text-gray-400 mt-0.5">{hint}</p>}
+        <h3 className="font-bold text-gray-800 dark:text-slate-200">{title}</h3>
+        {hint && <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{hint}</p>}
       </div>
       {children}
     </div>
@@ -44,15 +44,15 @@ function Section({ title, hint, children }) {
 function Field({ label, children }) {
   return (
     <div>
-      <label className="text-xs font-medium text-gray-600">{label}</label>
+      <label className="text-xs font-medium text-gray-600 dark:text-slate-300">{label}</label>
       {children}
     </div>
   );
 }
 
-const inputBase = "w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm";
+const inputBase = "w-full mt-1 border dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md p-2.5 sm:p-2 text-sm";
 const textareaBase = `${inputBase} min-h-[90px]`;
-const disabledCls = "bg-gray-100 text-gray-400 cursor-not-allowed";
+const disabledCls = "bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed";
 
 // ✅ মাউস দিয়ে ড্র্যাগ করে সাজানোর জন্য generic wrapper — শুধু বাম পাশের
 // grip handle drag করা যাবে, ভিতরের input/textarea ক্লিক করলে drag শুরু হবে না
@@ -73,8 +73,8 @@ function SortableItem({ id, disabled, children }) {
         {...listeners}
         className={`absolute -left-1 top-2 p-1.5 rounded touch-none z-10 ${
           disabled
-            ? "text-gray-300 cursor-not-allowed"
-            : "text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-grab active:cursor-grabbing"
+            ? "text-gray-300 dark:text-slate-600 cursor-not-allowed"
+            : "text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-grab active:cursor-grabbing"
         }`}
         title="ড্র্যাগ করে ক্রম বদলান"
       >
@@ -326,12 +326,12 @@ export default function RefundPolicyAdminPage() {
       )}
 
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-xl md:text-2xl font-bold">🔄 Refund Policy Page</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-slate-100">🔄 Refund Policy Page</h2>
         <div className="flex items-center gap-2">
           {!isEditMode ? (
             <button
               onClick={handleEnterEditMode}
-              className="text-xs font-semibold px-3 py-2 rounded-md border text-indigo-600 hover:bg-indigo-50"
+              className="text-xs font-semibold px-3 py-2 rounded-md border dark:border-slate-600 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10"
               title="Edit"
             >
               ✏️ Edit
@@ -340,7 +340,7 @@ export default function RefundPolicyAdminPage() {
             <>
               <button
                 onClick={handleCancelEdit}
-                className="text-xs font-semibold px-3 py-2 rounded-md border text-gray-600 hover:bg-gray-100"
+                className="text-xs font-semibold px-3 py-2 rounded-md border dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
               >
                 ✖️ বাতিল
               </button>
@@ -356,7 +356,7 @@ export default function RefundPolicyAdminPage() {
           <button
             onClick={() => setConfirmReset(true)}
             disabled={!isEditMode}
-            className="text-xs font-semibold px-3 py-2 rounded-md border text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-xs font-semibold px-3 py-2 rounded-md border dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             🔄 Reset to Default
           </button>
@@ -364,7 +364,7 @@ export default function RefundPolicyAdminPage() {
       </div>
 
       {!isEditMode && (
-        <div className="text-xs text-gray-500 bg-gray-50 border rounded-md px-3 py-2">
+        <div className="text-xs text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-md px-3 py-2">
           👁️ Read-only mode — এডিট করতে উপরের ✏️ Edit বাটনে ক্লিক করুন।
         </div>
       )}
@@ -427,15 +427,15 @@ export default function RefundPolicyAdminPage() {
                     id={section._key}
                     disabled={dragDisabled}
                   >
-                    <div className="border rounded-lg p-3 space-y-3 bg-white">
+                    <div className="border dark:border-slate-700 rounded-lg p-3 space-y-3 bg-white dark:bg-slate-900">
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2.5 py-1 mt-0.5 shrink-0">
+                        <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 rounded-full px-2.5 py-1 mt-0.5 shrink-0">
                           সেকশন {i + 1}
                         </span>
                         <button
                           onClick={() => removeSection(i)}
                           disabled={!isEditMode || cardLocked}
-                          className="text-xs font-semibold px-2.5 py-1.5 rounded-md border text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                          className="text-xs font-semibold px-2.5 py-1.5 rounded-md border dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
                         >
                           <Trash2 size={13} /> সেকশন মুছুন
                         </button>
@@ -461,7 +461,7 @@ export default function RefundPolicyAdminPage() {
                       </Field>
 
                       <div>
-                        <label className="text-xs font-medium text-gray-600">
+                        <label className="text-xs font-medium text-gray-600 dark:text-slate-300">
                           পয়েন্টসমূহ (একাধিক বিবরণ যোগ করা যাবে)
                         </label>
                         <DndContext
@@ -482,7 +482,7 @@ export default function RefundPolicyAdminPage() {
                                     id={point._key}
                                     disabled={dragDisabled}
                                   >
-                                    <div className="flex gap-2 items-start bg-gray-50 rounded-md p-2">
+                                    <div className="flex gap-2 items-start bg-gray-50 dark:bg-slate-800 rounded-md p-2">
                                       <textarea
                                         rows={2}
                                         disabled={fieldDisabled(pointPath)}
@@ -495,7 +495,7 @@ export default function RefundPolicyAdminPage() {
                                           )
                                         }
                                         placeholder="পয়েন্টের বিবরণ লিখুন..."
-                                        className={`${inputBase} mt-0 min-h-[46px] flex-1 bg-white ${
+                                        className={`${inputBase} mt-0 min-h-[46px] flex-1 bg-white dark:bg-slate-900 ${
                                           fieldDisabled(pointPath)
                                             ? disabledCls
                                             : ""
@@ -511,7 +511,7 @@ export default function RefundPolicyAdminPage() {
                                           !isEditMode ||
                                           fieldDisabled(pointPath)
                                         }
-                                        className="p-2 rounded-md border text-red-600 hover:bg-red-50 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="p-2 rounded-md border dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                                         title="এই পয়েন্ট মুছুন"
                                       >
                                         <X size={14} />
@@ -526,7 +526,7 @@ export default function RefundPolicyAdminPage() {
                         <button
                           onClick={() => addPoint(i)}
                           disabled={!isEditMode || cardLocked}
-                          className="mt-2 text-xs font-semibold px-2.5 py-1.5 rounded-md border text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                          className="mt-2 text-xs font-semibold px-2.5 py-1.5 rounded-md border dark:border-slate-600 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
                         >
                           <Plus size={13} /> পয়েন্ট যুক্ত করুন
                         </button>
@@ -541,7 +541,7 @@ export default function RefundPolicyAdminPage() {
         <button
           onClick={addSection}
           disabled={!isEditMode || activeField !== null}
-          className="text-xs font-semibold px-3 py-2 rounded-md border text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
+          className="text-xs font-semibold px-3 py-2 rounded-md border dark:border-slate-600 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
         >
           <Plus size={13} /> নতুন সেকশন যুক্ত করুন
         </button>
@@ -550,18 +550,18 @@ export default function RefundPolicyAdminPage() {
       {/* Reset confirm modal */}
       {confirmReset && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-5 max-w-sm w-full">
-            <p className="font-bold text-gray-800 mb-2">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 max-w-sm w-full">
+            <p className="font-bold text-gray-800 dark:text-slate-200 mb-2">
               Refund Policy পেজ রিসেট করবেন?
             </p>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
               এখন যা এডিট করা আছে সব মুছে ডিফল্ট কন্টেন্ট ফিরে আসবে। এই কাজটি
               undo করা যাবে না।
             </p>
             <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <button
                 onClick={() => setConfirmReset(false)}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
               >
                 বাতিল
               </button>

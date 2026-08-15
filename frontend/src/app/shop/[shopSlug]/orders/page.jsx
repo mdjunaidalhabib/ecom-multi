@@ -7,6 +7,7 @@ import Toast from "../../../../../components/home/Toast";
 import EditOrderForm from "../../../../../components/orders/EditOrderForm";
 import CourierStatus from "../../../../../components/CourierStatus";
 import useShopPath from "../../../../../hooks/useShopPath";
+import useRequireFullStorefront from "../../../../../hooks/useRequireFullStorefront";
 
 // ✅ Date formatter
 // timeZone ফিক্স করা Asia/Dhaka-তে — createdAt সবসময় সার্ভারের সময় (সঠিক),
@@ -30,6 +31,7 @@ const formatDateTime = (dateString) => {
 };
 
 export default function OrdersPage() {
+  useRequireFullStorefront();
   const { me, loadingUser } = useUser();
   const { base } = useShopPath();
 

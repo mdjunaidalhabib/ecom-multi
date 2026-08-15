@@ -38,7 +38,7 @@ export default function BulkBar({
         {/* BULK STATUS */}
         {sameStatus && bulkStatus && (
           <select
-            className="rounded-full py-1 text-xs bg-white border"
+            className="rounded-full py-1 text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 border border-gray-300 dark:border-slate-600"
             value={bulkStatus}
             disabled={disabled}
             onChange={async (e) => {
@@ -96,7 +96,7 @@ export default function BulkBar({
             showToast("Order delete হয়েছে", "success");
           }}
           className={`px-3 py-1 rounded-full text-xs text-white ${
-            disabled ? "bg-red-300 cursor-not-allowed" : "bg-red-600"
+            disabled ? "bg-red-300 dark:bg-red-800/60 cursor-not-allowed" : "bg-red-600"
           }`}
         >
           Delete

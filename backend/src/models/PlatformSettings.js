@@ -11,49 +11,18 @@ const platformSettingsSchema = new mongoose.Schema(
       immutable: true,
     },
 
-    // Plan → storefront theme default mapping। কোনো শপের branding.theme
-    // খালি থাকলে এখান থেকে তার plan অনুযায়ী theme resolve হয়
-    // (দেখুন controllers/shop/public.shop.controller.js -> getShopInfo)
-    //
-    // ⚠️ ইচ্ছাকৃতভাবে সবগুলো plan-এর default "classic" — নতুন theme deploy
-    // হওয়ার সাথে সাথে কোনো লাইভ শপের ডিজাইন যেন হুট করে বদলে না যায়।
-    // Super admin নিজে Settings → Themes থেকে যাচাই করে যখন রেডি মনে করবে,
-    // তখনই কোনো plan-কে aurora/terra-তে opt-in করাবে।
-    planThemeMap: {
-      free: { type: String, enum: ["classic", "aurora", "terra"], default: "classic" },
-      starter: { type: String, enum: ["classic", "aurora", "terra"], default: "classic" },
-      pro: { type: String, enum: ["classic", "aurora", "terra"], default: "classic" },
-    },
+    // ⚠️ Plan → theme/feature mapping আগে এখানে ছিল, এখন সেটা dynamic
+    // `Plan` কালেকশনে সরানো হয়েছে (দেখুন models/Plan.js) যাতে super-admin
+    // প্ল্যান যোগ/এডিট/ডিলিট করতে পারে — এই doc এখন ভবিষ্যতের অন্য
+    // platform-wide সেটিংসের জন্য reserved।
 
-    // Plan → feature access mapping। কোন plan-এ custom domain/analytics/promo
-    // চালু থাকবে, আর নতুন শপ তৈরির সময় maxProducts/maxAdmins-এর default কত
-    // হবে — সবই এখান থেকে super admin নিয়ন্ত্রণ করে (দেখুন
-    // services/planFeatureService.js এবং middlewares/requirePlanFeature.js)।
-    // ⚠️ maxProducts/maxAdmins শুধু *নতুন* শপ তৈরির সময় ডিফল্ট হিসেবে বসে —
-    // আগে থেকে থাকা শপের limits এখান থেকে বদলালে বদলায় না, সেটা প্রতিটা
-    // শপের নিজের এডিট ফর্ম থেকে (Shops পেজ) আলাদাভাবে override করা লাগে।
-    planFeatures: {
-      free: {
-        customDomain: { type: Boolean, default: false },
-        analytics: { type: Boolean, default: false },
-        promo: { type: Boolean, default: false },
-        maxProducts: { type: Number, default: 50 },
-        maxAdmins: { type: Number, default: 1 },
-      },
-      starter: {
-        customDomain: { type: Boolean, default: false },
-        analytics: { type: Boolean, default: true },
-        promo: { type: Boolean, default: true },
-        maxProducts: { type: Number, default: 200 },
-        maxAdmins: { type: Number, default: 2 },
-      },
-      pro: {
-        customDomain: { type: Boolean, default: true },
-        analytics: { type: Boolean, default: true },
-        promo: { type: Boolean, default: true },
-        maxProducts: { type: Number, default: 1000 },
-        maxAdmins: { type: Number, default: 5 },
-      },
+    // ✅ "শীঘ্রই আসছে" ঘোষণা — super-admin এখান থেকে একটা ছোট মেসেজ সেট করে
+    // দিতে পারে (যেমন কোন নতুন প্ল্যান/ফিচার আসছে) যেটা প্রতিটা শপ-admin এর
+    // "My Plan" পেজে ব্যানার হিসেবে দেখা যাবে। খালি text মানে কোনো ব্যানার
+    // দেখানো হবে না (দেখুন controllers/shop/announcement.admin.controller.js)।
+    announcement: {
+      text: { type: String, trim: true, maxlength: 300, default: "" },
+      updatedAt: { type: Date, default: null },
     },
   },
   { timestamps: true },

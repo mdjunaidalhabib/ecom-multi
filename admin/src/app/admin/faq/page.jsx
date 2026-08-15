@@ -23,7 +23,7 @@ function Skeleton() {
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-3">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />
+        <div key={i} className="h-24 bg-gray-200 dark:bg-slate-700 rounded-xl animate-pulse" />
       ))}
     </div>
   );
@@ -31,10 +31,10 @@ function Skeleton() {
 
 function Section({ title, hint, children }) {
   return (
-    <div className="border rounded-xl p-4 sm:p-5 bg-white space-y-4">
+    <div className="border dark:border-slate-700 rounded-xl p-4 sm:p-5 bg-white dark:bg-slate-900 space-y-4">
       <div>
-        <h3 className="font-bold text-gray-800">{title}</h3>
-        {hint && <p className="text-[11px] text-gray-400 mt-0.5">{hint}</p>}
+        <h3 className="font-bold text-gray-800 dark:text-slate-200">{title}</h3>
+        {hint && <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{hint}</p>}
       </div>
       {children}
     </div>
@@ -44,15 +44,16 @@ function Section({ title, hint, children }) {
 function Field({ label, children }) {
   return (
     <div>
-      <label className="text-xs font-medium text-gray-600">{label}</label>
+      <label className="text-xs font-medium text-gray-600 dark:text-slate-400">{label}</label>
       {children}
     </div>
   );
 }
 
-const inputBase = "w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm";
+const inputBase =
+  "w-full mt-1 border rounded-md p-2.5 sm:p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500";
 const textareaBase = `${inputBase} min-h-[90px]`;
-const disabledCls = "bg-gray-100 text-gray-400 cursor-not-allowed";
+const disabledCls = "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-700! dark:text-slate-500";
 
 // ✅ মাউস দিয়ে ড্র্যাগ করে সাজানোর জন্য generic wrapper — শুধু বাম পাশের
 // grip handle drag করা যাবে, ভিতরের input/textarea ক্লিক করলে drag শুরু হবে না
@@ -73,8 +74,8 @@ function SortableItem({ id, disabled, children }) {
         {...listeners}
         className={`absolute -left-1 top-2 p-1.5 rounded touch-none z-10 ${
           disabled
-            ? "text-gray-300 cursor-not-allowed"
-            : "text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-grab active:cursor-grabbing"
+            ? "text-gray-300 dark:text-slate-600 cursor-not-allowed"
+            : "text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-grab active:cursor-grabbing"
         }`}
         title="ড্র্যাগ করে ক্রম বদলান"
       >
@@ -269,12 +270,12 @@ export default function FaqAdminPage() {
       )}
 
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-xl md:text-2xl font-bold">❓ FAQ Page</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-slate-100">❓ FAQ Page</h2>
         <div className="flex items-center gap-2">
           {!isEditMode ? (
             <button
               onClick={handleEnterEditMode}
-              className="text-xs font-semibold px-3 py-2 rounded-md border text-indigo-600 hover:bg-indigo-50"
+              className="text-xs font-semibold px-3 py-2 rounded-md border dark:border-slate-600 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10"
               title="Edit"
             >
               ✏️ Edit
@@ -283,7 +284,7 @@ export default function FaqAdminPage() {
             <>
               <button
                 onClick={handleCancelEdit}
-                className="text-xs font-semibold px-3 py-2 rounded-md border text-gray-600 hover:bg-gray-100"
+                className="text-xs font-semibold px-3 py-2 rounded-md border dark:border-slate-600 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800"
               >
                 ✖️ বাতিল
               </button>
@@ -299,7 +300,7 @@ export default function FaqAdminPage() {
           <button
             onClick={() => setConfirmReset(true)}
             disabled={!isEditMode}
-            className="text-xs font-semibold px-3 py-2 rounded-md border text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-xs font-semibold px-3 py-2 rounded-md border dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             🔄 Reset to Default
           </button>
@@ -307,7 +308,7 @@ export default function FaqAdminPage() {
       </div>
 
       {!isEditMode && (
-        <div className="text-xs text-gray-500 bg-gray-50 border rounded-md px-3 py-2">
+        <div className="text-xs text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-md px-3 py-2">
           👁️ Read-only mode — এডিট করতে উপরের ✏️ Edit বাটনে ক্লিক করুন।
         </div>
       )}
@@ -353,7 +354,7 @@ export default function FaqAdminPage() {
                   isEditMode && activeField !== null && !cardPaths.includes(activeField);
                 return (
                   <SortableItem key={item._key} id={item._key} disabled={dragDisabled}>
-                    <div className="border rounded-lg p-3 space-y-2 bg-white">
+                    <div className="border dark:border-slate-700 rounded-lg p-3 space-y-2 bg-white dark:bg-slate-800">
                       <Field label="প্রশ্ন (Question)">
                         <input
                           disabled={fieldDisabled(headingPath)}
@@ -382,7 +383,7 @@ export default function FaqAdminPage() {
                         <button
                           onClick={() => removeArrayItem("sections", i)}
                           disabled={!isEditMode || cardLocked}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-md border text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="text-xs font-semibold px-3 py-1.5 rounded-md border dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           🗑️ এই প্রশ্ন মুছুন
                         </button>
@@ -397,7 +398,7 @@ export default function FaqAdminPage() {
         <button
           onClick={() => addArrayItem("sections", { heading: "", content: "" })}
           disabled={!isEditMode || activeField !== null}
-          className="text-xs font-semibold px-3 py-2 rounded-md border text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="text-xs font-semibold px-3 py-2 rounded-md border dark:border-slate-600 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           ➕ নতুন প্রশ্ন যুক্ত করুন
         </button>
@@ -406,18 +407,18 @@ export default function FaqAdminPage() {
       {/* Reset confirm modal */}
       {confirmReset && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-5 max-w-sm w-full">
-            <p className="font-bold text-gray-800 mb-2">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 max-w-sm w-full">
+            <p className="font-bold text-gray-800 dark:text-slate-200 mb-2">
               FAQ পেজ রিসেট করবেন?
             </p>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
               এখন যা এডিট করা আছে সব মুছে ডিফল্ট কন্টেন্ট ফিরে আসবে। এই কাজটি
               undo করা যাবে না।
             </p>
             <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <button
                 onClick={() => setConfirmReset(false)}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800"
               >
                 বাতিল
               </button>

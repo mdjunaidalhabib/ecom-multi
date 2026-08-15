@@ -70,7 +70,7 @@ export default function MailReportPage() {
   return (
     <div className="p-3 sm:p-6">
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-2xl font-bold">📧 Mail Report</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">📧 Mail Report</h2>
         <button
           onClick={() => setConfirmReset(true)}
           className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg text-sm shadow hover:scale-105 transition-all"
@@ -80,42 +80,42 @@ export default function MailReportPage() {
       </div>
 
       {loading ? (
-        <div className="text-center text-gray-500 py-10">লোড হচ্ছে...</div>
+        <div className="text-center text-gray-500 dark:text-slate-400 py-10">লোড হচ্ছে...</div>
       ) : logs.length === 0 ? (
-        <div className="text-center text-gray-500 py-10">
+        <div className="text-center text-gray-500 dark:text-slate-400 py-10">
           কোনো ইমেইল পাঠানো হয়নি।
         </div>
       ) : (
         <>
           {/* ✅ Desktop Table */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border shadow-sm">
+          <div className="hidden md:block overflow-x-auto bg-white dark:bg-slate-900 rounded-xl border dark:border-slate-700 shadow-sm">
             <table className="w-full text-sm">
-              <thead className="bg-gray-100">
+              <thead className="bg-gray-100 dark:bg-slate-800">
                 <tr>
-                  <th className="p-3 text-left">Sent At</th>
-                  <th className="p-3 text-left">Recipient</th>
-                  <th className="p-3 text-left">Purpose</th>
-                  <th className="p-3 text-left">Subject</th>
-                  <th className="p-3 text-left">Status</th>
+                  <th className="p-3 text-left text-gray-700 dark:text-slate-300">Sent At</th>
+                  <th className="p-3 text-left text-gray-700 dark:text-slate-300">Recipient</th>
+                  <th className="p-3 text-left text-gray-700 dark:text-slate-300">Purpose</th>
+                  <th className="p-3 text-left text-gray-700 dark:text-slate-300">Subject</th>
+                  <th className="p-3 text-left text-gray-700 dark:text-slate-300">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {logs.map((log) => (
-                  <tr key={log._id} className="border-t hover:bg-gray-50">
-                    <td className="p-3 text-gray-600 whitespace-nowrap">
+                  <tr key={log._id} className="border-t dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800">
+                    <td className="p-3 text-gray-600 dark:text-slate-400 whitespace-nowrap">
                       {formatDate(log.createdAt)}
                     </td>
-                    <td className="p-3 font-medium">{log.to}</td>
-                    <td className="p-3 text-gray-700">
+                    <td className="p-3 font-medium text-gray-900 dark:text-slate-100">{log.to}</td>
+                    <td className="p-3 text-gray-700 dark:text-slate-300">
                       {purposeLabel(log.purpose)}
                     </td>
-                    <td className="p-3 text-gray-700">{log.subject}</td>
+                    <td className="p-3 text-gray-700 dark:text-slate-300">{log.subject}</td>
                     <td className="p-3">
                       <span
                         className={`px-2 py-1 rounded-md text-xs font-semibold ${
                           log.status === "failed"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-green-100 text-green-700"
+                            ? "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"
+                            : "bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400"
                         }`}
                       >
                         {log.status === "failed" ? "ব্যর্থ" : "পাঠানো হয়েছে"}
@@ -132,31 +132,31 @@ export default function MailReportPage() {
             {logs.map((log) => (
               <div
                 key={log._id}
-                className="border rounded-xl p-3 bg-white shadow-sm"
+                className="border dark:border-slate-700 rounded-xl p-3 bg-white dark:bg-slate-900 shadow-sm"
               >
                 <div className="flex justify-between items-start gap-2">
-                  <div className="font-semibold text-gray-800 break-all">
+                  <div className="font-semibold text-gray-800 dark:text-slate-200 break-all">
                     {log.to}
                   </div>
                   <span
                     className={`shrink-0 px-2 py-1 rounded-md text-xs font-semibold ${
                       log.status === "failed"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-green-100 text-green-700"
+                        ? "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"
+                        : "bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400"
                     }`}
                   >
                     {log.status === "failed" ? "ব্যর্থ" : "পাঠানো হয়েছে"}
                   </span>
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-gray-600 dark:text-slate-400 mt-1">
                   {purposeLabel(log.purpose)}
                 </div>
                 {log.subject && (
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                     {log.subject}
                   </div>
                 )}
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-xs text-gray-400 dark:text-slate-500 mt-1">
                   {formatDate(log.createdAt)}
                 </div>
               </div>
@@ -175,18 +175,18 @@ export default function MailReportPage() {
       {/* Reset confirm modal */}
       {confirmReset && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-5 max-w-sm w-full">
-            <p className="font-bold text-gray-800 mb-2">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 max-w-sm w-full">
+            <p className="font-bold text-gray-800 dark:text-slate-200 mb-2">
               Mail Report রিসেট করবেন?
             </p>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
               রিসেট করলে এখন পর্যন্ত লগ হওয়া সব মেইল রেকর্ড ডাটাবেজ থেকে
               স্থায়ীভাবে মুছে যাবে। এই কাজটি আর ফিরিয়ে আনা যাবে না।
             </p>
             <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <button
                 onClick={() => setConfirmReset(false)}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
               >
                 বাতিল
               </button>

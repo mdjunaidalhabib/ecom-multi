@@ -4,7 +4,7 @@ import "../globals.css";
 
 export default function PanelLayout({ children }) {
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 dark:bg-slate-950 transition-colors">
       <Sidebar />
       <div className="flex flex-1 flex-col">
         <Header />

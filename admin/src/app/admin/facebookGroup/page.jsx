@@ -78,26 +78,26 @@ export default function FacebookGroupAdmin() {
     handleSave(updated);
   };
 
-  if (loading) return <p className="text-center py-10">Loading...</p>;
+  if (loading) return <p className="text-center py-10 text-gray-500 dark:text-slate-400">Loading...</p>;
   if (!config) return null;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white shadow p-4 md:p-6 rounded-lg space-y-6">
+    <div className="max-w-2xl mx-auto bg-white dark:bg-slate-900 shadow p-4 md:p-6 rounded-lg space-y-6">
       <Toaster position="top-right" />
 
-      <h2 className="text-xl md:text-2xl font-bold">
+      <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-slate-100">
         📘 Facebook Group Link
       </h2>
-      <p className="text-sm text-gray-500 -mt-4">
+      <p className="text-sm text-gray-500 dark:text-slate-400 -mt-4">
         সিঙ্গেল প্রোডাক্ট পেজে "Visit our Facebook group" লিংক এখান থেকে
         কন্ট্রোল হবে।
       </p>
 
       {/* TOGGLE */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border p-4 rounded-lg">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border dark:border-slate-700 p-4 rounded-lg">
         <div>
-          <p className="font-semibold">Link Status</p>
-          <p className="text-sm text-gray-500">
+          <p className="font-semibold text-gray-900 dark:text-slate-100">Link Status</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
             {config.enabled ? "Visible ✅" : "Hidden 🚫"}
           </p>
         </div>
@@ -105,7 +105,7 @@ export default function FacebookGroupAdmin() {
         <button
           onClick={toggleEnabled}
           className={`relative inline-flex h-7 w-14 items-center rounded-full transition ${
-            config.enabled ? "bg-green-500" : "bg-gray-300"
+            config.enabled ? "bg-green-500" : "bg-gray-300 dark:bg-slate-600"
           }`}
         >
           <span
@@ -117,15 +117,15 @@ export default function FacebookGroupAdmin() {
       </div>
 
       {/* FIELDS */}
-      <div className="border p-4 rounded-lg space-y-4">
-        <h3 className="font-semibold">Group Info</h3>
+      <div className="border dark:border-slate-700 p-4 rounded-lg space-y-4">
+        <h3 className="font-semibold text-gray-900 dark:text-slate-100">Group Info</h3>
 
         {FIELDS.map(({ key, label, emoji, placeholder }) => (
-          <div key={key} className="border-b pb-3">
+          <div key={key} className="border-b dark:border-slate-700 pb-3">
             <div className="flex flex-col md:flex-row gap-2 md:items-center">
               <div className="flex items-center gap-2 md:w-48">
                 <span className="text-lg">{emoji}</span>
-                <span className="text-sm font-medium">{label}</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-300">{label}</span>
               </div>
 
               {editing === key ? (
@@ -134,7 +134,7 @@ export default function FacebookGroupAdmin() {
                     value={tempValue}
                     onChange={(e) => setTempValue(e.target.value)}
                     placeholder={placeholder}
-                    className="w-full md:flex-1 p-2 border rounded text-sm"
+                    className="w-full md:flex-1 p-2 border dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 rounded text-sm"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") commitEdit(key);
@@ -159,9 +159,9 @@ export default function FacebookGroupAdmin() {
                 </>
               ) : (
                 <>
-                  <p className="flex-1 text-sm break-all">
+                  <p className="flex-1 text-sm break-all text-gray-700 dark:text-slate-300">
                     {config[key] || (
-                      <span className="text-gray-400 italic">Not set</span>
+                      <span className="text-gray-400 dark:text-slate-500 italic">Not set</span>
                     )}
                   </p>
 
@@ -194,15 +194,15 @@ export default function FacebookGroupAdmin() {
 
       {/* PREVIEW */}
       {config.link && (
-        <div className="border p-4 rounded-lg">
-          <h3 className="font-semibold mb-2">Preview</h3>
+        <div className="border dark:border-slate-700 p-4 rounded-lg">
+          <h3 className="font-semibold mb-2 text-gray-900 dark:text-slate-100">Preview</h3>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-[#1877F2] flex items-center justify-center text-white text-xs font-bold">
               f
             </div>
-            <span className="text-sm text-gray-900">
+            <span className="text-sm text-gray-900 dark:text-slate-100">
               Visit our Facebook group{" "}
-              <span className="text-pink-500 font-semibold">
+              <span className="text-pink-500 dark:text-pink-400 font-semibold">
                 {config.name || "Cartvan Family"}
               </span>
             </span>
@@ -210,7 +210,7 @@ export default function FacebookGroupAdmin() {
         </div>
       )}
 
-      {saving && <p className="text-sm text-gray-400">Saving...</p>}
+      {saving && <p className="text-sm text-gray-400 dark:text-slate-500">Saving...</p>}
     </div>
   );
 }

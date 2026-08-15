@@ -1,21 +1,28 @@
-import { getPlatformSettings } from "../models/PlatformSettings.js";
+import Plan, { ensurePlansSeeded } from "../models/Plan.js";
 
-// PlatformSettings.planFeatures না পাওয়া গেলে (পুরনো doc, migration না চলা
-// অবস্থায়) এই ফলব্যাক ব্যবহার হয় — কোনো plan-ই ভুলবশত ব্লক না হয়ে যায়
+// Plan document না পাওয়া গেলে (ডিলিট হয়ে যাওয়া বা অজানা plan key) এই
+// ফলব্যাক ব্যবহার হয় — কোনো plan-ই ভুলবশত ব্লক না হয়ে যায়
 const FALLBACK_FEATURES = {
   customDomain: false,
   analytics: false,
   promo: false,
+  payment: false,
+  landingPages: false,
+  fullStorefront: true,
+  invoiceCustomization: false,
   maxProducts: 200,
   maxAdmins: 2,
 };
 
 export async function getPlanFeatures(planId) {
-  const settings = await getPlatformSettings();
-  const planFeatures = settings.planFeatures?.[planId];
-  return planFeatures
-    ? planFeatures.toObject?.() || planFeatures
-    : FALLBACK_FEATURES;
+  await ensurePlansSeeded();
+  const plan = await Plan.findOne({ key: planId });
+  if (!plan) return FALLBACK_FEATURES;
+
+  return {
+    ...plan.features.toObject(),
+    ...plan.limits.toObject(),
+  };
 }
 
 export async function shopHasFeature(shop, featureKey) {

@@ -6,8 +6,10 @@ import { apiFetch } from "../../../../../utils/api";
 import ProductCard from "../../../../../components/home/ProductCard";
 import CartSkeleton from "../../../../../components/skeletons/CartSkeleton"; // ✅ CartSkeleton import
 import useShopPath from "../../../../../hooks/useShopPath";
+import useRequireFullStorefront from "../../../../../hooks/useRequireFullStorefront";
 
 export default function WishlistPage() {
+  useRequireFullStorefront();
   const { wishlist } = useCart();
   const { base } = useShopPath();
   const [allProducts, setAllProducts] = useState([]);

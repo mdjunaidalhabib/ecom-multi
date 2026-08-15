@@ -1,10 +1,6 @@
 import express from "express";
 import Order from "../../models/Order.js";
 import { moveToTrash } from "../../../utils/trash/trash.helpers.js";
-import {
-  regenerateInvoiceInBackground,
-  invalidateInvoiceCache,
-} from "../../utils/invoice/invoiceService.js";
 import { releasePromoUsage } from "../../services/promoService.js";
 import { updateInventoryForItem } from "../../services/inventoryService.js";
 
@@ -205,10 +201,6 @@ router.post("/", async (req, res) => {
           stockErr?.message || "Stock not available / Inventory update failed",
       });
     }
-
-    // ✅ Pre-generate the invoice PDF in the background so it's ready
-    // instantly whenever it's downloaded later.
-    regenerateInvoiceInBackground(created._id);
 
     res.status(201).json(created);
   } catch (err) {
@@ -551,20 +543,6 @@ router.put("/:id", async (req, res) => {
       } catch (restockErr) {
         console.error("❌ Restock Error (admin cancel):", restockErr);
       }
-    }
-
-    // ✅ Invoice-visible fields changed -> old cached PDF is stale.
-    // Wipe it and rebuild in the background so downloads stay instant.
-    const invoiceAffectingFields = [
-      "billing",
-      "discount",
-      "total",
-      "paymentStatus",
-      "paymentMethod",
-    ];
-    if (invoiceAffectingFields.some((k) => updateData[k] !== undefined)) {
-      await invalidateInvoiceCache(updated._id);
-      regenerateInvoiceInBackground(updated._id);
     }
 
     res.json(updated);

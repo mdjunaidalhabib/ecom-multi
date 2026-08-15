@@ -3,26 +3,46 @@ import { useEffect, useState } from "react";
 import OrderSummarySkeleton from "../skeletons/OrderSummarySkeleton";
 import { formatDateTime } from "../../lib/utils";
 import useShopPath from "../../hooks/useShopPath";
+import downloadInvoicePdf from "../../utils/invoiceDownload";
 
 export default function OrderSummary({ orderId }) {
   const { base } = useShopPath();
   const [order, setOrder] = useState(null);
+  const [invoiceTemplate, setInvoiceTemplate] = useState(null);
+  const [invoiceShop, setInvoiceShop] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (!orderId) return;
 
     setLoading(true);
 
-    fetch(`/api/orders/${orderId}`)
+    fetch(`/api/invoice/${orderId}`)
       .then((res) => res.json())
-      .then(setOrder)
+      .then((data) => {
+        setOrder(data.order || null);
+        setInvoiceTemplate(data.template || null);
+        setInvoiceShop(data.shop || null);
+      })
       .catch((err) => {
         console.error("❌ Failed to fetch order:", err);
         setOrder(null);
       })
       .finally(() => setLoading(false));
   }, [orderId]);
+
+  const handleDownloadInvoice = async () => {
+    if (!order || !invoiceTemplate) return;
+    setDownloading(true);
+    try {
+      await downloadInvoicePdf(order, invoiceShop, invoiceTemplate);
+    } catch (err) {
+      console.error("❌ Invoice download failed:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (loading) return <OrderSummarySkeleton />;
   if (!order)
@@ -147,14 +167,14 @@ export default function OrderSummary({ orderId }) {
 
       {/* Actions */}
       <div className="flex gap-2 p-3">
-        <a
-          href={`/api/invoice/${orderId}`}
-          target="_blank"
-          rel="noreferrer"
-          className="flex-1 bg-blue-600 text-white py-1.5 rounded text-center hover:bg-blue-700 text-xs"
+        <button
+          type="button"
+          onClick={handleDownloadInvoice}
+          disabled={!invoiceTemplate || downloading}
+          className="flex-1 bg-blue-600 text-white py-1.5 rounded text-center hover:bg-blue-700 disabled:opacity-60 text-xs"
         >
-          🧾 Download Invoice
-        </a>
+          {downloading ? "⏳ তৈরি হচ্ছে..." : "🧾 Download Invoice"}
+        </button>
 
         <a
           href={base || "/"}

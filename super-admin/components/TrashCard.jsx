@@ -3,7 +3,7 @@
 import { formatDateTime } from "../lib/utils";
 
 const TYPE_BADGE_STYLE = {
-  Shop: "bg-violet-100 border-violet-200 text-violet-700",
+  Shop: "bg-violet-100 dark:bg-violet-500/15 border-violet-200 dark:border-violet-500/30 text-violet-700 dark:text-violet-300",
 };
 
 const TYPE_ICON = {
@@ -47,12 +47,12 @@ export default function TrashCard({ item, busy, onRestore, onDelete }) {
   const subtitle = getSubtitle(item);
   const badgeStyle =
     TYPE_BADGE_STYLE[item.collectionName] ||
-    "bg-gray-100 border-gray-200 text-gray-700";
+    "bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300";
 
   return (
-    <div className="relative border rounded-xl shadow-md p-4 flex flex-col bg-white hover:shadow-lg transition opacity-90">
+    <div className="relative border border-gray-200 dark:border-slate-700 rounded-xl shadow-md dark:shadow-black/30 p-4 flex flex-col bg-white dark:bg-slate-900 hover:shadow-lg transition opacity-90">
       {/* 🖼️ Image */}
-      <div className="w-full aspect-square overflow-hidden rounded-lg mb-3 relative bg-gray-50">
+      <div className="w-full aspect-square overflow-hidden rounded-lg mb-3 relative bg-gray-50 dark:bg-slate-800">
         {image ? (
           <img
             src={image}
@@ -60,7 +60,7 @@ export default function TrashCard({ item, busy, onRestore, onDelete }) {
             className="w-full h-full object-cover grayscale-[15%]"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-slate-500 text-xs">
             No Image
           </div>
         )}
@@ -80,15 +80,15 @@ export default function TrashCard({ item, busy, onRestore, onDelete }) {
       </div>
 
       {/* 📋 Info */}
-      <h2 className="font-semibold text-lg truncate text-gray-800">
+      <h2 className="font-semibold text-lg truncate text-gray-800 dark:text-slate-100">
         {item.label || "Untitled"}
       </h2>
 
       {subtitle && (
-        <p className="text-sm text-gray-500 truncate">{subtitle}</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 truncate">{subtitle}</p>
       )}
 
-      <p className="text-xs text-gray-400 mt-1">
+      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
         Deleted: {formatDateTime(item.deletedAt)}
       </p>
 

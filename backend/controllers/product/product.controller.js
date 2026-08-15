@@ -1,4 +1,7 @@
 import Product from "../../src/models/Product.js";
+import Shop from "../../src/models/Shop.js";
+import Category from "../../src/models/Category.js";
+import { shopHasFeature } from "../../src/services/planFeatureService.js";
 import fs from "fs";
 import sharp from "sharp";
 import path from "path";
@@ -204,6 +207,7 @@ export const createProduct = async (req, res) => {
       name,
       price,
       oldPrice,
+      costPrice,
       stock,
       sold,
       isSoldOut,
@@ -219,18 +223,54 @@ export const createProduct = async (req, res) => {
       cartvanBox,
     } = req.body;
 
-    const categoryIds = categories ? safeJSON(categories, []) : [];
+    let categoryIds = categories ? safeJSON(categories, []) : [];
 
-    if (
-      !name ||
-      price === undefined ||
-      !Array.isArray(categoryIds) ||
-      categoryIds.length === 0
-    ) {
+    if (!name || price === undefined) {
       cleanupReqFiles(req);
       return res
         .status(400)
-        .json({ error: "Name, Price & at least one Category required" });
+        .json({ error: "Name ও Price আবশ্যক" });
+    }
+
+    const shop = await Shop.findById(req.shopId).select("limits plan").lean();
+
+    if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+      // ✅ landing-page-only শপে (fullStorefront: false) কোনো ক্যাটাগরি
+      // ব্রাউজিং পেজ নেই, তাই ক্যাটাগরি বাছাই বাধ্যতামূলক না — একটা
+      // hidden default category স্বয়ংক্রিয়ভাবে find-or-create করে বসিয়ে
+      // দেওয়া হয় (Product.categories schema-তে required-ই থাকছে, শুধু
+      // এই শপগুলোর জন্য admin ফর্মে ক্যাটাগরি সিলেক্টর দেখানো হবে না)
+      const hasFullStorefront = await shopHasFeature(shop, "fullStorefront");
+      if (!hasFullStorefront) {
+        const defaultCategory = await Category.findOneAndUpdate(
+          { shopId: req.shopId, name: "__landing_default__" },
+          {
+            $setOnInsert: {
+              shopId: req.shopId,
+              name: "__landing_default__",
+              isActive: false,
+            },
+          },
+          { upsert: true, new: true },
+        );
+        categoryIds = [defaultCategory._id];
+      } else {
+        cleanupReqFiles(req);
+        return res
+          .status(400)
+          .json({ error: "Name, Price & at least one Category required" });
+      }
+    }
+
+    // ✅ প্ল্যান-ভিত্তিক প্রোডাক্ট লিমিট — Shop.limits.maxProducts
+    // (Product tenant-scoped বলে countDocuments() এমনিতেই এই শপের মধ্যে সীমাবদ্ধ)
+    const maxProducts = shop?.limits?.maxProducts ?? 200;
+    const currentProductCount = await Product.countDocuments();
+    if (currentProductCount >= maxProducts) {
+      cleanupReqFiles(req);
+      return res.status(403).json({
+        error: `এই প্ল্যানে সর্বোচ্চ ${maxProducts}টি প্রোডাক্ট যোগ করা যাবে। প্ল্যান আপগ্রেড করুন।`,
+      });
     }
 
     const total = await Product.countDocuments();
@@ -338,6 +378,10 @@ export const createProduct = async (req, res) => {
       name,
       price: mainPrice,
       oldPrice: mainOldPrice,
+      costPrice:
+        costPrice !== undefined && costPrice !== null && costPrice !== ""
+          ? toNumber(costPrice, 0)
+          : null,
       stock: finalStock,
       sold: mainSold,
       isSoldOut: isSoldOut === "true" ? true : computedSoldOut,
@@ -383,6 +427,7 @@ export const updateProduct = async (req, res) => {
       name,
       price,
       oldPrice,
+      costPrice,
       stock,
       sold,
       isSoldOut,
@@ -535,6 +580,11 @@ export const updateProduct = async (req, res) => {
     if (oldPrice !== undefined) {
       product.oldPrice =
         oldPrice && toNumber(oldPrice, 0) > 0 ? toNumber(oldPrice, 0) : null;
+    }
+
+    if (costPrice !== undefined) {
+      product.costPrice =
+        costPrice !== null && costPrice !== "" ? toNumber(costPrice, 0) : null;
     }
 
     if (sold !== undefined) product.sold = toNumber(sold, product.sold);

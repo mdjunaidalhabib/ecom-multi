@@ -64,23 +64,23 @@ export default function SuperAdminDashboardPage() {
     <div className="space-y-6 p-3 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="mb-2 flex items-center gap-2 text-violet-700">
+          <div className="mb-2 flex items-center gap-2 text-rose-600 dark:text-rose-400">
             <ShieldCheck size={20} />
             <span className="text-sm font-semibold uppercase tracking-wider">
               Super Admin Portal
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 sm:text-3xl">
             Platform Overview
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
             সব shop, assigned admin এবং platform activity-এর সংক্ষিপ্ত চিত্র।
           </p>
         </div>
 
         <Link
           href="/shops"
-          className="rounded-lg bg-violet-600 px-4 py-2.5 text-center text-sm font-semibold text-white shadow hover:bg-violet-700"
+          className="rounded-lg bg-rose-600 px-4 py-2.5 text-center text-sm font-semibold text-white shadow hover:bg-rose-700"
         >
           Manage Shops
         </Link>
@@ -89,24 +89,24 @@ export default function SuperAdminDashboardPage() {
       {loading ? (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[1, 2, 3, 4].map((item) => (
-            <div key={item} className="h-28 animate-pulse rounded-2xl bg-white shadow" />
+            <div key={item} className="h-28 animate-pulse rounded-2xl bg-white dark:bg-slate-900 shadow" />
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+        <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-4 text-red-700 dark:text-red-400">
           {error}
         </div>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {cards.map(({ label, value, icon: Icon }) => (
-              <div key={label} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+              <div key={label} className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-gray-100 dark:ring-slate-800">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm text-gray-500">{label}</p>
-                    <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">{label}</p>
+                    <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-slate-100">{value}</p>
                   </div>
-                  <div className="rounded-xl bg-violet-50 p-3 text-violet-700">
+                  <div className="rounded-xl bg-rose-50 dark:bg-rose-500/10 p-3 text-rose-700 dark:text-rose-400">
                     <Icon size={23} />
                   </div>
                 </div>
@@ -114,8 +114,8 @@ export default function SuperAdminDashboardPage() {
             ))}
           </div>
 
-          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-            <h2 className="text-lg font-bold text-gray-900">Shop Status</h2>
+          <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-gray-100 dark:ring-slate-800">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">Shop Status</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <Status label="Active / Trial" value={shops.length - summary.suspended} />
               <Status label="Suspended" value={summary.suspended} />
@@ -133,9 +133,9 @@ export default function SuperAdminDashboardPage() {
 
 function Status({ label, value }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
+    <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 p-4">
+      <p className="text-sm text-gray-500 dark:text-slate-400">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-slate-100">{value}</p>
     </div>
   );
 }

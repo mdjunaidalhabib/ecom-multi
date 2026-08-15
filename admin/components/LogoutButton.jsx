@@ -44,7 +44,7 @@ export default function LogoutButton() {
       title="Logout"
       className={`flex items-center justify-center gap-1.5 rounded-full sm:rounded-lg h-9 w-9 sm:h-auto sm:w-auto sm:px-3.5 sm:py-2 text-white text-sm font-medium shadow-sm transition-all ${
         loading
-          ? "bg-gray-400 cursor-not-allowed"
+          ? "bg-gray-400 dark:bg-slate-600 cursor-not-allowed"
           : "bg-red-500 hover:bg-red-600 active:scale-95"
       }`}
     >

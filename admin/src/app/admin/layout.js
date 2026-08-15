@@ -6,7 +6,7 @@ import "../globals.css";
 
 export default function AdminLayout({ children }) {
   return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-gray-100 dark:bg-slate-950 transition-colors">
           <Sidebar />
           <div className="flex-1 flex flex-col">
             <Header />

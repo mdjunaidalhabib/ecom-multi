@@ -34,7 +34,6 @@ const ACCENTS = {
     badge: "bg-blue-600",
     button: "bg-blue-600 hover:bg-blue-700",
     ring: "focus:border-blue-500 focus:ring-blue-500/20",
-    panelBg: softPanel("37,99,235"),
     text: "text-blue-600",
   },
   violet: {
@@ -43,7 +42,6 @@ const ACCENTS = {
     badge: "bg-violet-600",
     button: "bg-violet-600 hover:bg-violet-700",
     ring: "focus:border-violet-500 focus:ring-violet-500/20",
-    panelBg: softPanel("124,58,237"),
     text: "text-violet-600",
   },
   orange: {
@@ -52,7 +50,6 @@ const ACCENTS = {
     badge: "bg-[#f75605]",
     button: "bg-[#f75605] hover:bg-[#df4c02]",
     ring: "focus:border-[#f75605] focus:ring-[#f75605]/20",
-    panelBg: softPanel("247,86,5"),
     text: "text-[#f75605]",
   },
 };
@@ -78,6 +75,7 @@ export default function LoginPortal({
   accent = "blue",
 }) {
   const theme = ACCENTS[accent] || ACCENTS.blue;
+  const panelBg = softPanel(theme.rgb);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -141,11 +139,14 @@ export default function LoginPortal({
   };
 
   return (
-    <main className="flex min-h-screen bg-slate-50">
+    <main
+      className="relative flex min-h-screen bg-slate-50"
+      style={{ colorScheme: "light" }}
+    >
       {/* Left brand panel */}
       <div
         className="relative hidden w-1/2 flex-col justify-between overflow-hidden p-12 text-slate-900 lg:flex"
-        style={{ background: theme.panelBg }}
+        style={{ background: panelBg }}
       >
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.5]"
@@ -278,7 +279,7 @@ export default function LoginPortal({
               type="email"
               autoComplete="email"
               placeholder="you@example.com"
-              className={`w-full rounded-lg border border-gray-300 p-3 pl-10 outline-none transition focus:ring-4 ${theme.ring}`}
+              className={`w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 p-3 pl-10 outline-none transition focus:ring-4 ${theme.ring}`}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
@@ -297,7 +298,7 @@ export default function LoginPortal({
               type={showPass ? "text" : "password"}
               autoComplete="current-password"
               placeholder="••••••••"
-              className={`w-full rounded-lg border border-gray-300 p-3 pl-10 pr-11 outline-none transition focus:ring-4 ${theme.ring}`}
+              className={`w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 p-3 pl-10 pr-11 outline-none transition focus:ring-4 ${theme.ring}`}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required

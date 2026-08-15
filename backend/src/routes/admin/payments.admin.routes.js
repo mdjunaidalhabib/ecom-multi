@@ -3,12 +3,19 @@ import PaymentMethod from "../../models/PaymentMethod.js";
 import Order from "../../models/Order.js";
 import { restockOrderItems } from "../../utils/inventory/restock.js";
 import { moveToTrash } from "../../../utils/trash/trash.helpers.js";
-import {
-  invalidateInvoiceCache,
-  regenerateInvoiceInBackground,
-} from "../../utils/invoice/invoiceService.js";
+import { requirePlanFeature } from "../../middlewares/requirePlanFeature.js";
 
 const router = express.Router();
+
+// ✅ Payment setup plan-gated — free plan থেকে বন্ধ থাকতে পারে, তখন শপ শুধু
+// COD-এ অর্ডার নিতে পারবে (দেখুন PlatformSettings.planFeatures, super admin
+// Settings > Plan Features থেকে ম্যানেজ করে)
+router.use(
+  requirePlanFeature(
+    "payment",
+    "আপনার বর্তমান প্ল্যানে Payment সেটাপ ফিচারটি নেই। শুধু Cash on Delivery (COD)-এ অর্ডার নিতে পারবেন। প্ল্যান আপগ্রেড করতে সুপারএডমিনের সাথে যোগাযোগ করুন।",
+  ),
+);
 
 /* =====================================================
    ✅ PAYMENT METHODS CRUD (bKash / Nagad / Rocket etc.)
@@ -249,9 +256,6 @@ router.patch("/:orderId/verify", async (req, res) => {
     }
 
     await order.save();
-
-    await invalidateInvoiceCache(order._id);
-    regenerateInvoiceInBackground(order._id);
 
     res.json(order);
   } catch (err) {

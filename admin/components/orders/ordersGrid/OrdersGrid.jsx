@@ -7,6 +7,9 @@ import useOrdersManager from "../hooks/useOrdersManager";
 import StatusSummary from "./StatusSummary";
 import BulkBar from "./BulkBar";
 import OrderCard from "./OrderCard";
+import useInvoiceTemplate from "../../../hooks/useInvoiceTemplate";
+import downloadInvoicePdf from "../../../utils/invoiceDownload";
+import toast from "react-hot-toast";
 
 export default function OrdersGrid({
   orders,
@@ -21,6 +24,20 @@ export default function OrdersGrid({
   const [tabStatus, setTabStatus] = useState("");
   const [openId, setOpenId] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const { template: invoiceTemplate, shop: invoiceShop } = useInvoiceTemplate();
+
+  const handleDownloadInvoice = async (order) => {
+    if (!invoiceTemplate) return;
+    setDownloadingId(order._id);
+    try {
+      await downloadInvoicePdf(order, invoiceShop, invoiceTemplate);
+    } catch {
+      toast.error("❌ ইনভয়েস তৈরি করতে সমস্যা হয়েছে");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const manager = useOrdersManager({
     orders,
@@ -136,7 +153,7 @@ export default function OrdersGrid({
               checked={manager.allSelected}
               onChange={manager.toggleAll}
             />
-            <span className="text-xs font-semibold whitespace-nowrap">
+            <span className="text-xs font-semibold whitespace-nowrap text-gray-700 dark:text-slate-300">
               Select all ({manager.filteredOrders.length})
             </span>
           </label>
@@ -159,13 +176,13 @@ export default function OrdersGrid({
       )}
 
       {/* ================= ORDER LIST ================= */}
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
         {manager.filteredOrders.length === 0 ? (
-          <div className="p-6 text-center text-gray-500 text-sm">
+          <div className="p-6 text-center text-gray-500 dark:text-slate-400 text-sm">
             No orders found.
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y dark:divide-slate-700">
             {manager.filteredOrders.map((o) => (
               <OrderCard
                 key={o._id}
@@ -180,6 +197,9 @@ export default function OrdersGrid({
                 onDelete={onDelete}
                 onSendCourier={onSendCourier}
                 onFinalStatusSync={handleCourierFinalStatus} // ✅ ADD
+                onDownloadInvoice={handleDownloadInvoice}
+                invoiceReady={!!invoiceTemplate}
+                downloadingInvoice={downloadingId === o._id}
               />
             ))}
           </div>

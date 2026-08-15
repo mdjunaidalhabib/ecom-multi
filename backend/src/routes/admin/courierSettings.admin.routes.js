@@ -1,11 +1,18 @@
 import express from "express";
 import CourierSetting from "../../models/CourierSetting.js";
+import { requirePermission } from "../../middlewares/adminAuthMiddleware.js";
 
 const router = express.Router();
 
+// ⚠️ এই ফাইলটা index.js এ "/" এ mount করা (পুরো admin router-এর প্রতিটা
+// path-এর prefix হিসেবে ম্যাচ করে), তাই এখানে blanket `router.use(...)`
+// দিয়ে permission gate বসানো যাবে না — সেটা পরের সব route (categories,
+// payments, ...) কেও ভুলভাবে আটকে দিত। তাই প্রতিটা route-এ আলাদাভাবে
+// requirePermission("settings") বসানো হয়েছে।
+
 // ✅ Save or Update Courier Settings
 // FINAL path: POST /api/v1/admin/courier-settings
-router.post("/courier-settings", async (req, res) => {
+router.post("/courier-settings", requirePermission("settings"), async (req, res) => {
   try {
     const { courier, merchantName, apiKey, secretKey, isActive } = req.body;
 
@@ -47,7 +54,7 @@ router.post("/courier-settings", async (req, res) => {
 
 // ✅ Get All Couriers
 // FINAL path: GET /api/v1/admin/courier-settings
-router.get("/courier-settings", async (req, res) => {
+router.get("/courier-settings", requirePermission("settings"), async (req, res) => {
   try {
     const settings = await CourierSetting.find();
     res.json(settings);
@@ -58,7 +65,7 @@ router.get("/courier-settings", async (req, res) => {
 
 // ✅ Get Active Courier (Only one active allowed)
 // FINAL path: GET /api/v1/admin/active-courier
-router.get("/active-courier", async (req, res) => {
+router.get("/active-courier", requirePermission("settings"), async (req, res) => {
   try {
     const active = await CourierSetting.findOne({ isActive: true });
     res.json(active || null);
@@ -69,7 +76,7 @@ router.get("/active-courier", async (req, res) => {
 
 // ✅ Set Active Courier (Only one global active)
 // FINAL path: POST /api/v1/admin/set-active-courier
-router.post("/set-active-courier", async (req, res) => {
+router.post("/set-active-courier", requirePermission("settings"), async (req, res) => {
   try {
     const { courier, merchantName } = req.body;
 
@@ -114,7 +121,7 @@ router.post("/set-active-courier", async (req, res) => {
 
 // ✅ Delete Courier
 // FINAL path: DELETE /api/v1/admin/courier-settings/:id
-router.delete("/courier-settings/:id", async (req, res) => {
+router.delete("/courier-settings/:id", requirePermission("settings"), async (req, res) => {
   try {
     const { id } = req.params;
 

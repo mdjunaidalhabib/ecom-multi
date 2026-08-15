@@ -1,4 +1,4 @@
-import { CircleGauge, Store, Trash2, User, Settings, Palette, SlidersHorizontal, Inbox } from "lucide-react";
+import { CircleGauge, Store, Trash2, User, Layers, Inbox, FileText } from "lucide-react";
 
 // ✅ Superadmin-এর কাজ শুধু শপ তৈরি/ম্যানেজ করা — কোনো শপের
 // Products/Orders/Users/Settings ইত্যাদি shop-scoped ডেটাতে তার এক্সেস
@@ -16,19 +16,24 @@ export const superAdminNavItems = [
     href: "/shops",
   },
   {
+    icon: <Layers size={18} />,
+    label: "Plans",
+    href: "/plans",
+  },
+  {
     icon: <Inbox size={18} />,
     label: "Plan Requests",
     href: "/plan-requests",
   },
   {
+    icon: <FileText size={18} />,
+    label: "Invoice Template",
+    href: "/invoice-template",
+  },
+  {
     icon: <Trash2 size={18} />,
     label: "Shop Trash",
     href: "/trash",
-  },
-  {
-    icon: <Settings size={18} />,
-    label: "Settings",
-    href: "/settings",
   },
   {
     icon: <User size={18} />,
@@ -37,16 +42,7 @@ export const superAdminNavItems = [
   },
 ];
 
-// ✅ MenuBar-এর "Settings" collapsible submenu-তে দেখানো হয়
-export const superAdminSettingsChildren = [
-  {
-    icon: <Palette size={16} />,
-    label: "Themes",
-    href: "/settings/themes",
-  },
-  {
-    icon: <SlidersHorizontal size={16} />,
-    label: "Plan Features",
-    href: "/settings/plan-features",
-  },
-];
+// ✅ বর্তমানে কোনো Settings sub-page নেই (Plan Features/Themes সেটিংস এখন
+// /plans পেজেই মার্জ করা) — ভবিষ্যতে দরকার হলে এখানে আবার যোগ করা যাবে।
+// Header/MenuBar এখনো এই আর্গুমেন্ট প্রত্যাশা করে, তাই খালি array রাখা হলো।
+export const superAdminSettingsChildren = [];

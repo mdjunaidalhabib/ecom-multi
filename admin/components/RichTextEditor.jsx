@@ -40,7 +40,7 @@ function ToolbarButton({ onClick, active, disabled, title, children }) {
       className={`p-1.5 rounded-md text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
         active
           ? "bg-indigo-600 text-white"
-          : "text-gray-600 hover:bg-gray-200"
+          : "text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700"
       }`}
     >
       {children}
@@ -107,12 +107,12 @@ export default function RichTextEditor({
 
   return (
     <div
-      className={`rounded-xl border overflow-hidden bg-white transition-all ${
-        error ? "border-red-500" : "border-gray-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-400"
+      className={`rounded-xl border overflow-hidden bg-white dark:bg-slate-900 transition-all ${
+        error ? "border-red-500" : "border-gray-300 dark:border-slate-600 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-500/20 focus-within:border-indigo-400"
       }`}
     >
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 border-b bg-gray-50 px-2 py-1.5">
+      <div className="flex flex-wrap items-center gap-0.5 border-b dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-2 py-1.5">
         <ToolbarButton
           title="Bold"
           active={editor.isActive("bold")}
@@ -135,7 +135,7 @@ export default function RichTextEditor({
           <UnderlineIcon size={15} />
         </ToolbarButton>
 
-        <span className="w-px h-5 bg-gray-300 mx-1" />
+        <span className="w-px h-5 bg-gray-300 dark:bg-slate-600 mx-1" />
 
         <ToolbarButton
           title="উপশিরোনাম (বড়)"
@@ -169,7 +169,7 @@ export default function RichTextEditor({
           <Link2 size={15} />
         </ToolbarButton>
 
-        <span className="w-px h-5 bg-gray-300 mx-1" />
+        <span className="w-px h-5 bg-gray-300 dark:bg-slate-600 mx-1" />
 
         {/* রং */}
         <div className="flex items-center gap-1 px-0.5">
@@ -182,17 +182,17 @@ export default function RichTextEditor({
               onClick={() => setColor(c.value)}
               className={`w-5 h-5 rounded-full border flex items-center justify-center transition-transform hover:scale-110 ${
                 editor.isActive("textStyle", { color: c.value })
-                  ? "ring-2 ring-offset-1 ring-indigo-500"
-                  : "border-gray-300"
+                  ? "ring-2 ring-offset-1 dark:ring-offset-slate-900 ring-indigo-500"
+                  : "border-gray-300 dark:border-slate-600"
               }`}
               style={c.value ? { backgroundColor: c.value, borderColor: c.value } : { background: "#fff" }}
             >
-              {!c.value && <span className="text-[9px] font-bold text-gray-400">A</span>}
+              {!c.value && <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500">A</span>}
             </button>
           ))}
         </div>
 
-        <span className="w-px h-5 bg-gray-300 mx-1" />
+        <span className="w-px h-5 bg-gray-300 dark:bg-slate-600 mx-1" />
 
         <ToolbarButton
           title="ফরম্যাট মুছুন"
@@ -209,7 +209,7 @@ export default function RichTextEditor({
       </div>
 
       {/* Editable area */}
-      <div className="px-4 py-3 text-[15px]" style={{ minHeight }}>
+      <div className="px-4 py-3 text-[15px] text-gray-900 dark:text-slate-100" style={{ minHeight }}>
         <EditorContent editor={editor} />
       </div>
     </div>

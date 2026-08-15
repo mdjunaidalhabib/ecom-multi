@@ -28,7 +28,7 @@ function SectionHeader({ icon: Icon, title }) {
       <div className="h-8 w-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
         <Icon size={15} />
       </div>
-      <div className="text-sm font-semibold text-gray-900">{title}</div>
+      <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">{title}</div>
     </div>
   );
 }
@@ -303,10 +303,10 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     items.some((x) => x.productId && toNumber(x.qty, 0) > 0);
 
   const inputClass = (hasError) =>
-    `w-full h-12 rounded-2xl border px-4 text-sm font-semibold outline-none transition ${
+    `w-full h-12 rounded-2xl border px-4 text-sm font-semibold outline-none transition text-gray-900 dark:text-slate-100 ${
       hasError
-        ? "border-red-500 bg-red-50 focus:ring-2 focus:ring-red-200"
-        : "border-gray-200 bg-white focus:ring-2 focus:ring-blue-200"
+        ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/30"
+        : "border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
     }`;
 
   /* ===========================
@@ -423,7 +423,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
         } items-end sm:items-center justify-center bg-black/60`}
       >
         {/* ✅ MOBILE FULL SCREEN / DESKTOP CENTER */}
-        <div className="w-full sm:max-w-6xl sm:rounded-3xl bg-gray-50 h-[92vh] sm:h-[88vh] overflow-hidden shadow-2xl flex flex-col">
+        <div className="w-full sm:max-w-6xl sm:rounded-3xl bg-gray-50 dark:bg-slate-900 h-[92vh] sm:h-[88vh] overflow-hidden shadow-2xl flex flex-col">
           {/* ✅ STICKY HEADER */}
           <div
             className={`shrink-0 overflow-hidden px-4 sm:px-6 py-5 flex items-center justify-between sticky top-0 z-20 transition-colors ${
@@ -464,9 +464,9 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
               {/* LEFT */}
               <div className="space-y-4">
                 {/* SALE CHANNEL CARD */}
-                <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm space-y-3">
                   <SectionHeader icon={ShoppingBag} title="Sale Channel" />
-                  <div className="grid grid-cols-2 gap-2.5 p-1 rounded-2xl bg-gray-100">
+                  <div className="grid grid-cols-2 gap-2.5 p-1 rounded-2xl bg-gray-100 dark:bg-slate-700">
                     <button
                       type="button"
                       onClick={() => {
@@ -476,8 +476,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                       }}
                       className={`h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${
                         !isOffline
-                          ? "bg-white text-blue-700 shadow-md"
-                          : "text-gray-500 hover:text-gray-700"
+                          ? "bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-md"
+                          : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300"
                       }`}
                     >
                       <Globe size={16} /> Online
@@ -491,15 +491,15 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                       }}
                       className={`h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${
                         isOffline
-                          ? "bg-white text-purple-700 shadow-md"
-                          : "text-gray-500 hover:text-gray-700"
+                          ? "bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-400 shadow-md"
+                          : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300"
                       }`}
                     >
                       <Store size={16} /> Offline
                     </button>
                   </div>
                   {isOffline && (
-                    <div className="flex items-start gap-2 rounded-2xl bg-purple-50 border border-purple-100 px-3 py-2.5 text-[11px] text-purple-700 font-semibold">
+                    <div className="flex items-start gap-2 rounded-2xl bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 px-3 py-2.5 text-[11px] text-purple-700 dark:text-purple-400 font-semibold">
                       <Store size={14} className="shrink-0 mt-0.5" />
                       In-store sale — কাস্টমার তথ্য ঐচ্ছিক, ডেলিভারি চার্জ ৳০, এবং Payment/Status ডিফল্টভাবে Paid ও Delivered বসানো হয়েছে।
                     </div>
@@ -507,14 +507,14 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                 </div>
 
                 {/* CUSTOMER CARD */}
-                <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm space-y-3">
                   <div className="flex items-center justify-between">
                     <SectionHeader icon={User} title="Customer Info" />
                     <div
                       className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
                         isOffline
-                          ? "bg-purple-50 text-purple-600"
-                          : "bg-red-50 text-red-600"
+                          ? "bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                          : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400"
                       }`}
                     >
                       {isOffline ? "Optional" : "Required"}
@@ -523,8 +523,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
-                      <div className="text-[11px] font-semibold text-gray-600">
-                        Name {!isOffline && <span className="text-red-600">*</span>}
+                      <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
+                        Name {!isOffline && <span className="text-red-600 dark:text-red-400">*</span>}
                       </div>
                       <input
                         className={inputClass(touched.name && errors.name)}
@@ -536,15 +536,15 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                         onBlur={() => setTouched((p) => ({ ...p, name: true }))}
                       />
                       {touched.name && errors.name && (
-                        <div className="text-[11px] text-red-600">
+                        <div className="text-[11px] text-red-600 dark:text-red-400">
                           Name required
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-1">
-                      <div className="text-[11px] font-semibold text-gray-600">
-                        Phone {!isOffline && <span className="text-red-600">*</span>}
+                      <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
+                        Phone {!isOffline && <span className="text-red-600 dark:text-red-400">*</span>}
                       </div>
                       <input
                         className={inputClass(touched.phone && errors.phone)}
@@ -558,15 +558,15 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                         }
                       />
                       {touched.phone && errors.phone && (
-                        <div className="text-[11px] text-red-600">
+                        <div className="text-[11px] text-red-600 dark:text-red-400">
                           Valid number required
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-1">
-                      <div className="text-[11px] font-semibold text-gray-600">
-                        Address {!isOffline && <span className="text-red-600">*</span>}
+                      <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
+                        Address {!isOffline && <span className="text-red-600 dark:text-red-400">*</span>}
                       </div>
                       <input
                         className={inputClass(
@@ -582,7 +582,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                         }
                       />
                       {touched.address && errors.address && (
-                        <div className="text-[11px] text-red-600">
+                        <div className="text-[11px] text-red-600 dark:text-red-400">
                           Address required
                         </div>
                       )}
@@ -590,11 +590,11 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                   </div>
 
                   <div className="space-y-1">
-                    <div className="text-[11px] font-semibold text-gray-600">
+                    <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
                       Note (optional)
                     </div>
                     <input
-                      className="w-full h-12 rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+                      className="w-full h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
                       placeholder="Note..."
                       value={billing.note}
                       onChange={(e) =>
@@ -605,7 +605,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                 </div>
 
                 {/* ITEMS CARD */}
-                <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm space-y-3">
                   <div className="flex items-center justify-between">
                     <SectionHeader icon={Package} title="Items" />
                     <button
@@ -635,24 +635,24 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                       return (
                         <div
                           key={idx}
-                          className="rounded-3xl border border-gray-100 bg-gray-50/70 p-3 space-y-2"
+                          className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-gray-50/70 dark:bg-slate-900/40 p-3 space-y-2"
                         >
                           {/* TOP */}
                           <button
                             type="button"
                             onClick={() => openPicker(idx)}
-                            className="w-full h-14 rounded-3xl border border-gray-100 bg-white px-3 flex items-center gap-3 hover:border-blue-200 hover:bg-blue-50/30 transition"
+                            className="w-full h-14 rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 flex items-center gap-3 hover:border-blue-200 dark:hover:border-blue-500/40 hover:bg-blue-50/30 dark:hover:bg-blue-500/10 transition"
                           >
                             <img
                               src={p ? image : "/no-image.png"}
                               alt=""
-                              className="w-11 h-11 rounded-2xl border object-cover"
+                              className="w-11 h-11 rounded-2xl border dark:border-slate-600 object-cover"
                             />
                             <div className="min-w-0 text-left">
-                              <div className="text-sm font-black truncate">
+                              <div className="text-sm font-black truncate text-gray-900 dark:text-slate-100">
                                 {p ? p.name : "Select product"}
                               </div>
-                              <div className="text-[11px] text-gray-500 font-semibold">
+                              <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
                                 {p
                                   ? `৳${toNumber(p.price, 0)} • Stock: ${stock}`
                                   : "Click to choose product"}
@@ -664,7 +664,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                           <div className="flex flex-col sm:grid sm:grid-cols-12 gap-2">
                             {/* COLOR */}
                             <select
-                              className="w-full sm:col-span-7 h-12 rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+                              className="w-full sm:col-span-7 h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
                               value={it.color || ""}
                               onChange={(e) =>
                                 updateItem(idx, "color", e.target.value || null)
@@ -682,21 +682,21 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                             </select>
 
                             {/* QTY */}
-                            <div className="w-full sm:col-span-5 h-12 rounded-2xl border border-gray-200 bg-white px-2 flex items-center justify-between">
+                            <div className="w-full sm:col-span-5 h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 flex items-center justify-between">
                               <button
                                 type="button"
                                 onClick={() => changeQty(idx, -1)}
                                 disabled={!p || toNumber(it.qty, 1) <= 1}
                                 className={`w-9 h-9 rounded-xl font-black flex items-center justify-center transition ${
                                   !p || toNumber(it.qty, 1) <= 1
-                                    ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                    ? "bg-gray-100 dark:bg-slate-700 text-gray-300 dark:text-slate-500 cursor-not-allowed"
+                                    : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600"
                                 }`}
                               >
                                 <Minus size={14} />
                               </button>
 
-                              <div className="text-base font-black">
+                              <div className="text-base font-black text-gray-900 dark:text-slate-100">
                                 {it.qty}
                               </div>
 
@@ -706,8 +706,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                                 disabled={!p || it.qty >= stock}
                                 className={`w-9 h-9 rounded-xl font-black flex items-center justify-center transition ${
                                   !p || it.qty >= stock
-                                    ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                    ? "bg-gray-100 dark:bg-slate-700 text-gray-300 dark:text-slate-500 cursor-not-allowed"
+                                    : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600"
                                 }`}
                               >
                                 <Plus size={14} />
@@ -716,14 +716,14 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                           </div>
 
                           <div className="flex justify-between items-center pt-1">
-                            <div className="text-[11px] text-gray-500 font-semibold">
+                            <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
                               {p ? `Stock: ${stock}` : "Pick a product first"}
                             </div>
 
                             <button
                               type="button"
                               onClick={() => removeItem(idx)}
-                              className="text-xs font-black text-red-600 hover:text-red-700 flex items-center gap-1"
+                              className="text-xs font-black text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 flex items-center gap-1"
                             >
                               <Trash2 size={13} /> Remove
                             </button>
@@ -735,16 +735,16 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                 </div>
 
                 {/* PAYMENT + STATUS */}
-                <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm space-y-3">
                   <SectionHeader icon={Wallet} title="Payment & Status" />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <div className="text-[11px] font-semibold text-gray-600">
+                      <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
                         Payment Method
                       </div>
                       <select
-                        className="w-full h-12 rounded-2xl border border-gray-200 bg-gray-50 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+                        className="w-full h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-slate-100 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value)}
                       >
@@ -756,11 +756,11 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                     </div>
 
                     <div className="space-y-1">
-                      <div className="text-[11px] font-semibold text-gray-600">
+                      <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
                         Payment Status
                       </div>
                       <select
-                        className="w-full h-12 rounded-2xl border border-gray-200 bg-gray-50 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+                        className="w-full h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-slate-100 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
                         value={paymentStatus}
                         onChange={(e) => setPaymentStatus(e.target.value)}
                       >
@@ -771,11 +771,11 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                     </div>
 
                     <div className="space-y-1">
-                      <div className="text-[11px] font-semibold text-gray-600">
+                      <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
                         Order Status
                       </div>
                       <select
-                        className="w-full h-12 rounded-2xl border border-gray-200 bg-gray-50 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+                        className="w-full h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-slate-100 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
                         value={status}
                         onChange={(e) => setStatus(e.target.value)}
                       >
@@ -790,16 +790,16 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                     </div>
 
                     <div className="space-y-1">
-                      <div className="text-[11px] font-semibold text-gray-600">
+                      <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
                         Discount
                       </div>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 font-black">
                           ৳
                         </span>
                         <input
                           type="number"
-                          className="w-full h-12 rounded-2xl border border-gray-200 bg-white pl-10 pr-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+                          className="w-full h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 pl-10 pr-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
                           value={discount}
                           onChange={(e) =>
                             setDiscount(Number(e.target.value || 0))
@@ -814,25 +814,25 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                   <div
                     className={`rounded-3xl border p-4 flex items-center justify-between gap-3 ${
                       isOffline
-                        ? "border-purple-100 bg-purple-50"
-                        : "border-blue-100 bg-blue-50"
+                        ? "border-purple-100 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/10"
+                        : "border-blue-100 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
                           isOffline
-                            ? "bg-purple-100 text-purple-600"
-                            : "bg-blue-100 text-blue-600"
+                            ? "bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400"
+                            : "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400"
                         }`}
                       >
                         <Truck size={16} />
                       </div>
                       <div>
-                        <div className="text-sm font-black text-gray-900">
+                        <div className="text-sm font-black text-gray-900 dark:text-slate-100">
                           Delivery Charge {isOffline ? "" : "(DB)"}
                         </div>
-                        <div className="text-[11px] text-gray-500 font-semibold">
+                        <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
                           {isOffline
                             ? "in-store sale • no delivery"
                             : "locked • not editable"}
@@ -841,7 +841,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                     </div>
                     <div
                       className={`text-lg font-black ${
-                        isOffline ? "text-purple-700" : "text-blue-700"
+                        isOffline ? "text-purple-700 dark:text-purple-400" : "text-blue-700 dark:text-blue-400"
                       }`}
                     >
                       {isOffline
@@ -856,11 +856,11 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
 
               {/* RIGHT SUMMARY */}
               <div className="space-y-4">
-                <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3 lg:sticky lg:top-4">
+                <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm space-y-3 lg:sticky lg:top-4">
                   <SectionHeader icon={Receipt} title="Order Summary" />
 
                   {!viewItems.length ? (
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-slate-400">
                       No items added yet.
                     </div>
                   ) : (
@@ -868,27 +868,27 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                       {viewItems.map((it, i) => (
                         <div
                           key={i}
-                          className="rounded-3xl border bg-gray-50 p-3 flex gap-3 items-center"
+                          className="rounded-3xl border dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 p-3 flex gap-3 items-center"
                         >
                           <img
                             src={it.image}
                             alt=""
-                            className="w-14 h-14 rounded-2xl border object-cover"
+                            className="w-14 h-14 rounded-2xl border dark:border-slate-600 object-cover"
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-black truncate">
+                            <div className="text-sm font-black truncate text-gray-900 dark:text-slate-100">
                               {it.name}
                             </div>
                             {it.colorLabel && (
-                              <div className="text-[11px] font-black text-pink-600">
+                              <div className="text-[11px] font-black text-pink-600 dark:text-pink-400">
                                 Color: {it.colorLabel}
                               </div>
                             )}
-                            <div className="text-[11px] text-gray-500 font-semibold">
+                            <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
                               ৳{toNumber(it.price, 0)} × {toNumber(it.qty, 0)}
                             </div>
                           </div>
-                          <div className="text-sm font-black">
+                          <div className="text-sm font-black text-gray-900 dark:text-slate-100">
                             ৳{toNumber(it.price, 0) * toNumber(it.qty, 0)}
                           </div>
                         </div>
@@ -896,19 +896,19 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                     </div>
                   )}
 
-                  <div className="border-t pt-3 text-sm space-y-2">
+                  <div className="border-t dark:border-slate-700 pt-3 text-sm space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-600 font-semibold">
+                      <span className="text-gray-600 dark:text-slate-400 font-semibold">
                         Subtotal
                       </span>
-                      <span className="font-black">৳{subtotal}</span>
+                      <span className="font-black text-gray-900 dark:text-slate-100">৳{subtotal}</span>
                     </div>
 
                     <div className="flex justify-between">
-                      <span className="text-gray-600 font-semibold">
+                      <span className="text-gray-600 dark:text-slate-400 font-semibold">
                         Delivery
                       </span>
-                      <span className="font-black">
+                      <span className="font-black text-gray-900 dark:text-slate-100">
                         {isOffline
                           ? "৳0"
                           : deliveryLoading
@@ -918,7 +918,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                     </div>
 
                     {!!discount && (
-                      <div className="flex justify-between text-red-600">
+                      <div className="flex justify-between text-red-600 dark:text-red-400">
                         <span className="font-semibold">Discount</span>
                         <span className="font-black">
                           -৳{toNumber(discount, 0)}
@@ -943,10 +943,10 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
           </div>
 
           {/* ✅ STICKY FOOTER (MOBILE + DESKTOP) */}
-          <div className="shrink-0 px-4 sm:px-6 py-3 border-t border-gray-100 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sticky bottom-0 z-20">
+          <div className="shrink-0 px-4 sm:px-6 py-3 border-t border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sticky bottom-0 z-20">
             <div
               className={`text-[11px] font-bold flex items-center gap-1.5 ${
-                canSubmit ? "text-emerald-600" : "text-gray-400"
+                canSubmit ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400 dark:text-slate-500"
               }`}
             >
               {canSubmit ? "✅ Ready to create" : "Fill required fields..."}
@@ -955,7 +955,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
             <div className="flex gap-2">
               <button
                 onClick={onClose}
-                className="flex-1 sm:flex-none h-11 px-4 rounded-2xl border border-gray-200 bg-white font-black text-gray-700 hover:bg-gray-50"
+                className="flex-1 sm:flex-none h-11 px-4 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-black text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
               >
                 Cancel
               </button>
@@ -965,7 +965,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                 disabled={!canSubmit}
                 className={`flex-1 sm:flex-none h-11 px-5 rounded-2xl font-black text-white transition ${
                   !canSubmit
-                    ? "bg-gray-300 cursor-not-allowed"
+                    ? "bg-gray-300 dark:bg-slate-600 cursor-not-allowed"
                     : isOffline
                       ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:opacity-90"
                       : "bg-gradient-to-r from-indigo-600 to-blue-600 hover:opacity-90"
@@ -1033,12 +1033,12 @@ function CategoryDropdown({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full h-12 rounded-2xl border border-gray-200 bg-white px-4 flex items-center justify-between gap-2 text-left"
+        className="w-full h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 flex items-center justify-between gap-2 text-left"
       >
         <span className="flex items-center gap-2 min-w-0">
           {selectedCategory ? (
             <>
-              <span className="relative h-7 w-7 rounded-lg overflow-hidden border bg-gray-50 shrink-0">
+              <span className="relative h-7 w-7 rounded-lg overflow-hidden border dark:border-slate-600 bg-gray-50 dark:bg-slate-700 shrink-0">
                 {selectedCategory.image ? (
                   <img
                     src={selectedCategory.image}
@@ -1046,19 +1046,19 @@ function CategoryDropdown({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className="flex h-full w-full items-center justify-center text-gray-300">
+                  <span className="flex h-full w-full items-center justify-center text-gray-300 dark:text-slate-500">
                     <ImageOff size={12} />
                   </span>
                 )}
               </span>
-              <span className="text-sm font-semibold text-gray-900 truncate">
+              <span className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
                 {selectedCategory.name}
               </span>
             </>
           ) : (
             <>
-              <LayoutGrid size={16} className="text-gray-400 shrink-0" />
-              <span className="text-sm font-semibold text-gray-500">
+              <LayoutGrid size={16} className="text-gray-400 dark:text-slate-500 shrink-0" />
+              <span className="text-sm font-semibold text-gray-500 dark:text-slate-400">
                 All Categories
               </span>
             </>
@@ -1066,21 +1066,21 @@ function CategoryDropdown({
         </span>
         <ChevronDown
           size={18}
-          className={`text-gray-400 shrink-0 transition-transform ${
+          className={`text-gray-400 dark:text-slate-500 shrink-0 transition-transform ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && (
-        <div className="absolute z-30 mt-1 w-full max-h-64 overflow-y-auto rounded-2xl border border-gray-100 bg-white shadow-lg py-1">
+        <div className="absolute z-30 mt-1 w-full max-h-64 overflow-y-auto rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg py-1">
           <button
             type="button"
             onClick={() => pick("")}
             className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
               !selectedCategoryId
-                ? "bg-indigo-50 text-indigo-700 font-semibold"
-                : "text-gray-700 hover:bg-gray-50"
+                ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-semibold"
+                : "text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
             }`}
           >
             <LayoutGrid size={16} className="shrink-0" />
@@ -1096,11 +1096,11 @@ function CategoryDropdown({
                 onClick={() => pick(c._id)}
                 className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
                   isSelected
-                    ? "bg-indigo-50 text-indigo-700 font-semibold"
-                    : "text-gray-700 hover:bg-gray-50"
+                    ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-semibold"
+                    : "text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
                 }`}
               >
-                <span className="relative h-8 w-8 rounded-lg overflow-hidden border bg-gray-50 shrink-0">
+                <span className="relative h-8 w-8 rounded-lg overflow-hidden border dark:border-slate-600 bg-gray-50 dark:bg-slate-700 shrink-0">
                   {c.image ? (
                     <img
                       src={c.image}
@@ -1108,7 +1108,7 @@ function CategoryDropdown({
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <span className="flex h-full w-full items-center justify-center text-gray-300">
+                    <span className="flex h-full w-full items-center justify-center text-gray-300 dark:text-slate-500">
                       <ImageOff size={14} />
                     </span>
                   )}
@@ -1148,9 +1148,9 @@ function ProductPickerModal({
         open ? "flex" : "hidden"
       } items-end sm:items-center justify-center`}
     >
-      <div className="bg-white w-full sm:max-w-md h-[88vh] sm:h-[80vh] sm:rounded-3xl rounded-t-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-slate-900 w-full sm:max-w-md h-[88vh] sm:h-[80vh] sm:rounded-3xl rounded-t-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden flex flex-col">
         {/* HEADER */}
-        <div className="px-4 py-3.5 border-b border-gray-100 bg-gradient-to-r from-indigo-600 to-blue-600 flex items-center justify-between sticky top-0 z-10 shrink-0">
+        <div className="px-4 py-3.5 border-b border-gray-100 dark:border-slate-700 bg-gradient-to-r from-indigo-600 to-blue-600 flex items-center justify-between sticky top-0 z-10 shrink-0">
           <div className="text-base font-semibold text-white">
             Select Product
           </div>
@@ -1163,7 +1163,7 @@ function ProductPickerModal({
         </div>
 
         {/* CATEGORY + SEARCH */}
-        <div className="p-4 border-b border-gray-100 bg-gray-50 shrink-0 space-y-2.5">
+        <div className="p-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 shrink-0 space-y-2.5">
           <CategoryDropdown
             categories={categories}
             selectedCategory={selectedCategory}
@@ -1174,16 +1174,16 @@ function ProductPickerModal({
           <div className="relative">
             <Search
               size={16}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
             />
             <input
-              className="w-full h-12 rounded-2xl border border-gray-200 bg-white pl-11 pr-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 pl-11 pr-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
               placeholder="Search product by name or ID..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div className="text-[11px] text-gray-500 font-semibold">
+          <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
             Showing <b>{products.length}</b> products
             {selectedCategory ? (
               <>
@@ -1197,9 +1197,9 @@ function ProductPickerModal({
         {/* LIST */}
         <div className="p-4 overflow-y-auto flex-1 space-y-2">
           {loading ? (
-            <div className="p-10 text-center text-gray-500">Loading...</div>
+            <div className="p-10 text-center text-gray-500 dark:text-slate-400">Loading...</div>
           ) : !products.length ? (
-            <div className="p-10 text-center text-gray-500">
+            <div className="p-10 text-center text-gray-500 dark:text-slate-400">
               No products found.
             </div>
           ) : (
@@ -1219,9 +1219,9 @@ function ProductPickerModal({
                   key={p._id}
                   type="button"
                   onClick={() => onPick(p)}
-                  className="w-full text-left border border-gray-100 rounded-2xl p-2.5 bg-white hover:border-indigo-300 hover:bg-indigo-50/30 transition flex items-center gap-3"
+                  className="w-full text-left border border-gray-100 dark:border-slate-700 rounded-2xl p-2.5 bg-white dark:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-500/10 transition flex items-center gap-3"
                 >
-                  <span className="relative h-12 w-12 rounded-xl overflow-hidden border bg-gray-50 shrink-0">
+                  <span className="relative h-12 w-12 rounded-xl overflow-hidden border dark:border-slate-600 bg-gray-50 dark:bg-slate-700 shrink-0">
                     {img ? (
                       <img
                         src={img}
@@ -1229,28 +1229,28 @@ function ProductPickerModal({
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="flex h-full w-full items-center justify-center text-gray-300">
+                      <span className="flex h-full w-full items-center justify-center text-gray-300 dark:text-slate-500">
                         <ImageOff size={16} />
                       </span>
                     )}
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-gray-900 truncate">
+                    <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
                       {p.name}
                     </div>
-                    <div className="text-[11px] text-gray-500 font-semibold truncate">
+                    <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold truncate">
                       {(p.categories || []).map((c) => c.name).join(", ")}
                     </div>
                   </div>
 
                   <div className="text-right shrink-0">
-                    <div className="text-sm font-black text-indigo-700">
+                    <div className="text-sm font-black text-indigo-700 dark:text-indigo-400">
                       ৳{Number(p.price || 0)}
                     </div>
                     <div
                       className={`text-[10px] font-bold ${
-                        outOfStock ? "text-red-500" : "text-gray-400"
+                        outOfStock ? "text-red-500 dark:text-red-400" : "text-gray-400 dark:text-slate-500"
                       }`}
                     >
                       {outOfStock ? "Out of stock" : `Stock: ${stock}`}

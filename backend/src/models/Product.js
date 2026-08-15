@@ -52,6 +52,12 @@ const productSchema = new mongoose.Schema(
     // ✅ default null
     oldPrice: { type: Number, default: null, min: 0 },
 
+    // ✅ Admin-only ক্রয় মূল্য (Cost/Purchase Price) — কাস্টমারকে কখনোই দেখানো
+    // হয় না, শুধুমাত্র admin panel এ profit margin হিসাব করার জন্য ব্যবহৃত হয়।
+    // সব public.product.controller.js এর query তে এই ফিল্ড explicit ভাবে
+    // .select("-costPrice") দিয়ে বাদ দেওয়া আছে — কোনোভাবেই storefront এ যাবে না।
+    costPrice: { type: Number, default: null, min: 0 },
+
     image: { type: String, default: "" }, // Main Image
     images: { type: [String], default: [] }, // Gallery Images
 

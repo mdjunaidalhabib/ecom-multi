@@ -179,17 +179,17 @@ export default function CourierSettingsPage() {
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold">🚚 Courier Settings</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">🚚 Courier Settings</h2>
 
       {/* Form */}
-      <div className="bg-white p-4 rounded-lg shadow border space-y-3">
-        <h3 className="text-lg font-semibold">Add / Update Courier</h3>
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow border dark:border-slate-700 space-y-3">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Add / Update Courier</h3>
 
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-sm font-medium">Courier</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Courier</label>
             <select
-              className="w-full border rounded p-2"
+              className="w-full border rounded p-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
               value={form.courier}
               onChange={(e) => setForm({ ...form, courier: e.target.value })}
             >
@@ -201,9 +201,9 @@ export default function CourierSettingsPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium">Merchant Name</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Merchant Name</label>
             <input
-              className="w-full border rounded p-2"
+              className="w-full border rounded p-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
               placeholder="Merchant name"
               value={form.merchantName}
               onChange={(e) =>
@@ -213,9 +213,9 @@ export default function CourierSettingsPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium">API Key</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300">API Key</label>
             <input
-              className="w-full border rounded p-2"
+              className="w-full border rounded p-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
               placeholder="Enter API Key"
               value={form.apiKey}
               onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
@@ -223,9 +223,9 @@ export default function CourierSettingsPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium">Secret Key</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Secret Key</label>
             <input
-              className="w-full border rounded p-2"
+              className="w-full border rounded p-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
               placeholder="Enter Secret Key"
               value={form.secretKey}
               onChange={(e) => setForm({ ...form, secretKey: e.target.value })}
@@ -237,7 +237,7 @@ export default function CourierSettingsPage() {
           onClick={saveCourier}
           disabled={loading}
           className={`${
-            loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+            loading ? "bg-gray-400 dark:bg-slate-600" : "bg-blue-600 hover:bg-blue-700"
           } text-white px-4 py-2 rounded mt-3`}
         >
           {loading ? "Saving..." : "Save Courier"}
@@ -245,15 +245,15 @@ export default function CourierSettingsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white p-4 rounded-lg shadow border">
-        <h3 className="text-lg font-semibold mb-3">Courier Accounts</h3>
-        <table className="w-full text-sm border">
-          <thead className="bg-gray-100">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow border dark:border-slate-700">
+        <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-slate-100">Courier Accounts</h3>
+        <table className="w-full text-sm border dark:border-slate-700">
+          <thead className="bg-gray-100 dark:bg-slate-800">
             <tr>
-              <th className="p-2 text-left">Courier</th>
-              <th className="p-2 text-left">Merchant</th>
-              <th className="p-2 text-center">Active</th>
-              <th className="p-2 text-center">Actions</th>
+              <th className="p-2 text-left text-gray-700 dark:text-slate-300">Courier</th>
+              <th className="p-2 text-left text-gray-700 dark:text-slate-300">Merchant</th>
+              <th className="p-2 text-center text-gray-700 dark:text-slate-300">Active</th>
+              <th className="p-2 text-center text-gray-700 dark:text-slate-300">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -266,19 +266,19 @@ export default function CourierSettingsPage() {
               return (
                 <tr
                   key={c._id}
-                  className={`border-t ${
-                    isActive ? "bg-green-50 border-green-400" : ""
+                  className={`border-t dark:border-slate-700 ${
+                    isActive ? "bg-green-50 dark:bg-green-500/10 border-green-400 dark:border-green-500/30" : ""
                   }`}
                 >
-                  <td className="p-2 font-medium">{c.courier}</td>
-                  <td className="p-2">{c.merchantName}</td>
+                  <td className="p-2 font-medium text-gray-900 dark:text-slate-100">{c.courier}</td>
+                  <td className="p-2 text-gray-700 dark:text-slate-300">{c.merchantName}</td>
                   <td className="p-2 text-center">
                     {isActive ? (
-                      <span className="text-green-600 font-semibold">
+                      <span className="text-green-600 dark:text-green-400 font-semibold">
                         🟢 Active
                       </span>
                     ) : (
-                      <span className="text-gray-500">Inactive</span>
+                      <span className="text-gray-500 dark:text-slate-400">Inactive</span>
                     )}
                   </td>
                   <td className="p-2 text-center">
@@ -309,13 +309,13 @@ export default function CourierSettingsPage() {
         <>
           <div className="fixed inset-0 bg-black/30 z-40" />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-sm rounded-xl p-5 shadow-2xl border">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-xl p-5 shadow-2xl border dark:border-slate-700">
               {confirmModal.type === "active" ? (
                 <>
-                  <h3 className="text-lg font-bold mb-2 text-indigo-600">
+                  <h3 className="text-lg font-bold mb-2 text-indigo-600 dark:text-indigo-400">
                     Activate Courier?
                   </h3>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-700 dark:text-slate-300">
                     আপনি কি{" "}
                     <span className="font-semibold">
                       {confirmModal.payload.courier} (
@@ -327,7 +327,7 @@ export default function CourierSettingsPage() {
                   <div className="flex justify-end gap-2 mt-4">
                     <button
                       onClick={() => setConfirmModal(null)}
-                      className="px-3 py-2 border rounded"
+                      className="px-3 py-2 border dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 rounded"
                     >
                       Cancel
                     </button>
@@ -341,10 +341,10 @@ export default function CourierSettingsPage() {
                 </>
               ) : (
                 <>
-                  <h3 className="text-lg font-bold mb-2 text-red-600">
+                  <h3 className="text-lg font-bold mb-2 text-red-600 dark:text-red-400">
                     Delete Courier?
                   </h3>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-700 dark:text-slate-300">
                     আপনি কি{" "}
                     <span className="font-semibold">
                       {confirmModal.payload.courier} (
@@ -356,7 +356,7 @@ export default function CourierSettingsPage() {
                   <div className="flex justify-end gap-2 mt-4">
                     <button
                       onClick={() => setConfirmModal(null)}
-                      className="px-3 py-2 border rounded"
+                      className="px-3 py-2 border dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 rounded"
                     >
                       Cancel
                     </button>

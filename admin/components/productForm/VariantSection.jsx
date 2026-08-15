@@ -111,7 +111,7 @@ function SortableImage({ item, vIdx, removeFile }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="relative w-24 h-24 rounded-xl overflow-hidden border group shadow-sm bg-white"
+      className="relative w-24 h-24 rounded-xl overflow-hidden border dark:border-slate-600 group shadow-sm bg-white dark:bg-slate-800"
     >
       {imageUrl ? (
         <img
@@ -120,7 +120,7 @@ function SortableImage({ item, vIdx, removeFile }) {
           alt="preview"
         />
       ) : (
-        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+        <div className="w-full h-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500 text-xs">
           No Preview
         </div>
       )}
@@ -161,11 +161,11 @@ export default function VariantSection({
   );
 
   const baseInput =
-    "mt-1 w-full border p-2.5 rounded-lg focus:outline-none transition-all text-sm";
-  const okClass = "border-gray-300 focus:ring-2 focus:ring-indigo-100";
+    "mt-1 w-full border p-2.5 rounded-lg focus:outline-none transition-all text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100";
+  const okClass = "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30";
   const disabledStyle =
-    "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200";
-  const errClass = "border-red-500 bg-red-50 focus:ring-red-100";
+    "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 cursor-not-allowed border-gray-200 dark:border-slate-600";
+  const errClass = "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-red-100 dark:focus:ring-red-500/30";
 
   // ✅ FIX: আগে এই normalize effect মাত্র একবার (component mount এ) চলত।
   // কিন্তু ProductForm যখন কোনো existing product edit করার জন্য খোলে, তখন
@@ -360,12 +360,12 @@ export default function VariantSection({
             key={i}
             className={`border rounded-2xl p-5 shadow-sm transition-all ${
               v.isBase
-                ? "bg-indigo-50/20 border-indigo-100"
-                : "bg-gray-50 border-gray-200"
+                ? "bg-indigo-50/20 dark:bg-indigo-500/5 border-indigo-100 dark:border-indigo-500/20"
+                : "bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700"
             }`}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-gray-700">
+              <h3 className="font-bold text-gray-700 dark:text-slate-300">
                 {v.isBase
                   ? "Default Settings (Main Product)"
                   : `Variant #${i + 1}`}
@@ -377,7 +377,7 @@ export default function VariantSection({
                   onClick={() =>
                     setVariants(variants.filter((_, idx) => idx !== i))
                   }
-                  className="text-red-500 hover:bg-red-50 p-2 rounded-full transition"
+                  className="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 p-2 rounded-full transition"
                 >
                   <FaTrash size={14} />
                 </button>
@@ -386,7 +386,7 @@ export default function VariantSection({
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="md:col-span-1">
-                <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+                <label className="text-xs font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wide">
                   Variant Name {v.isBase ? "" : "*"}
                 </label>
                 <input
@@ -403,14 +403,14 @@ export default function VariantSection({
                   placeholder={v.isBase ? "" : "e.g. Red / XL"}
                 />
                 {nameErr && (
-                  <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                  <p className="text-[10px] text-red-500 dark:text-red-400 mt-1 font-semibold">
                     {nameErr}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+                <label className="text-xs font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wide">
                   Price *
                 </label>
                 <input
@@ -421,14 +421,14 @@ export default function VariantSection({
                   placeholder="0.00"
                 />
                 {priceErr && (
-                  <p className="text-[10px] text-red-500 mt-1 font-semibold">
+                  <p className="text-[10px] text-red-500 dark:text-red-400 mt-1 font-semibold">
                     {priceErr}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+                <label className="text-xs font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wide">
                   Old Price
                 </label>
                 <input
@@ -441,7 +441,7 @@ export default function VariantSection({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+                <label className="text-xs font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wide">
                   Stock
                 </label>
                 <input
@@ -453,7 +453,7 @@ export default function VariantSection({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+                <label className="text-xs font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wide">
                   Sold
                 </label>
                 <input
@@ -469,19 +469,19 @@ export default function VariantSection({
             <div className="mt-5">
               <label
                 className={`text-xs font-bold uppercase tracking-wide block mb-2 ${
-                  imgErr ? "text-red-500" : "text-gray-600"
+                  imgErr ? "text-red-500 dark:text-red-400" : "text-gray-600 dark:text-slate-400"
                 }`}
               >
                 Variant Images (Required) *
-                <span className="ml-2 text-[10px] font-semibold text-gray-500 normal-case">
+                <span className="ml-2 text-[10px] font-semibold text-gray-500 dark:text-slate-400 normal-case">
                   (যেকোনো image format → Auto {IMAGE_RULE.width}×
                   {IMAGE_RULE.height})
                 </span>
                 <span
                   className={`ml-2 text-[10px] font-bold normal-case ${
                     fileItems.length >= MAX_VARIANT_IMAGES
-                      ? "text-red-500"
-                      : "text-gray-500"
+                      ? "text-red-500 dark:text-red-400"
+                      : "text-gray-500 dark:text-slate-400"
                   }`}
                 >
                   ({fileItems.length}/{MAX_VARIANT_IMAGES})
@@ -517,10 +517,10 @@ export default function VariantSection({
                     }
                     className={`w-24 h-24 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all ${
                       imgErr
-                        ? "border-red-500 bg-red-50 text-red-500 shadow-inner"
+                        ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 shadow-inner"
                         : imgProcessing
-                          ? "border-orange-300 bg-orange-50 text-orange-400"
-                          : "border-gray-300 text-gray-400 hover:border-indigo-300 hover:text-indigo-400"
+                          ? "border-orange-300 dark:border-orange-500/40 bg-orange-50 dark:bg-orange-500/10 text-orange-400 dark:text-orange-400"
+                          : "border-gray-300 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:text-indigo-400 dark:hover:text-indigo-400"
                     }`}
                   >
                     {imgProcessing ? (
@@ -555,13 +555,13 @@ export default function VariantSection({
               />
 
               {imgProcessing && (
-                <p className="text-[10px] text-orange-500 mt-1 font-bold">
+                <p className="text-[10px] text-orange-500 dark:text-orange-400 mt-1 font-bold">
                   {imgProcessing}
                 </p>
               )}
 
               {imgErr && (
-                <p className="text-[10px] text-red-500 mt-1 font-bold italic">
+                <p className="text-[10px] text-red-500 dark:text-red-400 mt-1 font-bold italic">
                   {imgErr}
                 </p>
               )}
@@ -587,7 +587,7 @@ export default function VariantSection({
               },
             ])
           }
-          className="bg-purple-100 text-purple-700 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-purple-600 hover:text-white transition-all shadow-sm text-sm"
+          className="bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-purple-600 hover:text-white transition-all shadow-sm text-sm"
         >
           <FaPlus size={12} /> Add Another Variant
         </button>

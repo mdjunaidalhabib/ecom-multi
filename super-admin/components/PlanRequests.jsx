@@ -5,7 +5,6 @@ import { CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
 import { Button } from "./button";
 import Toast from "./Toast";
 
-const PLAN_LABELS = { free: "Free", starter: "Starter", pro: "Pro" };
 const STATUS_TABS = [
   { key: "pending", label: "Pending" },
   { key: "approved", label: "Approved" },
@@ -13,14 +12,15 @@ const STATUS_TABS = [
   { key: "all", label: "All" },
 ];
 const STATUS_META = {
-  pending: ["Pending", "bg-amber-50 text-amber-700 border-amber-200", Clock],
-  approved: ["Approved", "bg-green-50 text-green-700 border-green-200", CheckCircle2],
-  rejected: ["Rejected", "bg-red-50 text-red-700 border-red-200", XCircle],
+  pending: ["Pending", "bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30", Clock],
+  approved: ["Approved", "bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-300 border-green-200 dark:border-green-500/30", CheckCircle2],
+  rejected: ["Rejected", "bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30", XCircle],
 };
 
 export default function PlanRequests() {
   const [status, setStatus] = useState("pending");
   const [requests, setRequests] = useState([]);
+  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [reviewing, setReviewing] = useState(null); // { id, action }
@@ -28,6 +28,7 @@ export default function PlanRequests() {
   const [saving, setSaving] = useState(false);
 
   const notify = (message, type = "info") => setToast({ message, type });
+  const planLabel = (key) => plans.find((p) => p.key === key)?.name || key;
 
   const load = () => {
     setLoading(true);
@@ -38,6 +39,13 @@ export default function PlanRequests() {
       .catch(() => notify("রিকোয়েস্ট লোড করা যায়নি", "error"))
       .finally(() => setLoading(false));
   };
+
+  useEffect(() => {
+    fetch("/api/admin/plans")
+      .then((res) => res.json())
+      .then((data) => setPlans(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     load();
@@ -84,8 +92,8 @@ export default function PlanRequests() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-xl font-semibold mb-1">Plan Requests</h1>
-      <p className="text-sm text-gray-500 mb-6">
+      <h1 className="text-xl font-semibold mb-1 text-gray-900 dark:text-slate-100">Plan Requests</h1>
+      <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
         শপগুলোর প্ল্যান আপগ্রেড/ডাউনগ্রেড অনুরোধ এখান থেকে অনুমোদন বা বাতিল করুন।
         অনুমোদন করলে শপের plan এবং limits সাথে সাথে আপডেট হয়ে যাবে।
       </p>
@@ -97,8 +105,8 @@ export default function PlanRequests() {
             onClick={() => setStatus(tab.key)}
             className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
               status === tab.key
-                ? "bg-gray-900 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ? "bg-gray-900 dark:bg-slate-100 text-white dark:text-slate-900"
+                : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700"
             }`}
           >
             {tab.label}
@@ -108,10 +116,10 @@ export default function PlanRequests() {
 
       {loading ? (
         <div className="flex min-h-40 items-center justify-center">
-          <Loader2 className="animate-spin text-gray-500" size={24} />
+          <Loader2 className="animate-spin text-gray-500 dark:text-slate-400" size={24} />
         </div>
       ) : requests.length === 0 ? (
-        <p className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-400">
+        <p className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center text-sm text-gray-400 dark:text-slate-500">
           কোনো রিকোয়েস্ট নেই।
         </p>
       ) : (
@@ -123,21 +131,21 @@ export default function PlanRequests() {
             return (
               <div
                 key={r._id}
-                className="rounded-2xl border border-gray-200 bg-white p-4"
+                className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="font-bold text-gray-900">
+                    <p className="font-bold text-gray-900 dark:text-slate-100">
                       {r.shopId?.name || "অজানা শপ"}{" "}
-                      <span className="font-normal text-gray-400">
+                      <span className="font-normal text-gray-400 dark:text-slate-500">
                         ({r.shopId?.slug || "—"})
                       </span>
                     </p>
-                    <p className="mt-0.5 text-sm text-gray-600">
-                      {PLAN_LABELS[r.currentPlan]} → {PLAN_LABELS[r.requestedPlan]}
+                    <p className="mt-0.5 text-sm text-gray-600 dark:text-slate-400">
+                      {planLabel(r.currentPlan)} → {planLabel(r.requestedPlan)}
                     </p>
                     {r.note && (
-                      <p className="mt-1 text-xs text-gray-500">নোট: {r.note}</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">নোট: {r.note}</p>
                     )}
                   </div>
                   <span
@@ -149,7 +157,7 @@ export default function PlanRequests() {
                 </div>
 
                 {r.reviewNote && (
-                  <p className="mt-2 text-xs text-gray-500">
+                  <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">
                     মন্তব্য: {r.reviewNote}
                   </p>
                 )}
@@ -157,13 +165,13 @@ export default function PlanRequests() {
                 {r.status === "pending" && (
                   <div className="mt-3">
                     {isReviewingThis ? (
-                      <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                      <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 p-3">
                         <textarea
                           value={reviewNote}
                           onChange={(e) => setReviewNote(e.target.value)}
                           maxLength={500}
                           placeholder="মন্তব্য (ঐচ্ছিক)"
-                          className="min-h-16 w-full resize-y rounded-lg border border-gray-300 p-2 text-sm outline-none"
+                          className="min-h-16 w-full resize-y rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 p-2 text-sm outline-none"
                         />
                         <div className="mt-2 flex justify-end gap-2">
                           <Button

@@ -139,22 +139,22 @@ export default function AdminOrderMailSendPage() {
   };
 
   if (loading || !settings)
-    return <p className="p-6 text-center text-gray-500">Loading...</p>;
+    return <p className="p-6 text-center text-gray-500 dark:text-slate-400">Loading...</p>;
 
   const systemDisabled = !settings.enabled;
 
   return (
     <div className="max-w-4xl mx-auto mt-12 px-4">
-      <div className="bg-white shadow-xl rounded-3xl border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 shadow-xl rounded-3xl border border-gray-200 dark:border-slate-700 overflow-hidden transition-colors">
         {/* Header */}
-        <div className="p-6 md:p-8 flex flex-col md:flex-row md:justify-between md:items-center border-b">
+        <div className="p-6 md:p-8 flex flex-col md:flex-row md:justify-between md:items-center border-b dark:border-slate-700">
           <div className="flex flex-col md:flex-row md:items-center md:gap-6">
-            <h2 className="font-bold text-xl md:text-2xl flex items-center gap-2">
+            <h2 className="font-bold text-xl md:text-2xl flex items-center gap-2 text-gray-900 dark:text-slate-100">
               📩 Mail System
             </h2>
             <span
               className={`mt-2 md:mt-0 text-sm md:text-base font-medium ${
-                settings.enabled ? "text-green-700" : "text-red-600"
+                settings.enabled ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"
               }`}
             >
               {settings.enabled
@@ -163,7 +163,7 @@ export default function AdminOrderMailSendPage() {
             </span>
           </div>
 
-          <p className="text-sm md:text-base text-gray-500 font-medium mt-2 md:mt-0">
+          <p className="text-sm md:text-base text-gray-500 dark:text-slate-400 font-medium mt-2 md:mt-0">
             {settings.emails.length}/5 emails added
           </p>
 
@@ -177,7 +177,7 @@ export default function AdminOrderMailSendPage() {
             />
             <div
               className={`w-12 h-6 rounded-full transition-colors ${
-                settings.enabled ? "bg-green-500" : "bg-gray-300"
+                settings.enabled ? "bg-green-500" : "bg-gray-300 dark:bg-slate-700"
               }`}
             ></div>
             <span
@@ -191,7 +191,7 @@ export default function AdminOrderMailSendPage() {
         {/* Email List */}
         <div className="p-6 md:p-8 space-y-4">
           {settings.emails.length === 0 && (
-            <p className="text-gray-500 text-sm md:text-base text-center">
+            <p className="text-gray-500 dark:text-slate-400 text-sm md:text-base text-center">
               No emails added yet
             </p>
           )}
@@ -199,23 +199,23 @@ export default function AdminOrderMailSendPage() {
           {settings.emails.map((e) => (
             <div
               key={e.email}
-              className={`flex flex-col md:flex-row md:justify-between md:items-center border p-4 rounded-2xl transition ${
+              className={`flex flex-col md:flex-row md:justify-between md:items-center border dark:border-slate-700 p-4 rounded-2xl transition ${
                 systemDisabled ? "opacity-50 pointer-events-none" : ""
               }`}
             >
-              <span className="text-sm md:text-base font-medium break-all">
+              <span className="text-sm md:text-base font-medium break-all text-gray-900 dark:text-slate-100">
                 {e.email}
               </span>
 
               <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
                 {e.active ? (
-                  <span className="text-xs md:text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                  <span className="text-xs md:text-sm bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400 px-3 py-1 rounded-full">
                     Active
                   </span>
                 ) : (
                   <button
                     onClick={() => updateSettings({ setActive: e.email })}
-                    className="text-xs md:text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-200 transition"
+                    className="text-xs md:text-sm bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full hover:bg-blue-200 dark:hover:bg-blue-500/20 transition"
                     disabled={systemDisabled}
                   >
                     Make Active
@@ -224,7 +224,7 @@ export default function AdminOrderMailSendPage() {
 
                 <button
                   onClick={() => updateSettings({ deleteEmail: e.email })}
-                  className="text-xs md:text-sm bg-red-100 text-red-700 px-3 py-1 rounded-full hover:bg-red-200 transition"
+                  className="text-xs md:text-sm bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 px-3 py-1 rounded-full hover:bg-red-200 dark:hover:bg-red-500/20 transition"
                   disabled={systemDisabled}
                 >
                   Delete
@@ -243,7 +243,7 @@ export default function AdminOrderMailSendPage() {
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               placeholder="admin@mail.com"
-              className="flex-1 border px-5 py-3 md:py-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm md:text-base"
+              className="flex-1 border dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 px-5 py-3 md:py-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm md:text-base"
               disabled={systemDisabled || settings.emails.length >= 5}
             />
             <button

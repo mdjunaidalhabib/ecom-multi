@@ -9,6 +9,7 @@ import { apiFetch } from "../../../../../utils/api";
 import Toast from "../../../../../components/home/Toast";
 import { formatDate } from "../../../../../lib/utils";
 import useShopPath from "../../../../../hooks/useShopPath";
+import useRequireFullStorefront from "../../../../../hooks/useRequireFullStorefront";
 
 function StatCard({ label, value, sub }) {
   return (
@@ -46,6 +47,7 @@ function Input({
 }
 
 export default function ProfilePage() {
+  useRequireFullStorefront();
   const { me, setMe, loadingUser } = useUser();
   const { base } = useShopPath();
   const [orderCount, setOrderCount] = useState(0);

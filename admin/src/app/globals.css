@@ -1,8 +1,23 @@
 @import "tailwindcss";
 
+/* ✅ Class-based dark mode (Tailwind v4 CSS-first config) — html.dark হলে
+   dark: variant সব utility class এ কার্যকর হয়। টগল হয় ThemeProvider দিয়ে। */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  color-scheme: dark;
+}
+
+html {
+  background: var(--background);
 }
 
 /* Thin, professional-looking scrollbar for the sidebar menu */
@@ -26,6 +41,18 @@
 
 .sidebar-scroll:hover::-webkit-scrollbar-thumb {
   background-color: #cbd5e1;
+}
+
+.dark .sidebar-scroll {
+  scrollbar-color: #334155 transparent;
+}
+
+.dark .sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: #334155;
+}
+
+.dark .sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: #475569;
 }
 
 /* ✅ Rich text content — প্রোডাক্ট Description/Additional Info এর জন্য,
@@ -91,6 +118,15 @@
   text-underline-offset: 2px;
 }
 
+.dark .rich-content blockquote {
+  border-left-color: #f472b6;
+  color: #94a3b8;
+}
+
+.dark .rich-content a {
+  color: #f472b6;
+}
+
 /* TipTap placeholder */
 .rich-content p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
@@ -98,4 +134,8 @@
   color: #9ca3af;
   pointer-events: none;
   height: 0;
+}
+
+.dark .rich-content p.is-editor-empty:first-child::before {
+  color: #64748b;
 }

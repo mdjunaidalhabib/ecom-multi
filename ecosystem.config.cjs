@@ -29,6 +29,20 @@
  */
 
 const path = require("path");
+const fs = require("fs");
+
+// প্রতিটা app-এর নিজের .env.production ফাইল থেকে PORT পড়ে আনে, যাতে
+// production port change করতে হলে এই ফাইলে হাত না দিয়ে শুধু .env.production
+// এডিট করলেই হয়।
+function readEnvPort(envPath, fallback) {
+  try {
+    const content = fs.readFileSync(envPath, "utf8");
+    const match = content.match(/^PORT=(\d+)/m);
+    return match ? Number(match[1]) : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 module.exports = {
   apps: [
@@ -53,12 +67,13 @@ module.exports = {
       name: "cartvan-admin",
       cwd: path.join(__dirname, "admin"),
       script: "node_modules/next/dist/bin/next",
-      args: "start -H 0.0.0.0 -p 3008",
+      args: "start -H 0.0.0.0",
       exec_mode: "cluster",
       instances: 2, // Next.js app — ২টা worker সাধারণত যথেষ্ট, দরকার হলে বাড়ান
       max_memory_restart: "500M",
       env: {
         NODE_ENV: "production",
+        PORT: readEnvPort(path.join(__dirname, "admin/.env.production"), 3008),
       },
       out_file: path.join(__dirname, "logs/admin-out.log"),
       error_file: path.join(__dirname, "logs/admin-error.log"),
@@ -68,7 +83,7 @@ module.exports = {
       name: "cartvan-frontend",
       cwd: path.join(__dirname, "frontend"),
       script: "node_modules/next/dist/bin/next",
-      args: "start -H 0.0.0.0 -p 3007",
+      args: "start -H 0.0.0.0",
       exec_mode: "cluster",
       // 🔧 frontend সব শপের কাস্টমার ট্রাফিক নেয় — এটাতে সবচেয়ে বেশি
       // worker রাখা ভালো (VPS-এর কোর সংখ্যা দেখে বাড়ান/কমান)
@@ -76,6 +91,7 @@ module.exports = {
       max_memory_restart: "500M",
       env: {
         NODE_ENV: "production",
+        PORT: readEnvPort(path.join(__dirname, "frontend/.env.production"), 3007),
       },
       out_file: path.join(__dirname, "logs/frontend-out.log"),
       error_file: path.join(__dirname, "logs/frontend-error.log"),
@@ -85,12 +101,13 @@ module.exports = {
       name: "cartvan-super-admin",
       cwd: path.join(__dirname, "super-admin"),
       script: "node_modules/next/dist/bin/next",
-      args: "start -H 0.0.0.0 -p 3009",
+      args: "start -H 0.0.0.0",
       exec_mode: "cluster",
       instances: 2, // Next.js app — ২টা worker সাধারণত যথেষ্ট, দরকার হলে বাড়ান
       max_memory_restart: "500M",
       env: {
         NODE_ENV: "production",
+        PORT: readEnvPort(path.join(__dirname, "super-admin/.env.production"), 3009),
       },
       out_file: path.join(__dirname, "logs/super-admin-out.log"),
       error_file: path.join(__dirname, "logs/super-admin-error.log"),

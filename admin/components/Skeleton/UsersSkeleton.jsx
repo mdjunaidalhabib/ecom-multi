@@ -22,12 +22,21 @@ export default function UsersSkeleton() {
           background-size: 800px 104px;
           animation: shimmer 1.3s linear infinite;
         }
+        :global(.dark) .shimmer {
+          background: linear-gradient(
+            to right,
+            #1e293b 8%,
+            #334155 18%,
+            #1e293b 33%
+          );
+          background-size: 800px 104px;
+        }
       `}</style>
 
       {/* Desktop Skeleton */}
-      <div className="hidden md:block overflow-x-auto bg-white rounded-xl border shadow-sm">
+      <div className="hidden md:block overflow-x-auto bg-white dark:bg-slate-800 rounded-xl border dark:border-slate-700 shadow-sm">
         <table className="w-full text-sm">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-100 dark:bg-slate-700">
             <tr>
               {["User ID", "Name", "Email", "Avatar"].map((h) => (
                 <th key={h} className="p-3 text-left">
@@ -38,7 +47,7 @@ export default function UsersSkeleton() {
           </thead>
           <tbody>
             {Array.from({ length: 6 }).map((_, i) => (
-              <tr key={i} className="border-t">
+              <tr key={i} className="border-t dark:border-slate-700/60">
                 {Array.from({ length: 4 }).map((_, j) => (
                   <td key={j} className="p-3">
                     <div className="w-full h-4 shimmer rounded"></div>
@@ -55,7 +64,7 @@ export default function UsersSkeleton() {
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="border rounded-xl p-3 bg-white shadow-sm flex items-center gap-3"
+            className="border dark:border-slate-700 rounded-xl p-3 bg-white dark:bg-slate-800 shadow-sm flex items-center gap-3"
           >
             <div className="w-12 h-12 shimmer rounded-full"></div>
             <div className="flex-1 space-y-2">

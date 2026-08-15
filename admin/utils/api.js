@@ -32,6 +32,8 @@ export async function apiFetch(path, options = {}) {
       if (typeof window !== "undefined") {
         document.cookie =
           "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie =
+          "active_shop_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
         try {
           localStorage.clear();

@@ -9,16 +9,16 @@ function Modal({ isOpen, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
       {/* Modal Container */}
-      <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl relative flex flex-col max-h-[85vh]">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl shadow-2xl relative flex flex-col max-h-[85vh]">
         {/* Header (Fixed) */}
-        <div className="flex items-center justify-between px-8 py-5 border-b bg-gray-50 rounded-t-2xl">
-          <h2 className="text-xl font-semibold text-gray-800">
+        <div className="flex items-center justify-between px-8 py-5 border-b dark:border-slate-700 bg-gray-50 dark:bg-slate-800 rounded-t-2xl">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-200">
             📦 Tracking Updates
           </h2>
 
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-800 text-xl"
+            className="text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 text-xl"
             aria-label="Close modal"
           >
             ✕
@@ -158,38 +158,38 @@ export default function CourierStatus({
 
   if (!activeTrackingId) {
     return (
-      <div className="mt-1 text-[12px] text-gray-400">Courier not created</div>
+      <div className="mt-1 text-[12px] text-gray-400 dark:text-slate-500">Courier not created</div>
     );
   }
 
   return (
     <div className="mt-1 flex items-center gap-2">
       {loading ? (
-        <div className="text-[12px] text-gray-400">Loading status...</div>
+        <div className="text-[12px] text-gray-400 dark:text-slate-500">Loading status...</div>
       ) : error ? (
-        <div className="text-[12px] text-red-500">{error}</div>
+        <div className="text-[12px] text-red-500 dark:text-red-400">{error}</div>
       ) : (
         <Badge>🚚 {displayStatus}</Badge>
       )}
 
       <button
         onClick={openModal}
-        className="text-[11px] px-1 py-0 rounded-md border bg-white hover:bg-gray-100 transition"
+        className="text-[11px] px-1 py-0 rounded-md border dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
       >
         Live Tracking
       </button>
 
       <Modal isOpen={modalOpen} onClose={closeModal}>
         {eventsLoading ? (
-          <div className="text-center text-gray-500">Loading timeline...</div>
+          <div className="text-center text-gray-500 dark:text-slate-400">Loading timeline...</div>
         ) : eventsError ? (
-          <div className="text-red-500 text-center">{eventsError}</div>
+          <div className="text-red-500 dark:text-red-400 text-center">{eventsError}</div>
         ) : events.length === 0 ? (
-          <div className="text-gray-500 text-center">
+          <div className="text-gray-500 dark:text-slate-400 text-center">
             No tracking updates available.
           </div>
         ) : (
-          <div className="relative pl-6 border-l-2 border-gray-300 space-y-3">
+          <div className="relative pl-6 border-l-2 border-gray-300 dark:border-slate-600 space-y-3">
             {events.map((e, idx) => {
               const message = e?.status || "Unknown update";
               const date = e?.timestamp ? formatDateTime(e.timestamp) : "—";
@@ -208,19 +208,19 @@ export default function CourierStatus({
 
                   {/* Card */}
                   <div
-                    className="bg-gray-50 border rounded-lg 
+                    className="bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg
                   px-3 py-2 md:px-5 md:py-3 shadow-sm"
                   >
-                    <div className="text-[10px] md:text-xs text-gray-400 md:text-gray-500 mb-1">
+                    <div className="text-[10px] md:text-xs text-gray-400 dark:text-slate-500 md:text-gray-500 dark:md:text-slate-400 mb-1">
                       {date}
                     </div>
 
                     {/* ✅ Mobile slim text */}
                     <div
-                      className="text-[12px] md:text-sm 
-                    font-normal md:font-medium 
-                    text-gray-700 md:text-gray-800 
-                    leading-tight md:leading-snug 
+                      className="text-[12px] md:text-sm
+                    font-normal md:font-medium
+                    text-gray-700 dark:text-slate-300 md:text-gray-800 dark:md:text-slate-200
+                    leading-tight md:leading-snug
                     break-words whitespace-pre-wrap"
                     >
                       {message}

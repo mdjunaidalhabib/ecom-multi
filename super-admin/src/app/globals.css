@@ -1,8 +1,23 @@
 @import "tailwindcss";
 
+/* ✅ Class-based dark mode (Tailwind v4 CSS-first config) — html.dark হলে
+   dark: variant সব utility class এ কার্যকর হয়। টগল হয় ThemeProvider দিয়ে। */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  color-scheme: dark;
+}
+
+html {
+  background: var(--background);
 }
 
 /* Thin, professional-looking scrollbar for the sidebar menu */
@@ -26,4 +41,16 @@
 
 .sidebar-scroll:hover::-webkit-scrollbar-thumb {
   background-color: #cbd5e1;
+}
+
+.dark .sidebar-scroll {
+  scrollbar-color: #334155 transparent;
+}
+
+.dark .sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: #334155;
+}
+
+.dark .sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: #475569;
 }

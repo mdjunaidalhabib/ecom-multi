@@ -188,49 +188,49 @@ export default function AddSlideModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-40" />
+      <div className="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-40" />
 
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl">
-          <h2 className="text-xl font-bold mb-4 text-center">
+        <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl p-6 shadow-xl">
+          <h2 className="text-xl font-bold mb-4 text-center text-gray-900 dark:text-slate-100">
             {editId ? "✏️ Edit Slide" : "➕ Add New Slide"}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
                 Slide Title
               </label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Slide title"
-                className="border w-full p-2 rounded"
+                className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
                 Slide Link (Href)
               </label>
               <input
                 value={href}
                 onChange={(e) => setHref(e.target.value)}
                 placeholder="Href (optional)"
-                className="border w-full p-2 rounded"
+                className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
                   Serial No
                 </label>
                 <select
                   value={order}
                   onChange={(e) => setOrder(Number(e.target.value))}
-                  className="border w-full p-2 rounded bg-white"
+                  className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                 >
                   {Array.from({ length: maxSerial }, (_, i) => i + 1).map(
                     (num) => (
@@ -243,11 +243,11 @@ export default function AddSlideModal({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">Status</label>
                 <select
                   value={isActive ? "active" : "hidden"}
                   onChange={(e) => setIsActive(e.target.value === "active")}
-                  className="border w-full p-2 rounded bg-white"
+                  className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                 >
                   <option value="active">Active</option>
                   <option value="hidden">Hidden</option>
@@ -257,9 +257,9 @@ export default function AddSlideModal({
 
             {/* ✅ Image uploader */}
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-slate-300">
                 Slide Image{" "}
-                <span className="text-[11px] text-gray-500 font-semibold">
+                <span className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
                   (যেকোনো image format → Auto {SLIDER_IMAGE_RULE.width}×
                   {SLIDER_IMAGE_RULE.height})
                 </span>
@@ -269,8 +269,8 @@ export default function AddSlideModal({
                 ref={dropRef}
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
-                className={`border-2 border-dashed rounded-lg overflow-hidden cursor-pointer bg-gray-50 aspect-[3/1] flex items-center justify-center ${
-                  imageError ? "border-red-500 bg-red-50" : "border-gray-300"
+                className={`border-2 border-dashed rounded-lg overflow-hidden cursor-pointer bg-gray-50 dark:bg-slate-800 aspect-[3/1] flex items-center justify-center ${
+                  imageError ? "border-red-500 bg-red-50 dark:bg-red-500/10" : "border-gray-300 dark:border-slate-600"
                 }`}
                 onClick={() =>
                   dropRef.current?.querySelector("input[type=file]")?.click()
@@ -283,7 +283,7 @@ export default function AddSlideModal({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-gray-500 text-sm">
+                  <span className="text-gray-500 dark:text-slate-400 text-sm">
                     Drag & drop or click to upload
                   </span>
                 )}
@@ -302,13 +302,13 @@ export default function AddSlideModal({
               </div>
 
               {imageError && (
-                <p className="text-[11px] text-red-600 mt-1 font-semibold">
+                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 font-semibold">
                   {imageError}
                 </p>
               )}
 
               {!filesReady && (
-                <p className="text-[11px] text-orange-600 mt-1 font-semibold">
+                <p className="text-[11px] text-orange-600 dark:text-orange-400 mt-1 font-semibold">
                   Processing image...
                 </p>
               )}
@@ -318,7 +318,7 @@ export default function AddSlideModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-4 py-2 border rounded"
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded text-gray-700 dark:text-slate-300"
                 disabled={loading}
               >
                 Cancel
@@ -328,7 +328,7 @@ export default function AddSlideModal({
                 type="submit"
                 className={`px-4 py-2 rounded text-white ${
                   loading || !filesReady || !!imageError
-                    ? "bg-gray-400 cursor-not-allowed"
+                    ? "bg-gray-400 dark:bg-slate-600 cursor-not-allowed"
                     : "bg-green-600 hover:bg-green-700"
                 }`}
                 disabled={loading || !filesReady || !!imageError}

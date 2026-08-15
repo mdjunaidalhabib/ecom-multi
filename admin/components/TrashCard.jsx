@@ -3,12 +3,12 @@
 import { formatDateTime } from "../lib/utils";
 
 const TYPE_BADGE_STYLE = {
-  Product: "bg-indigo-100 border-indigo-200 text-indigo-700",
-  Category: "bg-blue-100 border-blue-200 text-blue-700",
-  Order: "bg-amber-100 border-amber-200 text-amber-700",
-  Slider: "bg-rose-100 border-rose-200 text-rose-700",
-  PaymentMethod: "bg-emerald-100 border-emerald-200 text-emerald-700",
-  Shop: "bg-violet-100 border-violet-200 text-violet-700",
+  Product: "bg-indigo-100 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400",
+  Category: "bg-blue-100 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400",
+  Order: "bg-amber-100 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400",
+  Slider: "bg-rose-100 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400",
+  PaymentMethod: "bg-emerald-100 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+  Shop: "bg-violet-100 dark:bg-violet-500/10 border-violet-200 dark:border-violet-500/20 text-violet-700 dark:text-violet-400",
 };
 
 const TYPE_ICON = {
@@ -84,12 +84,12 @@ export default function TrashCard({ item, busy, onRestore, onDelete }) {
   const subtitle = getSubtitle(item);
   const badgeStyle =
     TYPE_BADGE_STYLE[item.collectionName] ||
-    "bg-gray-100 border-gray-200 text-gray-700";
+    "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300";
 
   return (
-    <div className="relative border rounded-xl shadow-md p-4 flex flex-col bg-white hover:shadow-lg transition opacity-90">
+    <div className="relative border dark:border-slate-700 rounded-xl shadow-md p-4 flex flex-col bg-white dark:bg-slate-900 hover:shadow-lg transition opacity-90">
       {/* 🖼️ Image */}
-      <div className="w-full aspect-square overflow-hidden rounded-lg mb-3 relative bg-gray-50">
+      <div className="w-full aspect-square overflow-hidden rounded-lg mb-3 relative bg-gray-50 dark:bg-slate-800">
         {image ? (
           <img
             src={image}
@@ -97,7 +97,7 @@ export default function TrashCard({ item, busy, onRestore, onDelete }) {
             className="w-full h-full object-cover grayscale-[15%]"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-slate-500 text-xs">
             No Image
           </div>
         )}
@@ -117,15 +117,15 @@ export default function TrashCard({ item, busy, onRestore, onDelete }) {
       </div>
 
       {/* 📋 Info */}
-      <h2 className="font-semibold text-lg truncate text-gray-800">
+      <h2 className="font-semibold text-lg truncate text-gray-800 dark:text-slate-200">
         {item.label || "Untitled"}
       </h2>
 
       {subtitle && (
-        <p className="text-sm text-gray-500 truncate">{subtitle}</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 truncate">{subtitle}</p>
       )}
 
-      <p className="text-xs text-gray-400 mt-1">
+      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
         Deleted: {formatDateTime(item.deletedAt)}
       </p>
 

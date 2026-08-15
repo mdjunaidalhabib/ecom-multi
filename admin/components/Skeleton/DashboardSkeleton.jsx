@@ -22,6 +22,15 @@ export default function DashboardSkeleton() {
           background-size: 800px 104px;
           animation: shimmer 1.3s linear infinite;
         }
+        :global(.dark) .shimmer {
+          background: linear-gradient(
+            to right,
+            #1e293b 8%,
+            #334155 18%,
+            #1e293b 33%
+          );
+          background-size: 800px 104px;
+        }
       `}</style>
 
       {/* Stats Cards Skeleton */}
@@ -32,13 +41,13 @@ export default function DashboardSkeleton() {
       </div>
 
       {/* Top Products Skeleton */}
-      <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm space-y-3">
         <div className="w-1/3 h-5 shimmer rounded"></div>
         <div className="w-full h-32 shimmer rounded"></div>
       </div>
 
       {/* Monthly Sales Skeleton */}
-      <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm space-y-3">
         <div className="w-1/2 h-5 shimmer rounded"></div>
         <div className="w-full h-64 shimmer rounded"></div>
       </div>

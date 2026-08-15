@@ -11,7 +11,7 @@ export const getProductsPublic = async (req, res) => {
       categories: { $in: activeCats.map((c) => c._id) },
       isActive: true,
     })
-      .select("-reviews")
+      .select("-reviews -costPrice")
       .populate("categories", "name")
       .sort({ createdAt: -1 })
       .lean();
@@ -24,6 +24,7 @@ export const getProductsPublic = async (req, res) => {
 export const getProductByIdPublic = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
+      .select("-costPrice")
       .populate("categories")
       .lean();
     const hasActiveCategory =
@@ -129,7 +130,7 @@ export const getProductsByCategoryPublic = async (req, res) => {
       categories: category._id,
       isActive: true,
     })
-      .select("-reviews")
+      .select("-reviews -costPrice")
       .populate("categories", "name")
       .sort({ createdAt: -1 })
       .lean();

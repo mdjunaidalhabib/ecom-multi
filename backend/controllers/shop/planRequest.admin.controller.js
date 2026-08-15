@@ -1,7 +1,6 @@
 import Shop from "../../src/models/Shop.js";
 import PlanChangeRequest from "../../src/models/PlanChangeRequest.js";
-
-const VALID_PLANS = ["free", "starter", "pro"];
+import Plan from "../../src/models/Plan.js";
 
 /* -------------------------------------------------------
    POST /admin/plan-requests — লগইন করা admin/staff-এর শপের জন্য
@@ -17,7 +16,8 @@ export const createPlanRequest = async (req, res) => {
 
     const { requestedPlan, note } = req.body;
 
-    if (!VALID_PLANS.includes(requestedPlan)) {
+    const planExists = await Plan.exists({ key: requestedPlan });
+    if (!planExists) {
       return res.status(400).json({ message: "Invalid requested plan" });
     }
     if (requestedPlan === shop.plan) {

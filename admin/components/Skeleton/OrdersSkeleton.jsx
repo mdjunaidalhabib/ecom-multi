@@ -22,6 +22,15 @@ export default function OrdersSkeleton() {
           background-size: 800px 104px;
           animation: shimmer 1.3s linear infinite;
         }
+        :global(.dark) .shimmer {
+          background: linear-gradient(
+            to right,
+            #1e293b 8%,
+            #334155 18%,
+            #1e293b 33%
+          );
+          background-size: 800px 104px;
+        }
       `}</style>
 
       {/* 🔹 Mobile Grid Skeleton */}
@@ -29,7 +38,7 @@ export default function OrdersSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="border border-gray-200 rounded-2xl p-4 bg-white shadow-sm"
+            className="border border-gray-200 dark:border-slate-700 rounded-2xl p-4 bg-white dark:bg-slate-800 shadow-sm"
           >
             {/* Header */}
             <div className="flex justify-between items-start">
@@ -68,13 +77,13 @@ export default function OrdersSkeleton() {
       </div>
 
       {/* 🔹 Desktop Table Skeleton */}
-      <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="hidden md:block overflow-x-auto bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-100 dark:bg-slate-700">
             <tr>
               {["Order", "Customer", "Items", "Totals", "Payment", "Status", "Actions"].map(
                 (h) => (
-                  <th key={h} className="text-left p-3 font-medium text-gray-600">
+                  <th key={h} className="text-left p-3 font-medium text-gray-600 dark:text-slate-400">
                     {h}
                   </th>
                 )
@@ -83,7 +92,7 @@ export default function OrdersSkeleton() {
           </thead>
           <tbody>
             {Array.from({ length: 5 }).map((_, i) => (
-              <tr key={i} className="border-t border-gray-100">
+              <tr key={i} className="border-t border-gray-100 dark:border-slate-700/60">
                 {Array.from({ length: 7 }).map((_, j) => (
                   <td key={j} className="p-3 align-top">
                     <div className="w-full h-4 shimmer rounded mb-2"></div>

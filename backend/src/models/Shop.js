@@ -68,10 +68,12 @@ const shopSchema = new mongoose.Schema(
       default: null,
     },
 
-    // Plan / limits (ভবিষ্যতে billing এর জন্য hook হিসেবে রাখা)
+    // Plan / limits — plan এখন Plan কালেকশন থেকে dynamically তৈরি/ডিলিট হয়
+    // (দেখুন models/Plan.js), তাই এখানে স্ট্যাটিক enum রাখা যায় না। বৈধতা
+    // যাচাই হয় admin.shop.controller.js-এ (create/update shop) live Plan
+    // লিস্টের বিপরীতে।
     plan: {
       type: String,
-      enum: ["free", "starter", "pro"],
       default: "free",
     },
     limits: {
