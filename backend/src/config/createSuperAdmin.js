@@ -14,7 +14,7 @@ const createSuperAdmin = async () => {
       return;
     }
 
-    let admin = await Admin.findOne({ email });
+    let admin = await Admin.findOne({ role: "superadmin" });
 
     if (!admin) {
       admin = await Admin.create({
@@ -30,6 +30,11 @@ const createSuperAdmin = async () => {
     }
 
     let updated = false;
+
+    if (admin.email !== email) {
+      admin.email = email;
+      updated = true;
+    }
 
     if (admin.name !== name) {
       admin.name = name;
