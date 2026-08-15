@@ -54,6 +54,23 @@ const cleanupReqFiles = (req) => {
   for (const f of files) safeUnlink(f.path);
 };
 
+// ✅ Mongoose/Mongo error গুলো raw (ObjectId(), Date() সহ পুরো document)
+// frontend এ পাঠানো হয় না — এখানে user-friendly বাংলা মেসেজে রূপান্তর করা হয়।
+const sendMongoError = (res, err) => {
+  if (err?.code === 11000) {
+    return res.status(409).json({
+      error: "একই তথ্যের একটি প্রোডাক্ট ইতিমধ্যে আছে",
+    });
+  }
+  if (err?.name === "ValidationError") {
+    const message = Object.values(err.errors || {})
+      .map((e) => e.message)
+      .join(", ");
+    return res.status(400).json({ error: message || "প্রোডাক্টের তথ্য সঠিক নয়" });
+  }
+  return res.status(500).json({ error: "Server error" });
+};
+
 /**
  * ✅ Convert ANY (jpeg/png/webp) => strict 1200×1200 (1:1) WEBP, এর কাছাকাছি সর্বোচ্চ চেষ্টায় <= 150KB (fit:cover, center crop)
  * - center crop
@@ -407,7 +424,7 @@ export const createProduct = async (req, res) => {
   } catch (err) {
     console.error("Create Error:", err);
     cleanupReqFiles(req);
-    res.status(500).json({ error: err?.message || "Server error" });
+    sendMongoError(res, err);
   }
 };
 
@@ -638,7 +655,7 @@ export const updateProduct = async (req, res) => {
   } catch (err) {
     console.error("Update Error:", err);
     cleanupReqFiles(req);
-    res.status(500).json({ error: err?.message || "Server error" });
+    sendMongoError(res, err);
   }
 };
 

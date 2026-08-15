@@ -94,7 +94,7 @@ const productSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-productSchema.index({ name: "text", categories: 1 });
+productSchema.index({ name: "text" });
 productSchema.index({ shopId: 1, categories: 1 });
 productSchema.index({ shopId: 1, isActive: 1, createdAt: -1 });
 productSchema.index({ shopId: 1, order: 1 });
