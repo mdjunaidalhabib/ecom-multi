@@ -43,7 +43,9 @@
     "start:admin": "cd admin && npm run dev",
     "start:super-admin": "cd super-admin && npm run dev",
     "start:backend": "cd backend && npm run dev",
-    "dev": "concurrently \"npm run start:frontend\" \"npm run start:admin\" \"npm run start:super-admin\" \"npm run start:backend\""
+    "dev:apps": "concurrently \"npm run start:frontend\" \"npm run start:admin\" \"npm run start:super-admin\" \"npm run start:backend\"",
+    "dev": "node scripts/dev-with-tunnel.mjs",
+    "tunnel": "node scripts/dev-with-tunnel.mjs --tunnel-only"
   },
   "repository": {
     "type": "git",

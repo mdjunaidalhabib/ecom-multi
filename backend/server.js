@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 4000;
 const isProd = process.env.NODE_ENV === "production";
 
 // ✅ Required environment validation
-const requiredEnv = ["MONGO_URI", "JWT_SECRET"];
+const requiredEnv = ["MONGO_URI", "DB_NAME", "JWT_SECRET"];
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 if (missingEnv.length) {
   console.error(`❌ Missing required environment variables: ${missingEnv.join(", ")}`);

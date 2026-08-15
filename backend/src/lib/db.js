@@ -8,6 +8,9 @@ const connectDB = async () => {
     if (!mongoUri) {
       throw new Error("MONGO_URI is missing in .env file");
     }
+    if (!dbName) {
+      throw new Error("DB_NAME is missing in .env file");
+    }
 
     await mongoose.connect(mongoUri, {
       dbName,
