@@ -19,7 +19,6 @@ const DEFAULT_SETTINGS = {
 
 export default function PromoCodeBox({
   items,
-  userId,
   phone,
   paymentMethod,
   onPromoChange,
@@ -85,9 +84,19 @@ export default function PromoCodeBox({
     if (!silent) setError("");
 
     try {
+      // ✅ per-customer promo limit backend এখন verified token থেকে userId
+      // বের করে (body.userId আর বিশ্বাস করে না), তাই লগইন থাকলে token
+      // পাঠানো দরকার — নাহলে logged-in কাস্টমারও phone-only guest হিসেবে
+      // ট্রিট হবে।
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
       const response = await fetch("/api/promos/validate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           code: normalized,
           items: items.map(({ productId, qty, color }) => ({
@@ -95,7 +104,6 @@ export default function PromoCodeBox({
             qty,
             color: color || null,
           })),
-          userId: userId || null,
           phone: phone || "",
           paymentMethod: paymentMethod || "cod",
         }),
@@ -137,7 +145,7 @@ export default function PromoCodeBox({
     }, 450);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemSignature, paymentMethod, phone, userId, appliedCode]);
+  }, [itemSignature, paymentMethod, phone, appliedCode]);
 
   // Wait for the server setting before rendering so an admin-disabled field
   // never flashes briefly on the checkout page.

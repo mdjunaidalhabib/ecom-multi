@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { getCurrentShopId } from "../tenancy/shopContext.js";
 
 /**
  * 🔥 FIX (server crash on boot): আগে GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET
@@ -64,9 +65,11 @@ export function configurePassport() {
             });
           }
 
-          // ✅ JWT generate
+          // ✅ JWT generate — shopId অবশ্যই embed করতে হবে, কারণ User মডেল
+          // per-shop identity (একই googleId ভিন্ন শপে ভিন্ন account, দেখুন
+          // User.js)। shopId ছাড়া টোকেন যেকোনো শপে ব্যবহারযোগ্য হয়ে যেত।
           const token = jwt.sign(
-            { id: user._id, email: user.email },
+            { id: user._id, email: user.email, shopId: getCurrentShopId() },
             process.env.JWT_SECRET,
             { expiresIn: "90d" }
           );

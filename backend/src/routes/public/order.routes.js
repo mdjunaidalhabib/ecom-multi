@@ -13,6 +13,7 @@ import {
   releasePromoUsage,
 } from "../../services/promoService.js";
 import { updateInventoryForItem } from "../../services/inventoryService.js";
+import { resolveAuthedCustomer } from "../../auth/resolveAuthedCustomer.js";
 
 // ✅ correct relative path
 import { getOrderMailSendSettings } from "../../../utils/mail/index.js";
@@ -115,11 +116,16 @@ router.post("/", async (req, res) => {
       items,
       billing,
       promoCode,
-      userId,
       paymentMethod,
       paymentStatus,
       paymentDetails,
     } = req.body;
+
+    // ✅ কে অর্ডার করছে সেটা client-supplied body.userId থেকে না, verified
+    // JWT থেকে বের করা হয় — নাহলে যেকোনো userId পাঠিয়ে অন্যের নামে অর্ডার
+    // বসানো যেত। token না থাকলে/অবৈধ হলে guest order (userId: null)।
+    const authedCustomer = await resolveAuthedCustomer(req);
+    const userId = authedCustomer?.userId ?? null;
 
     // ✅ Validation
     if (!items?.length) {
@@ -400,15 +406,21 @@ router.get("/:id", async (req, res) => {
 });
 
 /**
- * @route   GET /api/orders?userId=xxx
+ * @route   GET /api/orders
+ * @desc    ✅ লগইন করা কাস্টমারের নিজের order history — userId এখন query
+ *          param থেকে না, verified JWT থেকে বের করা হয় (নাহলে userId=1,2,3...
+ *          বসিয়ে যে কেউ অন্য কাস্টমারের নাম/ফোন/ঠিকানাসহ পুরো order history
+ *          দেখে ফেলতে পারত, কারণ User.userId শপ-প্রতি ছোট sequential integer)।
  */
 router.get("/", async (req, res) => {
   try {
-    const { userId } = req.query;
-    if (!userId) {
-      return res.status(400).json({ error: "userId প্রয়োজন।" });
+    const authedCustomer = await resolveAuthedCustomer(req);
+    if (!authedCustomer) {
+      return res.status(401).json({ error: "লগইন প্রয়োজন।" });
     }
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 }).limit(100);
+    const orders = await Order.find({ userId: authedCustomer.userId })
+      .sort({ createdAt: -1 })
+      .limit(100);
     return res.json(orders);
   } catch (err) {
     return res.status(500).json({ error: "অর্ডার লিস্ট লোড করা সম্ভব হয়নি।" });

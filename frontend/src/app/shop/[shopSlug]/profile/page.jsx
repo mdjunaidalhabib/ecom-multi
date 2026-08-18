@@ -150,7 +150,8 @@ export default function ProfilePage() {
       (async () => {
         setLoadingOrders(true);
         try {
-          const data = await apiFetch(`/orders?userId=${me.userId}`);
+          // ✅ backend এখন Authorization token থেকে userId বের করে
+          const data = await apiFetch(`/orders`);
           setOrderCount(Array.isArray(data) ? data.length : 0);
         } catch (err) {
           console.error("❌ Failed to fetch orders:", err);
@@ -224,10 +225,10 @@ export default function ProfilePage() {
         avatarUrl = uploadRes?.url || avatarUrl;
       }
 
+      // ✅ কোন user আপডেট হবে backend এখন Authorization token থেকে ঠিক করে
       const updated = await apiFetch(`/users/update`, {
         method: "PUT",
         body: JSON.stringify({
-          userId: me.userId,
           name: form.name,
           phone: form.phone,
           address: form.address,

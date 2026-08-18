@@ -67,7 +67,10 @@ export default function OrdersPage() {
     if (!loadingUser && me) {
       (async () => {
         try {
-          const data = await apiFetch(`/orders?userId=${me.userId}`);
+          // ✅ backend এখন Authorization token (apiFetch এমনিতেই পাঠায়)
+          // থেকে userId বের করে — query param এ userId দিয়ে সরাসরি অন্য
+          // কাস্টমারের order history দেখা যেত না, তাই এটা আর দরকার নেই।
+          const data = await apiFetch(`/orders`);
           setOrders(data || []);
           setFilteredOrders(data || []);
         } catch (err) {

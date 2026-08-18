@@ -1,19 +1,26 @@
 import express from "express";
 import User from "../../models/User.js";
+import { resolveAuthedCustomer } from "../../auth/resolveAuthedCustomer.js";
 
 const router = express.Router();
 
 /**
  * PUT /users/update
- * body: { userId, name, phone, address, city, country, avatar }
+ * body: { name, phone, address, city, country, avatar }
+ *
+ * ✅ কোন user আপডেট হবে সেটা body.userId থেকে না, verified JWT থেকে বের করা
+ * হয় — নাহলে যে কেউ (এমনকি লগইন ছাড়াই) body-তে ইচ্ছেমতো userId (ছোট
+ * sequential integer, সহজে অনুমানযোগ্য) বসিয়ে অন্য কাস্টমারের নাম/ফোন/
+ * ঠিকানা/avatar পাল্টে দিতে পারত।
  */
 router.put("/update", async (req, res) => {
   try {
-    const { userId, name, phone, address, city, country, avatar } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({ message: "userId is required" });
+    const authedCustomer = await resolveAuthedCustomer(req);
+    if (!authedCustomer) {
+      return res.status(401).json({ message: "লগইন প্রয়োজন।" });
     }
+
+    const { name, phone, address, city, country, avatar } = req.body;
 
     const updateData = {};
     if (name !== undefined) updateData.name = name;
@@ -24,7 +31,7 @@ router.put("/update", async (req, res) => {
     if (avatar !== undefined) updateData.avatar = avatar;
 
     const updatedUser = await User.findOneAndUpdate(
-      { userId: Number(userId) }, // userId is Number
+      { _id: authedCustomer._id },
       { $set: updateData },
       { new: true }
     );

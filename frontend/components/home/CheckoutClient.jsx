@@ -407,7 +407,6 @@ export default function CheckoutPage() {
       paymentMethod,
       paymentStatus: "pending",
       status: "pending",
-      userId: me?.userId || null,
       ...(promoResult?.promo?.code && { promoCode: promoResult.promo.code }),
       ...(isManualPayment && {
         paymentDetails: {
@@ -418,9 +417,18 @@ export default function CheckoutPage() {
     };
 
     try {
+      // ✅ কে অর্ডার করছে সেটা backend এখন verified token থেকে বের করে
+      // (body.userId আর বিশ্বাস করে না), তাই লগইন থাকলে token পাঠাতেই হবে —
+      // নাহলে logged-in কাস্টমারের অর্ডারও guest হিসেবে সেভ হয়ে যাবে।
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
       const res = await fetch(`/api/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(orderData),
       });
 
@@ -774,7 +782,6 @@ export default function CheckoutPage() {
 
               <PromoCodeBox
                 items={checkoutItemsPayload}
-                userId={me?.userId || null}
                 phone={phone}
                 paymentMethod={paymentMethod}
                 onPromoChange={setPromoResult}

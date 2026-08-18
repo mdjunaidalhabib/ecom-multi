@@ -6,6 +6,7 @@ import {
 } from "../../services/orderPricingService.js";
 import { validatePromoForOrder } from "../../services/promoService.js";
 import { getPublicPromoSettings } from "../../services/promoSettingsService.js";
+import { resolveAuthedCustomer } from "../../auth/resolveAuthedCustomer.js";
 
 const router = express.Router();
 
@@ -30,7 +31,15 @@ router.get("/settings", async (req, res) => {
 
 router.post("/validate", async (req, res) => {
   try {
-    const { code, items, userId, phone, paymentMethod } = req.body;
+    const { code, items, phone, paymentMethod } = req.body;
+
+    // ✅ per-customer promo usage limit userId দিয়ে চেক হয় (promoService)।
+    // client-supplied userId বিশ্বাস করলে অন্যের userId বসিয়ে usage-limit
+    // bypass করা যেত — তাই order.routes.js-এর মতোই verified JWT থেকে বের
+    // করা হচ্ছে; লগইন না থাকলে phone দিয়েই guest-limit চেক হয় (নিচে অপরিবর্তিত)।
+    const authedCustomer = await resolveAuthedCustomer(req);
+    const userId = authedCustomer?.userId ?? null;
+
     const trustedItems = await buildPricedOrderItemsFromDB(items);
     const subtotal = calculateItemsSubtotal(trustedItems);
     const entireCartFreeDelivery =
