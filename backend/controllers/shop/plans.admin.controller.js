@@ -9,6 +9,7 @@ const BOOLEAN_KEYS = [
   "payment",
   "landingPages",
   "fullStorefront",
+  "invoiceCustomization",
 ];
 const NUMBER_KEYS = ["maxProducts", "maxAdmins"];
 

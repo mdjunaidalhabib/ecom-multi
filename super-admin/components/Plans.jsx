@@ -43,6 +43,7 @@ const TOGGLE_FEATURES = [
   { key: "payment", label: "Payment (bKash/Nagad/Rocket)" },
   { key: "landingPages", label: "Landing Pages (single-product ad পেজ)" },
   { key: "fullStorefront", label: "Full Storefront (মাল্টি-প্রোডাক্ট ক্যাটালগ)" },
+  { key: "invoiceCustomization", label: "Invoice Customization (কাস্টম ইনভয়েস ডিজাইন)" },
 ];
 const LIMIT_FEATURES = [
   { key: "maxProducts", label: "সর্বোচ্চ Products" },
@@ -65,6 +66,7 @@ const emptyForm = () => ({
   payment: false,
   landingPages: false,
   fullStorefront: true,
+  invoiceCustomization: false,
   maxProducts: 50,
   maxAdmins: 1,
 });
@@ -80,6 +82,7 @@ const formFromPlan = (plan) => ({
   payment: !!plan.features?.payment,
   landingPages: !!plan.features?.landingPages,
   fullStorefront: plan.features?.fullStorefront !== false,
+  invoiceCustomization: !!plan.features?.invoiceCustomization,
   maxProducts: plan.limits?.maxProducts ?? 0,
   maxAdmins: plan.limits?.maxAdmins ?? 0,
 });
@@ -181,6 +184,7 @@ export default function Plans() {
         payment: form.payment,
         landingPages: form.landingPages,
         fullStorefront: form.fullStorefront,
+        invoiceCustomization: form.invoiceCustomization,
       },
       limits: {
         maxProducts: form.maxProducts,

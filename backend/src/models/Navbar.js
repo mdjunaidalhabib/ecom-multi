@@ -11,8 +11,8 @@ const NavbarSchema = new mongoose.Schema({
   },
   brand: {
     name: { type: String, default: "Brand Name" },
-    logo: { type: String, default: "" }, // Cloudinary URL
-    logoPublicId: { type: String, default: "" }, // ✅ Cloudinary public_id
+    logo: { type: String, default: "" }, // R2 URL
+    logoPublicId: { type: String, default: "" }, // ✅ R2 object key
   },
   updatedAt: { type: Date, default: Date.now },
 });

@@ -13,6 +13,7 @@ import createSuperAdmin from "./src/config/createSuperAdmin.js";
 import publicRoutes from "./src/routes/public/index.js";
 import adminRoutes from "./src/routes/admin/index.js";
 import { purgeExpiredTrash } from "./utils/trash/trash.helpers.js";
+import { autoSuspendExpiredShops } from "./utils/shop/shopAutoSuspend.helpers.js";
 
 dotenv.config();
 
@@ -181,6 +182,10 @@ const startServer = async () => {
     // তারপর প্রতি ঘন্টায় check করে permanently delete করবে
     purgeExpiredTrash();
     setInterval(purgeExpiredTrash, 60 * 60 * 1000);
+
+    // ✅ Plan-expiry auto-suspend: বুট-এ একবার, তারপর প্রতি ঘন্টায়
+    autoSuspendExpiredShops();
+    setInterval(autoSuspendExpiredShops, 60 * 60 * 1000);
 
     server = app.listen(PORT, "0.0.0.0", () =>
       console.log(`🚀 Backend running on port ${PORT}`)

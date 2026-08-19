@@ -1,9 +1,7 @@
 import express from "express";
 import Navbar from "../../models/Navbar.js";
-import upload from "../../../utils/upload.js"; // multer
-import fs from "fs";
-import { deleteByPublicId, buildOptimizedUrl } from "../../../utils/cloudinaryHelpers.js";
-import cloudinary from "../../../utils/cloudinary.js";
+import upload from "../../../utils/r2/upload.js"; // multer
+import { deleteByKey, uploadToR2 } from "../../../utils/r2/r2Helpers.js";
 
 const router = express.Router();
 
@@ -27,7 +25,7 @@ router.post("/", upload.single("logo"), async (req, res) => {
     // removeLogo request
     const removeLogo = data.removeLogo === "true";
     if (removeLogo && navbar?.brand?.logoPublicId) {
-      await deleteByPublicId(navbar.brand.logoPublicId);
+      await deleteByKey(navbar.brand.logoPublicId);
 
       data.brand = data.brand || {};
       data.brand.logo = "";
@@ -37,21 +35,17 @@ router.post("/", upload.single("logo"), async (req, res) => {
 
     // Handle logo upload
     if (req.file) {
-      // delete old logo by public id
+      // delete old logo by key
       if (navbar?.brand?.logoPublicId) {
-        await deleteByPublicId(navbar.brand.logoPublicId);
+        await deleteByKey(navbar.brand.logoPublicId);
       }
 
       // upload new logo to NAVBAR folder
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "navbar_logos",
-      });
-
-      fs.unlinkSync(req.file.path);
+      const uploaded = await uploadToR2(req.file, `shops/${req.shopStorageNumber}/navbar_logos`);
 
       data.brand = data.brand || {};
-      data.brand.logo = buildOptimizedUrl(result.public_id); // ✅ f_auto,q_auto সহ optimized URL
-      data.brand.logoPublicId = result.public_id;
+      data.brand.logo = uploaded.url;
+      data.brand.logoPublicId = uploaded.key;
     } else if (navbar?.brand) {
       // file না এলে আগের logo/publicId রেখে দাও
       data.brand = {

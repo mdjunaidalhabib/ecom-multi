@@ -16,24 +16,21 @@ import Product from "../../src/models/Product.js";
 import Slider from "../../src/models/Slider.js";
 import Trash from "../../src/models/Trash.js";
 import User from "../../src/models/User.js";
-import {
-  deleteFromCloudinary,
-  deleteByPublicId,
-} from "../cloudinary/cloudinaryHelpers.js";
+import { deleteFromR2, deleteByKey } from "../r2/r2Helpers.js";
 
 async function cleanupAssetGroup(collectionName, data) {
   try {
     if (collectionName === "Product") {
-      if (data.image) await deleteFromCloudinary(data.image);
-      for (const url of data.images || []) await deleteFromCloudinary(url);
+      if (data.image) await deleteFromR2(data.image);
+      for (const url of data.images || []) await deleteFromR2(url);
       for (const color of data.colors || []) {
-        for (const url of color.images || []) await deleteFromCloudinary(url);
+        for (const url of color.images || []) await deleteFromR2(url);
       }
     } else if (collectionName === "Category") {
-      if (data.imagePublicId) await deleteByPublicId(data.imagePublicId);
-      else if (data.image) await deleteFromCloudinary(data.image);
+      if (data.imagePublicId) await deleteByKey(data.imagePublicId);
+      else if (data.image) await deleteFromR2(data.image);
     } else if (collectionName === "Slider") {
-      if (data.srcPublicId) await deleteByPublicId(data.srcPublicId);
+      if (data.srcPublicId) await deleteByKey(data.srcPublicId);
     }
   } catch (err) {
     console.error("⚠️ Shop permanent-delete asset cleanup failed:", err);

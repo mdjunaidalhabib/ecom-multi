@@ -1,11 +1,10 @@
 import express from "express";
 import multer from "multer";
-import cloudinary from "../../../utils/cloudinary.js";
-import { buildOptimizedUrl } from "../../../utils/cloudinaryHelpers.js";
+import { uploadToR2 } from "../../../utils/r2/r2Helpers.js";
 
 const router = express.Router();
 
-// ✅ memory storage for cloudinary upload (best)
+// ✅ memory storage for R2 upload (best)
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
@@ -19,22 +18,8 @@ router.post("/avatar", upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "No image uploaded" });
     }
 
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: "avatars",
-        resource_type: "image",
-      },
-      (err, result) => {
-        if (err) {
-          console.error("❌ Cloudinary upload error:", err);
-          return res.status(500).json({ message: "Upload failed" });
-        }
-
-        return res.status(200).json({ url: buildOptimizedUrl(result.public_id) }); // ✅ f_auto,q_auto সহ optimized URL
-      }
-    );
-
-    stream.end(req.file.buffer);
+    const uploaded = await uploadToR2(req.file, `shops/${req.shopStorageNumber}/avatars`);
+    return res.status(200).json({ url: uploaded.url });
   } catch (error) {
     console.error("❌ Avatar upload route error:", error);
     return res.status(500).json({ message: "Server error" });

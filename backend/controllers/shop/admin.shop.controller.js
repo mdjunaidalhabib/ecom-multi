@@ -1,4 +1,5 @@
 import Shop from "../../src/models/Shop.js";
+import Counter from "../../src/models/Counter.js";
 import Admin from "../../src/models/Admin.js";
 import Product from "../../src/models/Product.js";
 import Order from "../../src/models/Order.js";
@@ -12,6 +13,34 @@ import { permanentlyDeleteShopData } from "../../utils/shop/shopTrash.helpers.js
 import { invalidateShopCache } from "../../src/tenancy/publicShopResolver.js";
 import { getPlanFeatures } from "../../src/services/planFeatureService.js";
 import Plan from "../../src/models/Plan.js";
+import {
+  isPlanExpired,
+  computePlanExpiresAt,
+  PLAN_EXPIRED_SUSPEND_REASON,
+} from "../../src/utils/planExpiry.js";
+
+// ✅ body থেকে আসা subscriptionStartDate পার্স করে — undefined মানে "touch
+// করো না", নাহলে বৈধ Date চাই (start date কখনো null/খালি রাখা যাবে না)।
+function parseSubscriptionStartDate(value) {
+  if (value === undefined) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("সাবস্ক্রিপশন শুরুর তারিখ সঠিক ফরম্যাটে দিন");
+  }
+  return date;
+}
+
+// ✅ body থেকে আসা subscriptionDays পার্স করে — undefined মানে "touch করো
+// না", null/""/0 মানে মেয়াদ নেই (auto-suspend বন্ধ), নাহলে ধনাত্মক সংখ্যা চাই।
+function parseSubscriptionDays(value) {
+  if (value === undefined) return undefined;
+  if (value === null || value === "" || Number(value) === 0) return null;
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) {
+    throw new Error("মেয়াদকাল একটি সঠিক সংখ্যা (দিন) হতে হবে");
+  }
+  return Math.floor(num);
+}
 
 // frontend/lib/shopMode.js এর DOMAIN_MODE_MARKER — কোনো real শপ এই slug
 // নিতে পারবে না, নাহলে custom-domain routing-এর সাথে conflict করবে
@@ -143,10 +172,30 @@ export const getShopById = async (req, res) => {
 ------------------------------------------------------- */
 export const createShop = async (req, res) => {
   try {
-    const { name, slug: rawSlug, domain, contactEmail, contactPhone, plan } = req.body || {};
+    const {
+      name,
+      slug: rawSlug,
+      domain,
+      contactEmail,
+      contactPhone,
+      plan,
+      subscriptionStartDate,
+      subscriptionDays,
+    } = req.body || {};
 
     if (!name || !name.trim()) {
       return res.status(400).json({ message: "শপের নাম আবশ্যক" });
+    }
+
+    let resolvedStartDate;
+    let resolvedDays;
+    try {
+      // ✅ না দিলে "এখন" (শপ তৈরির মুহূর্ত) — নতুন শপের জন্য স্বাভাবিক ডিফল্ট।
+      // আগে থেকে চলা সাবস্ক্রিপশন হলে super-admin ফর্মে আসল শুরুর তারিখ দেবে।
+      resolvedStartDate = parseSubscriptionStartDate(subscriptionStartDate) ?? new Date();
+      resolvedDays = parseSubscriptionDays(subscriptionDays) ?? null;
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
     }
 
     let resolvedPlan = "free";
@@ -205,12 +254,24 @@ export const createShop = async (req, res) => {
       slug = await generateUniqueSlug(name);
     }
 
+    // ✅ R2 storage key-এর জন্য পরিষ্কার, sequential (1, 2, 3, ...) নাম্বার —
+    // Counter দিয়ে atomically বসানো, একবার সেট হলে আর বদলায় না
+    const storageCounter = await Counter.findOneAndUpdate(
+      { name: "shopStorageNumber" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true },
+    );
+
     const shop = await Shop.create({
       name: name.trim(),
       slug,
+      storageNumber: storageCounter.seq,
       ...(normalizedDomain ? { domain: normalizedDomain, domainStatus: "pending_dns" } : {}),
       status: "trial",
       plan: resolvedPlan,
+      subscriptionStartDate: resolvedStartDate,
+      subscriptionDays: resolvedDays,
+      planExpiresAt: computePlanExpiresAt(resolvedStartDate, resolvedDays),
       // ✅ Plan-এর ডিফল্ট limits দিয়ে শুরু হয় (PlatformSettings.planFeatures) —
       // পরে শপের নিজের এডিট ফর্ম থেকে override করা যাবে
       limits: {
@@ -268,6 +329,8 @@ export const updateShop = async (req, res) => {
       contactEmail,
       contactPhone,
       plan,
+      subscriptionStartDate,
+      subscriptionDays,
       themeColor,
       theme,
       maxProducts,
@@ -303,6 +366,39 @@ export const updateShop = async (req, res) => {
     if (plan !== undefined) {
       const planDoc = await Plan.findOne({ key: plan }).select("key");
       if (planDoc) shop.plan = planDoc.key;
+    }
+
+    if (subscriptionStartDate !== undefined || subscriptionDays !== undefined) {
+      let resolvedStartDate;
+      let resolvedDays;
+      try {
+        resolvedStartDate = parseSubscriptionStartDate(subscriptionStartDate);
+        resolvedDays = parseSubscriptionDays(subscriptionDays);
+      } catch (err) {
+        return res.status(400).json({ message: err.message });
+      }
+
+      if (resolvedStartDate !== undefined) shop.subscriptionStartDate = resolvedStartDate;
+      if (resolvedDays !== undefined) shop.subscriptionDays = resolvedDays;
+      shop.planExpiresAt = computePlanExpiresAt(
+        shop.subscriptionStartDate,
+        shop.subscriptionDays,
+      );
+
+      // ✅ মেয়াদ নবায়ন/বাড়ানো হলে — এটা আগে auto-suspend (মেয়াদ শেষ হওয়ার
+      // কারণে) হয়ে থাকলে সাথে সাথে আবার active করে দেয়, যাতে super-admin-কে
+      // আলাদা করে "Activate" বাটনও চাপতে না হয়। কিন্তু manual কারণে
+      // suspend করা শপ এভাবে আপনাআপনি active হবে না — সেটার জন্য super-admin
+      // কে ইচ্ছাকৃতভাবে Activate করতে হবে।
+      const stillExpired = isPlanExpired({ planExpiresAt: shop.planExpiresAt });
+      if (
+        !stillExpired &&
+        shop.status === "suspended" &&
+        shop.suspendedReason === PLAN_EXPIRED_SUSPEND_REASON
+      ) {
+        shop.status = "active";
+        shop.suspendedReason = "";
+      }
     }
 
     if (domain !== undefined && domain.trim()) {
@@ -387,6 +483,13 @@ export const updateShopStatus = async (req, res) => {
       skipTenantScope: true,
     });
     if (!shop) return res.status(404).json({ message: "Shop not found" });
+
+    if (status !== "suspended" && isPlanExpired(shop)) {
+      return res.status(400).json({
+        message:
+          "এই শপের প্ল্যানের মেয়াদ শেষ হয়ে গেছে — আগে শপ এডিট করে মেয়াদ বাড়ান, তাহলেই শপ আবার চালু হয়ে যাবে।",
+      });
+    }
 
     shop.status = status;
     shop.suspendedReason =

@@ -1,10 +1,8 @@
 import express from "express";
 import Admin from "../../models/Admin.js";
-import fs from "fs";
 
-import upload from "../../../utils/cloudinary/upload.js";
-import cloudinary from "../../../utils/cloudinary/cloudinary.js";
-import { deleteByPublicId } from "../../../utils/cloudinary/cloudinaryHelpers.js";
+import upload from "../../../utils/r2/upload.js";
+import { uploadToR2, deleteByKey } from "../../../utils/r2/r2Helpers.js";
 
 import {
   protect,
@@ -86,7 +84,7 @@ router.put("/me", protect, upload.single("avatar"), async (req, res) => {
       req.body.removeAvatar === "true" || data.removeAvatar === "true";
 
     if (removeAvatar && admin.avatarPublicId) {
-      await deleteByPublicId(admin.avatarPublicId);
+      await deleteByKey(admin.avatarPublicId);
 
       admin.avatar = "";
       admin.avatarPublicId = "";
@@ -96,18 +94,13 @@ router.put("/me", protect, upload.single("avatar"), async (req, res) => {
     if (req.file) {
       // old image delete
       if (admin.avatarPublicId) {
-        await deleteByPublicId(admin.avatarPublicId);
+        await deleteByKey(admin.avatarPublicId);
       }
 
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "admin_avatars",
-      });
+      const uploaded = await uploadToR2(req.file, "admin_avatars");
 
-      // remove temp file
-      fs.unlinkSync(req.file.path);
-
-      admin.avatar = result.secure_url;
-      admin.avatarPublicId = result.public_id;
+      admin.avatar = uploaded.url;
+      admin.avatarPublicId = uploaded.key;
     }
 
     // 🔹 STEP 4: update fields

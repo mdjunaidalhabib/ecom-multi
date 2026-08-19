@@ -1,5 +1,5 @@
 import express from "express";
-import { productUpload } from "../../../utils/cloudinary/upload.js";
+import { productUpload } from "../../../utils/r2/upload.js";
 import {
   createProduct,
   getProductsAdmin,

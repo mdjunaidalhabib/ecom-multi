@@ -1,4 +1,5 @@
 import Shop from "../models/Shop.js";
+import { isPlanExpired } from "./planExpiry.js";
 
 const USABLE_SHOP_STATUSES = new Set(["active", "trial"]);
 
@@ -23,7 +24,7 @@ export async function getAdminShopAccess(admin) {
   const shops = await Shop.find({
     _id: { $in: assignedShopIds },
   })
-    .select("_id name status")
+    .select("_id name status storageNumber planExpiresAt")
     .setOptions({ skipTenantScope: true })
     .lean();
 
@@ -34,11 +35,14 @@ export async function getAdminShopAccess(admin) {
     .map((shopId) => shopById.get(shopId))
     .filter(Boolean);
 
-  const usableShops = assignedShops.filter((shop) =>
-    USABLE_SHOP_STATUSES.has(shop.status),
+  // ⚠️ মেয়াদ শেষ হওয়া শপ status="suspended"-এ ততক্ষণ যায় না যতক্ষণ না
+  // background sweep (autoSuspendExpiredShops) চলে — কিন্তু access সাথে
+  // সাথেই বন্ধ হওয়া উচিত, তাই এখানেই lazily ধরা হচ্ছে।
+  const usableShops = assignedShops.filter(
+    (shop) => USABLE_SHOP_STATUSES.has(shop.status) && !isPlanExpired(shop),
   );
   const suspendedShops = assignedShops.filter(
-    (shop) => shop.status === "suspended",
+    (shop) => shop.status === "suspended" || isPlanExpired(shop),
   );
 
   return {
@@ -51,10 +55,13 @@ export async function getAdminShopAccess(admin) {
 }
 
 export function buildSuspendedShopResponse(shop) {
+  const expired = shop?.status !== "suspended" && isPlanExpired(shop);
   return {
     success: false,
-    errorType: "SHOP_SUSPENDED",
-    message: "এই শপটি বর্তমানে সাসপেন্ড করা হয়েছে।",
+    errorType: expired ? "SHOP_PLAN_EXPIRED" : "SHOP_SUSPENDED",
+    message: expired
+      ? "এই শপের প্ল্যানের মেয়াদ শেষ হয়ে গেছে।"
+      : "এই শপটি বর্তমানে সাসপেন্ড করা হয়েছে।",
     contactMessage:
       "অনুগ্রহ করে সমস্যাটি সমাধানের জন্য অতি দ্রুত Developer-এর সাথে যোগাযোগ করুন।",
     suspension: {

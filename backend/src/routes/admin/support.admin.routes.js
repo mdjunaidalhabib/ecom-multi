@@ -2,9 +2,8 @@ import express from "express";
 import fs from "fs";
 import Support from "../../models/Support.js";
 import Footer from "../../models/Footer.js";
-import { teamPhotoUpload } from "../../../utils/cloudinary/upload.js";
-import cloudinary from "../../../utils/cloudinary/cloudinary.js";
-import { deleteByPublicId, buildOptimizedUrl } from "../../../utils/cloudinary/cloudinaryHelpers.js";
+import { teamPhotoUpload } from "../../../utils/r2/upload.js";
+import { deleteByKey, uploadToR2 } from "../../../utils/r2/r2Helpers.js";
 
 const router = express.Router();
 
@@ -89,17 +88,13 @@ router.post("/team/:memberId/photo", teamPhotoUpload.single("photo"), async (req
     }
 
     if (member.photoPublicId) {
-      await deleteByPublicId(member.photoPublicId);
+      await deleteByKey(member.photoPublicId);
     }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "support_team",
-    });
+    const uploaded = await uploadToR2(req.file, `shops/${req.shopStorageNumber}/support_team`);
 
-    fs.unlinkSync(req.file.path);
-
-    member.photo = buildOptimizedUrl(result.public_id);
-    member.photoPublicId = result.public_id;
+    member.photo = uploaded.url;
+    member.photoPublicId = uploaded.key;
     support.updatedAt = new Date();
     await support.save();
 
@@ -127,7 +122,7 @@ router.delete("/team/:memberId/photo", async (req, res) => {
     }
 
     if (member.photoPublicId) {
-      await deleteByPublicId(member.photoPublicId);
+      await deleteByKey(member.photoPublicId);
     }
 
     member.photo = "";

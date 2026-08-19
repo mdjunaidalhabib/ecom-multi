@@ -1,9 +1,12 @@
+import { Store } from "lucide-react";
 import { CartProvider } from "../../../../context/CartContext";
 import { UserProvider } from "../../../../context/UserContext";
 import FloatingActionButton from "../../../../components/home/FloatingActionButton";
 import StorefrontChrome from "../../../../components/StorefrontChrome";
+import ShopSuspensionGuard from "../../../../components/ShopSuspensionGuard";
 import { getShopInfo } from "../../../../lib/serverApi";
 import { getTheme } from "../../../../lib/themeRegistry";
+import { DOMAIN_MODE_MARKER } from "../../../../lib/shopMode";
 
 // Both custom-domain visitors (rewritten to /shop/__domain__/... by
 // frontend/src/middleware.js) and real path-based visitors (/shop/<slug>/...)
@@ -15,14 +18,37 @@ import { getTheme } from "../../../../lib/themeRegistry";
 // picks which Navbar/Footer to render for this shop's plan.
 async function getShop() {
   try {
-    return await getShopInfo();
-  } catch {
-    return null;
+    return { shop: await getShopInfo(), suspended: false };
+  } catch (err) {
+    const suspended =
+      err?.status === 403 && err?.body?.errorType === "SHOP_SUSPENDED";
+    return { shop: null, suspended };
   }
 }
 
-export default async function ShopLayout({ children }) {
-  const shop = await getShop();
+export default async function ShopLayout({ children, params }) {
+  const { shopSlug } = await params;
+  const { shop, suspended } = await getShop();
+
+  if (suspended) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+            <Store className="h-8 w-8 text-amber-600" strokeWidth={1.75} />
+          </div>
+          <h1 className="mt-5 text-xl font-bold text-gray-900 sm:text-2xl">
+            শপটি সাময়িকভাবে বন্ধ আছে
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-gray-500 sm:text-base">
+            এই মুহূর্তে এই অনলাইন শপে প্রবেশ করা যাচ্ছে না। অসুবিধার জন্য
+            আন্তরিকভাবে দুঃখিত — অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!shop) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-center p-4">
@@ -42,9 +68,17 @@ export default async function ShopLayout({ children }) {
 
   const { Navbar, Footer, mainClassName = "bg-white" } = getTheme(shop.effectiveTheme);
 
+  // ✅ custom-domain ভিজিটর এই routeSlug-এই আসে, শুধু middleware.js এটাকে
+  // DOMAIN_MODE_MARKER দিয়ে রিরাইট করে — সেই কেসে x-shop-slug পাঠানো ভুল
+  // (backend slug lookup fail করবে), তাই এখানে undefined রাখা হচ্ছে যাতে
+  // UserContext.jsx আগের মতোই x-shop-domain (Host header ভিত্তিক) দিয়ে
+  // resolve করতে পারে।
+  const userShopSlug = shopSlug !== DOMAIN_MODE_MARKER ? shopSlug : undefined;
+
   return (
-    <UserProvider>
+    <UserProvider shopSlug={userShopSlug}>
       <CartProvider>
+        <ShopSuspensionGuard shopSlug={userShopSlug} />
         <StorefrontChrome
           navbar={<Navbar />}
           footer={<Footer />}

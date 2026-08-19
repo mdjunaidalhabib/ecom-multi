@@ -20,8 +20,8 @@ const SocialLinkSchema = new mongoose.Schema(
 const TeamMemberSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   title: { type: String, default: "" }, // e.g. "Founder & CEO"
-  photo: { type: String, default: "" }, // Cloudinary image URL
-  photoPublicId: { type: String, default: "" }, // Cloudinary public_id (পুরনো ছবি delete করতে দরকার)
+  photo: { type: String, default: "" }, // R2 image URL
+  photoPublicId: { type: String, default: "" }, // R2 object key (পুরনো ছবি delete করতে দরকার)
   bio: { type: String, default: "" },
   email: { type: String, default: "" },
   phone: { type: String, default: "" },

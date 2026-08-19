@@ -1,5 +1,5 @@
 import express from "express";
-import { categoryUpload } from "../../../utils/cloudinary/upload.js";
+import { categoryUpload } from "../../../utils/r2/upload.js";
 import {
   createCategory,
   updateCategory,

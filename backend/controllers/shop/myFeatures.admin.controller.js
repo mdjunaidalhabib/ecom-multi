@@ -15,7 +15,15 @@ export const getMyFeatures = async (req, res) => {
     if (!shop) return res.status(404).json({ message: "Shop not found" });
 
     const features = await getPlanFeatures(shop.plan);
-    res.json({ plan: shop.plan, features });
+    res.json({
+      plan: shop.plan,
+      features,
+      status: shop.status,
+      subscriptionStartDate: shop.subscriptionStartDate || null,
+      subscriptionDays: shop.subscriptionDays || null,
+      planExpiresAt: shop.planExpiresAt || null,
+      suspendedReason: shop.suspendedReason || "",
+    });
   } catch (err) {
     console.error("❌ getMyFeatures error:", err);
     res.status(500).json({ message: "Server error" });

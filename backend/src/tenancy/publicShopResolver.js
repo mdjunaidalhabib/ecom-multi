@@ -1,6 +1,7 @@
 import Shop from "../models/Shop.js";
 import { runWithShopId } from "./shopContext.js";
 import { cacheGet, cacheSet, cacheDelete } from "../lib/simpleCache.js";
+import { isPlanExpired } from "../utils/planExpiry.js";
 
 const DOMAIN_CACHE_PREFIX = "shop-by-domain:";
 const SLUG_CACHE_PREFIX = "shop-by-slug:";
@@ -114,13 +115,23 @@ export async function resolveShopByDomain(req, res, next) {
     }
 
     if (shop.status === "suspended") {
-      return res
-        .status(403)
-        .json({ message: "এই শপটি বর্তমানে সাসপেন্ড করা আছে" });
+      return res.status(403).json({
+        message: "এই শপটি বর্তমানে সাসপেন্ড করা আছে",
+        errorType: "SHOP_SUSPENDED",
+      });
+    }
+
+    if (isPlanExpired(shop)) {
+      return res.status(403).json({
+        message: "এই শপের প্ল্যানের মেয়াদ শেষ হয়ে গেছে",
+        errorType: "SHOP_PLAN_EXPIRED",
+      });
     }
 
     req.shop = shop;
     req.shopId = shop._id;
+    // ✅ R2 storage key — পুরনো (migration-এর আগে তৈরি) শপে না থাকলে shopId fallback
+    req.shopStorageNumber = shop.storageNumber ?? shop._id;
 
     return runWithShopId(shop._id, next);
   } catch (err) {

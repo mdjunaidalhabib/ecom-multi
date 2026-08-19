@@ -19,6 +19,17 @@ const shopSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // ✅ Clean, short, sequential (1, 2, 3, ...) — creation-এ একবার Counter
+    // দিয়ে বসানো হয়, কখনো বদলায় না (slug rename-এর মতো না)। R2 storage
+    // key-তে ব্যবহার হয় (shops/{storageNumber}/...) যাতে shop delete করলে
+    // এক prefix delete করেই তার সব image মুছে যায়, স্লাগ রিনেমে ভেঙে না যায়।
+    storageNumber: {
+      type: Number,
+      unique: true,
+      sparse: true,
+      immutable: true,
+    },
+
     // ✅ Customer-facing custom domain, e.g. "shop1.com" (no protocol, no www)
     // ঐচ্ছিক — কাস্টম ডোমেইন ছাড়াও শপ platform-এর নিজস্ব slug-based path
     // (/shop/<slug>/...) দিয়ে সম্পূর্ণভাবে চলতে পারে (দেখুন publicShopResolver.js)
@@ -46,6 +57,26 @@ const shopSchema = new mongoose.Schema(
       default: "trial",
     },
     suspendedReason: { type: String, default: "" },
+
+    // ✅ Subscription মেয়াদ — Super Admin শপের জন্য একটা শুরুর তারিখ +
+    // মেয়াদকাল (দিনে) সেট করে, planExpiresAt এই দুটো থেকে derive/store হয়
+    // (দেখুন utils/planExpiry.js এর computePlanExpiresAt)।
+    //
+    // subscriptionStartDate — শপ তৈরির সময় auto (আজকের তারিখ) বসে, কিন্তু
+    // super-admin পরে হাতে বদলাতে পারে — যেসব শপের সাবস্ক্রিপশন এই ফিচার
+    // চালু হওয়ার আগে থেকেই চলছিল, তাদের আসল শুরুর তারিখ বসানোর জন্য এটা জরুরি।
+    subscriptionStartDate: { type: Date, default: Date.now },
+    // মেয়াদকাল দিনে (৩০/৯০/১৮০/৩৬৫ প্রিসেট, বা যেকোনো custom সংখ্যা দিনে)।
+    // null মানে কোনো সাবস্ক্রিপশন সাইকেল নেই — মেয়াদ নেই, auto-suspend কখনো প্রযোজ্য হবে না।
+    subscriptionDays: { type: Number, default: null },
+    // ✅ derived/cached expiry — subscriptionStartDate + subscriptionDays।
+    // সরাসরি এডিট হয় না, কিন্তু query performance-এর জন্য (auto-suspend
+    // sweep, lazy access check) আলাদা ফিল্ড হিসেবে store করা থাকে। null মানে
+    // মেয়াদ নেই (auto-suspend প্রযোজ্য না, আগের সব শপের ডিফল্ট আচরণ)।
+    // মেয়াদ পার হয়ে গেলে backend lazily (isPlanExpired) সাথে সাথে অ্যাক্সেস
+    // ব্লক করে, আর একটা background sweep (autoSuspendExpiredShops) status/
+    // suspendedReason ডাটাবেসে আপডেট করে (দেখুন utils/shop/shopAutoSuspend.helpers.js)
+    planExpiresAt: { type: Date, default: null },
 
     // Branding
     branding: {
@@ -89,5 +120,6 @@ const shopSchema = new mongoose.Schema(
 
 shopSchema.index({ domain: 1 }, { unique: true, sparse: true });
 shopSchema.index({ slug: 1 }, { unique: true });
+shopSchema.index({ storageNumber: 1 }, { unique: true, sparse: true });
 
 export default mongoose.models.Shop || mongoose.model("Shop", shopSchema);

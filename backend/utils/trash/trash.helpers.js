@@ -6,10 +6,7 @@ import Order from "../../src/models/Order.js";
 import PaymentMethod from "../../src/models/PaymentMethod.js";
 import Shop from "../../src/models/Shop.js";
 import { permanentlyDeleteShopData } from "../shop/shopTrash.helpers.js";
-import {
-  deleteFromCloudinary,
-  deleteByPublicId,
-} from "../cloudinary/cloudinaryHelpers.js";
+import { deleteFromR2, deleteByKey } from "../r2/r2Helpers.js";
 
 // ✅ যতদিন Trash এ রাখা হবে, তারপর auto-delete (permanent)
 export const TRASH_TTL_DAYS = 3;
@@ -48,7 +45,7 @@ const getLabel = (collectionName, data) => {
 
 /**
  * ✅ Hard-delete এর বদলে item টা Trash এ move করে।
- * NOTE: এখানে কোনো cloudinary image ডিলিট করা হয় না — restore করলে
+ * NOTE: এখানে কোনো R2 image ডিলিট করা হয় না — restore করলে
  * যাতে ছবি সহ পুরোপুরি ফিরে আসে। Image/asset শুধু permanent delete
  * (manual অথবা auto-purge) এর সময় cleanup হবে।
  *
@@ -79,28 +76,28 @@ export const moveToTrash = async (
 };
 
 /**
- * ✅ Trash এ থাকা কোনো item এর সাথে জড়িত cloudinary image/asset ডিলিট করে।
+ * ✅ Trash এ থাকা কোনো item এর সাথে জড়িত R2 image/asset ডিলিট করে।
  * শুধু permanent delete (manual "Delete forever" অথবা 3 দিন পর auto-purge)
  * এর সময় call হবে — soft delete/restore এ না।
  */
 export const cleanupTrashAssets = async (collectionName, data) => {
   try {
     if (collectionName === "Product") {
-      if (data.image) await deleteFromCloudinary(data.image);
-      for (const url of data.images || []) await deleteFromCloudinary(url);
+      if (data.image) await deleteFromR2(data.image);
+      for (const url of data.images || []) await deleteFromR2(url);
       for (const color of data.colors || []) {
-        for (const url of color.images || []) await deleteFromCloudinary(url);
+        for (const url of color.images || []) await deleteFromR2(url);
       }
     } else if (collectionName === "Category") {
-      if (data.imagePublicId) await deleteByPublicId(data.imagePublicId);
-      else if (data.image) await deleteFromCloudinary(data.image);
+      if (data.imagePublicId) await deleteByKey(data.imagePublicId);
+      else if (data.image) await deleteFromR2(data.image);
     } else if (collectionName === "Slider") {
-      if (data.srcPublicId) await deleteByPublicId(data.srcPublicId);
+      if (data.srcPublicId) await deleteByKey(data.srcPublicId);
     } else if (collectionName === "Shop") {
       if (data?.branding?.logoPublicId) {
-        await deleteByPublicId(data.branding.logoPublicId);
+        await deleteByKey(data.branding.logoPublicId);
       } else if (data?.branding?.logo) {
-        await deleteFromCloudinary(data.branding.logo);
+        await deleteFromR2(data.branding.logo);
       }
     }
     // Order ইত্যাদির কোনো external asset নেই

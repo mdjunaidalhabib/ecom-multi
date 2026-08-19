@@ -2,8 +2,7 @@ import fs from "fs";
 import sharp from "sharp";
 import LandingPage from "../../src/models/LandingPage.js";
 import Product from "../../src/models/Product.js";
-import { uploadToCloudinary } from "../../utils/product/index.js";
-import { deleteFromCloudinary } from "../../utils/cloudinary/cloudinaryHelpers.js";
+import { uploadToR2, deleteFromR2 } from "../../utils/r2/r2Helpers.js";
 
 const MAX_HERO_IMAGES = 5;
 
@@ -211,12 +210,12 @@ export const updateLandingPage = async (req, res) => {
     if (isPublished !== undefined) page.isPublished = !!isPublished;
 
     // ✅ heroImages এখান থেকেই reorder/remove করা যায় (নতুন আপলোড আলাদা
-    // এন্ডপয়েন্টে হয়) — যেসব url বাদ পড়েছে সেগুলো Cloudinary থেকেও মুছে দেওয়া হয়
+    // এন্ডপয়েন্টে হয়) — যেসব url বাদ পড়েছে সেগুলো R2 থেকেও মুছে দেওয়া হয়
     if (Array.isArray(heroImages)) {
       const removed = (page.heroImages || []).filter(
         (url) => !heroImages.includes(url),
       );
-      await Promise.all(removed.map((url) => deleteFromCloudinary(url)));
+      await Promise.all(removed.map((url) => deleteFromR2(url)));
       page.heroImages = heroImages.slice(0, MAX_HERO_IMAGES);
     }
 
@@ -266,7 +265,7 @@ export const deleteLandingPage = async (req, res) => {
     const page = await LandingPage.findById(req.params.id);
     if (!page) return res.status(404).json({ error: "Landing page not found" });
 
-    await Promise.all((page.heroImages || []).map((url) => deleteFromCloudinary(url)));
+    await Promise.all((page.heroImages || []).map((url) => deleteFromR2(url)));
     await LandingPage.findByIdAndDelete(page._id);
 
     res.json({ message: "✅ ল্যান্ডিং পেজ ডিলিট হয়েছে" });
@@ -304,8 +303,8 @@ export const uploadHeroImages = async (req, res) => {
     const uploadedUrls = [];
     for (const file of usable) {
       await convertHeroImage(file);
-      const uploaded = await uploadToCloudinary(file, "landing-pages/hero");
-      uploadedUrls.push(uploaded.optimizedUrl);
+      const uploaded = await uploadToR2(file, `shops/${req.shopStorageNumber}/landing-pages/hero`);
+      uploadedUrls.push(uploaded.url);
     }
 
     page.heroImages = [...(page.heroImages || []), ...uploadedUrls];

@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "../../../../context/UserContext";
+import { DOMAIN_MODE_MARKER } from "../../../../lib/shopMode";
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -28,8 +29,20 @@ export default function AuthCallback() {
       // ✅ token localStorage এ save করো
       localStorage.setItem("token", token);
 
+      // ✅ এই পেজের নিজের URL-এ /shop/<slug> prefix থাকে না (দেখুন
+      // middleware.js), তাই path-based শপে /api/auth/me কল থেকে x-shop-slug
+      // হারিয়ে যেত এবং backend ভুল শপ (localhost domain) দিয়ে resolve করতে
+      // গিয়ে 404 দিত — token সাথে সাথেই মুছে "logged out" দেখাত। redirect
+      // param-টা (যেটা মূল /shop/<slug>/... পেজের path, নিচে দেখুন) থেকেই
+      // slug বের করে explicit header হিসেবে পাঠানো হচ্ছে।
+      const slugMatch = redirect.match(/^\/shop\/([^/]+)/);
+      const extraHeaders =
+        slugMatch && slugMatch[1] !== DOMAIN_MODE_MARKER
+          ? { "x-shop-slug": slugMatch[1] }
+          : {};
+
       // ✅ fetchMe শেষ হওয়ার পর redirect করো (race condition fix)
-      fetchMe(token).then(() => {
+      fetchMe(token, extraHeaders).then(() => {
         router.replace(redirect);
       });
     } else {

@@ -1,6 +1,5 @@
 import Category from "../../src/models/Category.js";
-import { deleteFromCloudinary, deleteByPublicId, buildOptimizedUrl } from "../../utils/cloudinary/cloudinaryHelpers.js"; // ✅ deleteByPublicId added
-import cloudinary from "../../utils/cloudinary/cloudinary.js";
+import { deleteFromR2, deleteByKey, uploadToR2 } from "../../utils/r2/r2Helpers.js";
 import fs from "fs";
 import sharp from "sharp";
 import { toBool, normalizeCategoryOrders } from "../../utils/category/index.js";
@@ -90,16 +89,16 @@ export const createCategory = async (req, res) => {
 
       const convertedPath = await convertToCategoryWebp(req.file.path);
 
-      const result = await cloudinary.uploader.upload(convertedPath, {
-        folder: "categories",
-        resource_type: "image",
-      });
+      const uploaded = await uploadToR2(
+        { path: convertedPath, mimetype: "image/webp" },
+        `shops/${req.shopStorageNumber}/categories`,
+      );
 
       safeUnlink(req.file.path);
       safeUnlink(convertedPath);
 
-      imageUrl = buildOptimizedUrl(result.public_id); // ✅ f_auto,q_auto সহ optimized URL
-      imagePublicId = result.public_id; // ✅
+      imageUrl = uploaded.url;
+      imagePublicId = uploaded.key; // ✅
     }
 
     const name = req.body.name?.trim();
@@ -161,23 +160,23 @@ export const updateCategory = async (req, res) => {
 
       const convertedPath = await convertToCategoryWebp(req.file.path);
 
-      // ✅ old image delete — publicId দিয়ে, না থাকলে url দিয়ে
+      // ✅ old image delete — key দিয়ে, না থাকলে url দিয়ে
       if (category.imagePublicId) {
-        await deleteByPublicId(category.imagePublicId);
+        await deleteByKey(category.imagePublicId);
       } else if (category.image) {
-        await deleteFromCloudinary(category.image);
+        await deleteFromR2(category.image);
       }
 
-      const result = await cloudinary.uploader.upload(convertedPath, {
-        folder: "categories",
-        resource_type: "image",
-      });
+      const uploaded = await uploadToR2(
+        { path: convertedPath, mimetype: "image/webp" },
+        `shops/${req.shopStorageNumber}/categories`,
+      );
 
       safeUnlink(req.file.path);
       safeUnlink(convertedPath);
 
-      category.image = buildOptimizedUrl(result.public_id); // ✅ f_auto,q_auto সহ optimized URL
-      category.imagePublicId = result.public_id; // ✅
+      category.image = uploaded.url;
+      category.imagePublicId = uploaded.key; // ✅
     }
 
     if (req.body.name) category.name = req.body.name.trim();

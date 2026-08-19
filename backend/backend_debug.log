@@ -1,0 +1,46 @@
+◇ injected env (20) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+✅ Allowed CORS Origins: [
+  'http://localhost:3040',
+  'http://shop1.localhost:3000',
+  'http://shop2.localhost:3000'
+]
+(node:20472) [MONGOOSE] Warning: Duplicate schema index on {"domain":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20472) [MONGOOSE] Warning: Duplicate schema index on {"slug":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:20472) [MONGOOSE] Warning: Duplicate schema index on {"storageNumber":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+🔥 MongoDB Connection Error: getaddrinfo ENOTFOUND r5tsr3ibnibab126euufthwp
+MongooseServerSelectionError: getaddrinfo ENOTFOUND r5tsr3ibnibab126euufthwp
+    at _handleConnectionErrors (C:\website\ecom-multi\backend\node_modules\mongoose\lib\connection.js:1169:11)
+    at NativeConnection.openUri (C:\website\ecom-multi\backend\node_modules\mongoose\lib\connection.js:1100:11)
+    at async connectDB (file:///C:/website/ecom-multi/backend/src/lib/db.js:15:5)
+    at async startServer (file:///C:/website/ecom-multi/backend/server.js:177:5) {
+  errorLabelSet: Set(0) {},
+  reason: TopologyDescription {
+    type: 'Single',
+    servers: Map(1) { 'r5tsr3ibnibab126euufthwp:27017' => [ServerDescription] },
+    stale: false,
+    compatible: true,
+    heartbeatFrequencyMS: 10000,
+    localThresholdMS: 15,
+    setName: null,
+    maxElectionId: null,
+    maxSetVersion: null,
+    commonWireVersion: 0,
+    logicalSessionTimeoutMinutes: null
+  },
+  code: undefined,
+  cause: TopologyDescription {
+    type: 'Single',
+    servers: Map(1) { 'r5tsr3ibnibab126euufthwp:27017' => [ServerDescription] },
+    stale: false,
+    compatible: true,
+    heartbeatFrequencyMS: 10000,
+    localThresholdMS: 15,
+    setName: null,
+    maxElectionId: null,
+    maxSetVersion: null,
+    commonWireVersion: 0,
+    logicalSessionTimeoutMinutes: null
+  }
+}

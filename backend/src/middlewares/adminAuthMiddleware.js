@@ -58,6 +58,9 @@ export const protect = async (req, res, next) => {
       // requireShopContext uses this list so a suspended shop can never be
       // selected as the default when another assigned shop is still active.
       req.usableShopIds = shopAccess.usableShopIds;
+      // ✅ full shop docs (id/name/status/storageNumber) — requireShopContext
+      // এখান থেকে active shop-এর storageNumber বের করে (R2 storage key-এর জন্য)
+      req.usableShops = shopAccess.usableShops;
     }
 
     req.admin = admin;

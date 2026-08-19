@@ -1,9 +1,7 @@
 import express from "express";
 import Footer from "../../models/Footer.js";
-import upload from "../../../utils/upload.js";
-import { deleteByPublicId, buildOptimizedUrl } from "../../../utils/cloudinaryHelpers.js";
-import cloudinary from "../../../utils/cloudinary.js";
-import fs from "fs";
+import upload from "../../../utils/r2/upload.js";
+import { deleteByKey, uploadToR2 } from "../../../utils/r2/r2Helpers.js";
 
 const router = express.Router();
 
@@ -55,7 +53,7 @@ router.post("/", upload.single("logo"), async (req, res) => {
     // removeLogo request
     const removeLogo = data.removeLogo === "true";
     if (removeLogo && footer?.brand?.logoPublicId) {
-      await deleteByPublicId(footer.brand.logoPublicId);
+      await deleteByKey(footer.brand.logoPublicId);
       data.brand = data.brand || {};
       data.brand.logo = "";
       data.brand.logoPublicId = "";
@@ -65,18 +63,14 @@ router.post("/", upload.single("logo"), async (req, res) => {
     // Upload new logo if exists
     if (req.file) {
       if (footer?.brand?.logoPublicId) {
-        await deleteByPublicId(footer.brand.logoPublicId);
+        await deleteByKey(footer.brand.logoPublicId);
       }
 
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "footer_logos",
-      });
-
-      fs.unlinkSync(req.file.path);
+      const uploaded = await uploadToR2(req.file, `shops/${req.shopStorageNumber}/footer_logos`);
 
       data.brand = data.brand || {};
-      data.brand.logo = buildOptimizedUrl(result.public_id); // ✅ f_auto,q_auto সহ optimized URL
-      data.brand.logoPublicId = result.public_id;
+      data.brand.logo = uploaded.url;
+      data.brand.logoPublicId = uploaded.key;
     } else if (footer?.brand) {
       data.brand = {
         ...footer.brand.toObject?.() ?? footer.brand,
@@ -119,7 +113,7 @@ router.delete("/", async (req, res) => {
     const footer = await Footer.findOne();
 
     if (footer?.brand?.logoPublicId) {
-      await deleteByPublicId(footer.brand.logoPublicId);
+      await deleteByKey(footer.brand.logoPublicId);
     }
 
     await Footer.deleteMany({});

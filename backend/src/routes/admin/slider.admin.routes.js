@@ -1,9 +1,8 @@
 import express from "express";
 import Slider from "../../models/Slider.js";
-import upload from "../../../utils/upload.js"; // multer
+import upload from "../../../utils/r2/upload.js"; // multer
 import fs from "fs";
-import cloudinary from "../../../utils/cloudinary.js";
-import { deleteByPublicId, buildOptimizedUrl } from "../../../utils/cloudinaryHelpers.js";
+import { deleteByKey, uploadToR2 } from "../../../utils/r2/r2Helpers.js";
 import sharp from "sharp";
 import { moveToTrash } from "../../../utils/trash/trash.helpers.js";
 
@@ -177,7 +176,7 @@ router.post("/", upload.single("image"), async (req, res) => {
      * ✅ removeImage request
      */
     if (removeImage && slide?.srcPublicId) {
-      await deleteByPublicId(slide.srcPublicId);
+      await deleteByKey(slide.srcPublicId);
       slidePayload.src = "";
       slidePayload.srcPublicId = "";
       delete data.removeImage;
@@ -208,23 +207,23 @@ router.post("/", upload.single("image"), async (req, res) => {
       // ✅ convert server-side
       convertedPath = await convertToSliderWebp(req.file.path);
 
-      // ✅ delete old cloudinary image if exists
+      // ✅ delete old image if exists
       if (slide?.srcPublicId) {
-        await deleteByPublicId(slide.srcPublicId);
+        await deleteByKey(slide.srcPublicId);
       }
 
       // ✅ upload converted webp
-      const result = await cloudinary.uploader.upload(convertedPath, {
-        folder: "slider_images",
-        resource_type: "image",
-      });
+      const uploaded = await uploadToR2(
+        { path: convertedPath, mimetype: "image/webp" },
+        `shops/${req.shopStorageNumber}/slider_images`,
+      );
 
       // ✅ cleanup local temp
       safeUnlink(req.file.path);
       safeUnlink(convertedPath);
 
-      slidePayload.src = buildOptimizedUrl(result.public_id); // ✅ f_auto,q_auto সহ optimized URL
-      slidePayload.srcPublicId = result.public_id;
+      slidePayload.src = uploaded.url;
+      slidePayload.srcPublicId = uploaded.key;
     } else if (slide) {
       // ✅ keep old image if no new image uploaded
       slidePayload.src = slidePayload.src || slide.src;

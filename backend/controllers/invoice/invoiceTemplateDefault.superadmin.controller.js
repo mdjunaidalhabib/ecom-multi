@@ -4,8 +4,7 @@ import InvoiceTemplateDefault, {
   getOrCreateDefaultInvoiceTemplate,
 } from "../../src/models/InvoiceTemplateDefault.js";
 import { normalizeTemplate } from "../../src/constants/invoiceTemplate.js";
-import { uploadToCloudinary } from "../../utils/product/index.js";
-import { deleteByPublicId } from "../../utils/cloudinary/cloudinaryHelpers.js";
+import { uploadToR2, deleteByKey } from "../../utils/r2/r2Helpers.js";
 
 const safeUnlink = (filePath) => {
   if (!filePath) return;
@@ -73,16 +72,19 @@ export const uploadDefaultBackgroundImage = async (req, res) => {
     fs.writeFileSync(outputPath, buffer);
     safeUnlink(file.path);
 
-    const uploaded = await uploadToCloudinary({ path: outputPath }, "invoice_backgrounds/platform-default");
+    const uploaded = await uploadToR2(
+      { path: outputPath, mimetype: "image/webp" },
+      "invoice_backgrounds/platform-default",
+    );
 
     const existing = await InvoiceTemplateDefault.findOne({ key: "global" }).select(
       "background.imagePublicId",
     );
     if (existing?.background?.imagePublicId) {
-      await deleteByPublicId(existing.background.imagePublicId);
+      await deleteByKey(existing.background.imagePublicId);
     }
 
-    res.json({ url: uploaded.optimizedUrl, publicId: uploaded.public_id });
+    res.json({ url: uploaded.url, publicId: uploaded.key });
   } catch (err) {
     console.error("❌ uploadDefaultBackgroundImage error:", err);
     safeUnlink(file?.path);

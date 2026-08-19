@@ -1,5 +1,5 @@
 import express from "express";
-import { landingHeroUpload } from "../../../utils/cloudinary/upload.js";
+import { landingHeroUpload } from "../../../utils/r2/upload.js";
 import { requirePlanFeature } from "../../middlewares/requirePlanFeature.js";
 import {
   listLandingPages,

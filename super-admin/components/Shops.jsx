@@ -45,6 +45,18 @@ const PLAN_BADGE_PALETTE = [
 ];
 const THEME_LABELS = { classic: "Classic", aurora: "Aurora", terra: "Terra" };
 
+// ✅ সাবস্ক্রিপশন মেয়াদের প্রিসেট — সবগুলোই দিনের এককে (backend-ও দিনে হিসাব
+// করে, দেখুন planExpiry.js)। "custom" বাছলে সরাসরি দিনের সংখ্যা input দেখায়,
+// যাতে যেকোনো মেয়াদ (৪৫ দিন, ২ বছর = ৭৩০ দিন, ইত্যাদি) নিখুঁতভাবে দেওয়া যায়।
+const DURATION_PRESETS = [
+  { value: "", label: "মেয়াদ নেই" },
+  { value: "30", label: "১ মাস (৩০ দিন)" },
+  { value: "90", label: "৩ মাস (৯০ দিন)" },
+  { value: "180", label: "৬ মাস (১৮০ দিন)" },
+  { value: "365", label: "১ বছর (৩৬৫ দিন)" },
+  { value: "custom", label: "কাস্টম (দিন সংখ্যা)" },
+];
+
 export default function Shops() {
   const [shops, setShops] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
@@ -53,7 +65,18 @@ export default function Shops() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingShop, setEditingShop] = useState(null); // null = creating new
-  const [form, setForm] = useState({ name: "", slug: "", domain: "", contactEmail: "", contactPhone: "", plan: "free", theme: "" });
+  const [form, setForm] = useState({
+    name: "",
+    slug: "",
+    domain: "",
+    contactEmail: "",
+    contactPhone: "",
+    plan: "free",
+    theme: "",
+    subscriptionStartDate: "",
+    durationPreset: "",
+    customDays: "",
+  });
   const [slugEdited, setSlugEdited] = useState(false); // ইউজার নিজে হাতে slug বদলেছে কিনা — বদলালে আর নাম থেকে অটো-সাজেস্ট হবে না
   const [saving, setSaving] = useState(false);
   const [shopErrors, setShopErrors] = useState({});
@@ -99,6 +122,27 @@ export default function Shops() {
       .catch(() => {});
   }, []);
 
+  // ✅ শপ কার্ডে মেয়াদ badge দেখানোর জন্য — দিন বাকি থাকলে সংখ্যা, পার হয়ে
+  // গেলে "মেয়াদ শেষ" (auto-suspend sweep এখনো status আপডেট না করলেও)
+  const getExpiryInfo = (shop) => {
+    if (!shop.planExpiresAt) return null;
+    const diffMs = new Date(shop.planExpiresAt).getTime() - Date.now();
+    const daysLeft = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    if (diffMs <= 0) {
+      return { label: "মেয়াদ শেষ", className: "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30" };
+    }
+    if (daysLeft <= 7) {
+      return {
+        label: `মেয়াদ বাকি ${daysLeft} দিন`,
+        className: "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30",
+      };
+    }
+    return {
+      label: `মেয়াদ বাকি ${daysLeft} দিন`,
+      className: "bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30",
+    };
+  };
+
   const getPlan = (key) => plans.find((p) => p.key === key);
   const getPlanLabel = (key) => getPlan(key)?.name || key;
   const getPlanBadgeStyle = (key) => {
@@ -117,9 +161,49 @@ export default function Shops() {
       .replace(/-+/g, "-")
       .replace(/(^-|-$)/g, "");
 
+  // ✅ Date input শুধু "YYYY-MM-DD" নেয় — server-এর ISO string থেকে সেই অংশটুকু কেটে নেওয়া
+  const toDateInputValue = (value) => {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toISOString().slice(0, 10);
+  };
+
+  // ✅ subscriptionDays সংখ্যা থেকে durationPreset ফর্ম-স্টেট বের করে —
+  // ৩০/৯০/১৮০/৩৬৫ প্রিসেটের বাইরে যেকোনো সংখ্যা হলে "custom" এ পড়ে
+  const daysToDurationPreset = (days) => {
+    if (!days) return { durationPreset: "", customDays: "" };
+    if (["30", "90", "180", "365"].includes(String(days))) {
+      return { durationPreset: String(days), customDays: "" };
+    }
+    return { durationPreset: "custom", customDays: String(days) };
+  };
+
+  // ✅ ফর্মে বাছাই করা শুরুর তারিখ + মেয়াদ থেকে "মেয়াদ শেষ হবে" preview —
+  // backend-এর computePlanExpiresAt()-এর সাথে সামঞ্জস্যপূর্ণ (দিন-ভিত্তিক)
+  const previewExpiryDate = (form) => {
+    const days = form.durationPreset === "custom" ? Number(form.customDays) : Number(form.durationPreset || 0);
+    if (!days || !form.subscriptionStartDate) return null;
+    const d = new Date(form.subscriptionStartDate);
+    if (Number.isNaN(d.getTime())) return null;
+    d.setDate(d.getDate() + days);
+    return d;
+  };
+
   const openCreateModal = () => {
     setEditingShop(null);
-    setForm({ name: "", slug: "", domain: "", contactEmail: "", contactPhone: "", plan: "free", theme: "" });
+    setForm({
+      name: "",
+      slug: "",
+      domain: "",
+      contactEmail: "",
+      contactPhone: "",
+      plan: "free",
+      theme: "",
+      subscriptionStartDate: toDateInputValue(new Date()),
+      durationPreset: "",
+      customDays: "",
+    });
     setSlugEdited(false);
     setShopErrors({});
     setShowModal(true);
@@ -137,6 +221,8 @@ export default function Shops() {
       contactPhone: shop.contactPhone || "",
       plan: shop.plan || "free",
       theme: shop.branding?.theme || "",
+      subscriptionStartDate: toDateInputValue(shop.subscriptionStartDate || shop.createdAt),
+      ...daysToDurationPreset(shop.subscriptionDays),
     });
     setShowModal(true);
   };
@@ -161,10 +247,25 @@ export default function Shops() {
     ) {
       errors.contactEmail = true;
     }
+    if (form.durationPreset === "custom" && !(Number(form.customDays) > 0)) {
+      errors.customDays = true;
+    }
     setShopErrors(errors);
     if (Object.keys(errors).length) return;
 
     setSaving(true);
+
+    // ✅ durationPreset/customDays শুধু UI-এর সুবিধার জন্য — backend
+    // শুধু subscriptionStartDate + subscriptionDays (সংখ্যা) বোঝে
+    const subscriptionDays =
+      form.durationPreset === "custom"
+        ? Number(form.customDays)
+        : form.durationPreset
+          ? Number(form.durationPreset)
+          : null;
+
+    const { durationPreset, customDays, ...rest } = form;
+    const payload = { ...rest, subscriptionDays };
 
     try {
       const url = editingShop ? `/api/admin/shops/${editingShop._id}` : "/api/admin/shops";
@@ -173,7 +274,7 @@ export default function Shops() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -184,6 +285,7 @@ export default function Shops() {
         if (message.includes("নাম")) nextErrors.name = true;
         if (message.includes("Slug")) nextErrors.slug = true;
         if (message.includes("ডোমেইন")) nextErrors.domain = true;
+        if (message.includes("মেয়াদকাল")) nextErrors.customDays = true;
         setShopErrors(nextErrors);
         setToast({ message, type: "error" });
       } else {
@@ -439,6 +541,7 @@ export default function Shops() {
             const effectiveTheme =
               shop.branding?.theme || getPlan(shop.plan)?.theme || "classic";
             const themeIsOverridden = !!shop.branding?.theme;
+            const expiryInfo = getExpiryInfo(shop);
 
             return (
               <div
@@ -452,6 +555,14 @@ export default function Shops() {
                       <Globe size={14} />
                       {shop.domain || `/shop/${shop.slug}`}
                     </div>
+                    {shop.storageNumber != null && (
+                      <div
+                        className="mt-1 inline-flex items-center gap-1 text-xs font-mono text-gray-400 dark:text-slate-500"
+                        title="Cloudflare R2-এ এই শপের image storage key (shops/{id}/...)"
+                      >
+                        R2 ID: #{shop.storageNumber}
+                      </div>
+                    )}
                   </div>
                   <span
                     className={`text-xs font-semibold px-2 py-1 rounded-full border capitalize ${
@@ -475,6 +586,14 @@ export default function Shops() {
                     {THEME_LABELS[effectiveTheme] || effectiveTheme} থিম
                     {themeIsOverridden ? " (override)" : ""}
                   </span>
+                  {expiryInfo && (
+                    <span
+                      className={`text-xs font-semibold px-2 py-1 rounded-full border ${expiryInfo.className}`}
+                      title={`শুরু: ${shop.subscriptionStartDate ? new Date(shop.subscriptionStartDate).toLocaleDateString("en-GB") : "—"} · মেয়াদকাল: ${shop.subscriptionDays || "—"} দিন · শেষ: ${new Date(shop.planExpiresAt).toLocaleDateString("en-GB")}`}
+                    >
+                      {expiryInfo.label}
+                    </span>
+                  )}
                 </div>
 
                 {shop.domain ? (
@@ -684,6 +803,64 @@ export default function Shops() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="rounded-lg border border-gray-200 dark:border-slate-700 p-3 space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300">সাবস্ক্রিপশন শুরুর তারিখ</label>
+                  <input
+                    type="date"
+                    value={form.subscriptionStartDate}
+                    onChange={(e) => setForm((f) => ({ ...f, subscriptionStartDate: e.target.value }))}
+                    className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                    নতুন শপে আজকের তারিখ অটো বসে। যেসব শপের সাবস্ক্রিপশন আগে থেকেই চলছিল, তাদের আসল শুরুর তারিখ এখানে বসান।
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300">মেয়াদকাল</label>
+                  <select
+                    value={form.durationPreset}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, durationPreset: e.target.value }));
+                      setShopErrors((prev) => ({ ...prev, customDays: false }));
+                    }}
+                    className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1"
+                  >
+                    {DURATION_PRESETS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  {form.durationPreset === "custom" && (
+                    <input
+                      type="number"
+                      min="1"
+                      value={form.customDays}
+                      onChange={(e) => {
+                        setForm((f) => ({ ...f, customDays: e.target.value }));
+                        if (Number(e.target.value) > 0) setShopErrors((prev) => ({ ...prev, customDays: false }));
+                      }}
+                      placeholder="দিনের সংখ্যা লিখুন, যেমন: 45"
+                      className={`w-full border rounded-lg px-3 py-2 mt-2 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${shopErrors.customDays ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20" : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"}`}
+                    />
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                    মেয়াদ শেষ হলে শপ স্বয়ংক্রিয়ভাবে সাসপেন্ড হয়ে যাবে। "মেয়াদ নেই" রাখলে কখনো auto-suspend হবে না।
+                  </p>
+                </div>
+
+                {(() => {
+                  const preview = previewExpiryDate(form);
+                  return preview ? (
+                    <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+                      মেয়াদ শেষ হবে: {preview.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                    </p>
+                  ) : null;
+                })()}
               </div>
 
               <div>

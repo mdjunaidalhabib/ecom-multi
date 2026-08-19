@@ -11,9 +11,34 @@ import {
   CheckCircle2,
   XCircle,
   Megaphone,
+  CalendarClock,
+  AlertTriangle,
 } from "lucide-react";
 import { apiFetch } from "../lib/api";
-import { formatDateTime } from "../lib/utils";
+import { formatDateTime, formatDate } from "../lib/utils";
+
+// ✅ Header-এর brief badge-এর মতোই মেয়াদ হিসাব — এখানে বিস্তারিত কার্ডে ব্যবহার হয়
+function getExpiryMeta(planExpiresAt) {
+  if (!planExpiresAt) return null;
+  const diffMs = new Date(planExpiresAt).getTime() - Date.now();
+  const daysLeft = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+  if (diffMs <= 0) {
+    return {
+      label: "মেয়াদ শেষ হয়ে গেছে",
+      className: "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30",
+    };
+  }
+  if (daysLeft <= 7) {
+    return {
+      label: `আর ${daysLeft} দিন বাকি`,
+      className: "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30",
+    };
+  }
+  return {
+    label: `আর ${daysLeft} দিন বাকি`,
+    className: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30",
+  };
+}
 
 // ✅ প্ল্যান এখন super-admin থেকে dynamically যোগ/এডিট/ডিলিট করা যায়, তাই
 // এখানে fixed free/starter/pro constants নেই — badge রঙ প্ল্যান লিস্টে
@@ -168,13 +193,27 @@ export default function Plan() {
           </div>
         )}
 
+        {planInfo?.status === "suspended" && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-4">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">
+              <AlertTriangle size={16} />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-red-800 dark:text-red-300">শপটি বর্তমানে সাসপেন্ড করা আছে</p>
+              {planInfo?.suspendedReason && (
+                <p className="mt-0.5 text-xs text-red-700 dark:text-red-400">{planInfo.suspendedReason}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Current plan card */}
         <section className="mb-6 overflow-hidden rounded-2xl border border-gray-100 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm">
-          <div className="flex items-center gap-3 border-b border-gray-100 dark:border-slate-700/60 p-4">
+          <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 dark:border-slate-700/60 p-4">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400">
               <CreditCard size={20} />
             </span>
-            <div>
+            <div className="flex-1 min-w-0">
               <h2 className="font-black text-gray-900 dark:text-slate-100">বর্তমান প্ল্যান</h2>
               <span
                 className={`mt-1 inline-block rounded-full border px-2.5 py-1 text-xs font-bold ${planBadgeStyle(planInfo?.plan)}`}
@@ -182,6 +221,28 @@ export default function Plan() {
                 {planLabel(planInfo?.plan)}
               </span>
             </div>
+            {planInfo?.planExpiresAt && (
+              <div className="shrink-0 text-right">
+                <div className="flex items-center justify-end gap-1.5 text-xs text-gray-500 dark:text-slate-400">
+                  <CalendarClock size={13} />
+                  মেয়াদ শেষ: {formatDate(planInfo.planExpiresAt)}
+                </div>
+                {planInfo?.subscriptionStartDate && (
+                  <p className="mt-0.5 text-[11px] text-gray-400 dark:text-slate-500">
+                    শুরু: {formatDate(planInfo.subscriptionStartDate)}
+                    {planInfo?.subscriptionDays ? ` · ${planInfo.subscriptionDays} দিন` : ""}
+                  </p>
+                )}
+                {(() => {
+                  const meta = getExpiryMeta(planInfo.planExpiresAt);
+                  return meta ? (
+                    <span className={`mt-1 inline-block rounded-full border px-2.5 py-1 text-xs font-bold ${meta.className}`}>
+                      {meta.label}
+                    </span>
+                  ) : null;
+                })()}
+              </div>
+            )}
           </div>
 
           <div className="grid gap-3 p-4 sm:grid-cols-2">

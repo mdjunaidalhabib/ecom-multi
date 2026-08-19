@@ -51,6 +51,14 @@ export function requireShopContext(req, res, next) {
       : allowedShopIds[0];
 
   req.shopId = activeShopId;
+
+  // ✅ R2 storage key-এর জন্য পরিষ্কার sequential নাম্বার — না পেলে (পুরনো
+  // শপ যেগুলো migration-এর আগে তৈরি হয়েছে) shopId দিয়েই fallback করে
+  const activeShop = (req.usableShops || []).find(
+    (shop) => String(shop._id) === String(activeShopId),
+  );
+  req.shopStorageNumber = activeShop?.storageNumber ?? activeShopId;
+
   return runWithShopId(activeShopId, next);
 }
 

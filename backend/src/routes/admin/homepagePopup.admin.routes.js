@@ -2,9 +2,8 @@ import express from "express";
 import fs from "fs";
 import sharp from "sharp";
 import HomepagePopup from "../../models/HomepagePopup.js";
-import { popupUpload } from "../../../utils/cloudinary/upload.js";
-import cloudinary from "../../../utils/cloudinary.js";
-import { deleteByPublicId, buildOptimizedUrl } from "../../../utils/cloudinaryHelpers.js";
+import { popupUpload } from "../../../utils/r2/upload.js";
+import { deleteByKey, uploadToR2 } from "../../../utils/r2/r2Helpers.js";
 
 const router = express.Router();
 
@@ -107,7 +106,7 @@ router.post("/", popupUpload.single("image"), async (req, res) => {
 
     // ✅ remove image request
     if (removeImage === "true" && existing?.imagePublicId) {
-      await deleteByPublicId(existing.imagePublicId);
+      await deleteByKey(existing.imagePublicId);
       updateData.image = "";
       updateData.imagePublicId = "";
     }
@@ -135,19 +134,19 @@ router.post("/", popupUpload.single("image"), async (req, res) => {
       convertedPath = await convertToPopupWebp(req.file.path);
 
       if (existing?.imagePublicId) {
-        await deleteByPublicId(existing.imagePublicId);
+        await deleteByKey(existing.imagePublicId);
       }
 
-      const result = await cloudinary.uploader.upload(convertedPath, {
-        folder: "homepage_popup",
-        resource_type: "image",
-      });
+      const uploaded = await uploadToR2(
+        { path: convertedPath, mimetype: "image/webp" },
+        `shops/${req.shopStorageNumber}/homepage_popup`,
+      );
 
       safeUnlink(req.file.path);
       safeUnlink(convertedPath);
 
-      updateData.image = buildOptimizedUrl(result.public_id);
-      updateData.imagePublicId = result.public_id;
+      updateData.image = uploaded.url;
+      updateData.imagePublicId = uploaded.key;
     }
 
     let updated;

@@ -18,6 +18,21 @@ export function useShopFeatures() {
   return features;
 }
 
+// ✅ বর্তমান শপের plan/status/মেয়াদ (planExpiresAt) — Header-এ সংক্ষেপে আর
+// "আমার প্ল্যান" পেজে বিস্তারিত দেখানোর জন্য। null মানে এখনো লোড হয়নি।
+export function useMyPlanInfo() {
+  const [info, setInfo] = useState(null);
+
+  useEffect(() => {
+    axios
+      .get("/api/admin/my-features", { withCredentials: true })
+      .then((res) => setInfo(res.data || null))
+      .catch(() => setInfo(null));
+  }, []);
+
+  return info;
+}
+
 // ✅ navItems/settingsChildren থেকে যেসব আইটেমে `feature` key আছে কিন্তু
 // শপের প্ল্যানে সেটা enabled না, সেগুলো বাদ দেয়। features === null হলে
 // (এখনও লোড হয়নি) গেটেড আইটেম হাইড থাকে।

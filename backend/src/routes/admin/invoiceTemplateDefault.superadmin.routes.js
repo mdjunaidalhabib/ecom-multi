@@ -1,5 +1,5 @@
 import express from "express";
-import { invoiceBgUpload } from "../../../utils/cloudinary/upload.js";
+import { invoiceBgUpload } from "../../../utils/r2/upload.js";
 import { protect, superAdminOnly } from "../../middlewares/adminAuthMiddleware.js";
 import {
   getDefaultTemplate,

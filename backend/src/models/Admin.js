@@ -24,9 +24,9 @@ const adminSchema = new mongoose.Schema(
     phone: { type: String, trim: true },
     address: { type: String },
 
-    // ✅ Cloudinary avatar fields (Navbar style)
-    avatar: { type: String }, // secure_url
-    avatarPublicId: { type: String }, // public_id
+    // ✅ R2 avatar fields (Navbar style)
+    avatar: { type: String }, // public URL
+    avatarPublicId: { type: String }, // R2 object key
 
     password: { type: String, required: true },
     role: {

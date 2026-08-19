@@ -4,19 +4,50 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ChevronDown, User, LogOut, Store, Check } from "lucide-react";
+import { Menu, X, ChevronDown, User, LogOut, Store, Check, CalendarClock } from "lucide-react";
 import MenuBar from "./MenuBar";
 import LiveDateTime from "./LiveDateTime";
 import ThemeToggle from "./ThemeToggle";
 import { navItems, settingsChildren } from "./menuConfig";
 import {
   useShopFeatures,
+  useMyPlanInfo,
   filterByFeature,
   filterByRole,
   filterByPermission,
 } from "../hooks/useShopFeatures";
 import { getRoleLabel } from "../lib/roleLabel";
+import { formatDate } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+
+// ✅ Header-এ সংক্ষেপে প্ল্যান-মেয়াদ badge দেখানোর জন্য — বিস্তারিত "আমার
+// প্ল্যান" পেজে (দেখুন components/Plan.jsx)। planExpiresAt না থাকলে (null)
+// মেয়াদ নেই ধরা হয়, কোনো badge দেখানো হয় না।
+function getExpiryBadge(planInfo) {
+  if (!planInfo?.planExpiresAt) return null;
+  const diffMs = new Date(planInfo.planExpiresAt).getTime() - Date.now();
+  const daysLeft = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+
+  if (diffMs <= 0) {
+    return {
+      label: "মেয়াদ শেষ",
+      className:
+        "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30",
+    };
+  }
+  if (daysLeft <= 7) {
+    return {
+      label: `মেয়াদ বাকি ${daysLeft} দিন`,
+      className:
+        "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30",
+    };
+  }
+  return {
+    label: `মেয়াদ বাকি ${daysLeft} দিন`,
+    className:
+      "bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700",
+  };
+}
 
 // ✅ বর্তমান pathname থেকে টপবারে দেখানোর জন্য পেজের নাম বের করে —
 // navItems/settingsChildren এ মিলে গেলে সেই label, নাহলে URL segment থেকে
@@ -54,6 +85,8 @@ export default function Header() {
   const [shops, setShops] = useState([]);
   const [activeShopId, setActiveShopId] = useState(null);
   const features = useShopFeatures();
+  const planInfo = useMyPlanInfo();
+  const expiryBadge = admin?.role !== "superadmin" ? getExpiryBadge(planInfo) : null;
   const profileRef = useRef(null);
   const shopMenuRef = useRef(null);
 
@@ -176,6 +209,16 @@ export default function Header() {
 
       {/* ডান দিকে: থিম টগল, তারিখ-সময়, প্রোফাইল ড্রপডাউন, মোবাইল মেনু */}
       <div className="flex items-center gap-2 md:gap-3 shrink-0">
+        {expiryBadge && (
+          <Link
+            href="/admin/plan"
+            title={`মেয়াদ শেষের তারিখ: ${formatDate(planInfo?.planExpiresAt)}`}
+            className={`hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${expiryBadge.className}`}
+          >
+            <CalendarClock size={13} />
+            {expiryBadge.label}
+          </Link>
+        )}
         <ThemeToggle className="hidden sm:flex" />
         <LiveDateTime />
 

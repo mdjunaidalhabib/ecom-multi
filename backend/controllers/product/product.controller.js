@@ -5,13 +5,12 @@ import { shopHasFeature } from "../../src/services/planFeatureService.js";
 import fs from "fs";
 import sharp from "sharp";
 import path from "path";
-import { deleteFromCloudinary } from "../../utils/cloudinary/cloudinaryHelpers.js";
+import { deleteFromR2, uploadToR2 } from "../../utils/r2/r2Helpers.js";
 import { moveToTrash } from "../../utils/trash/trash.helpers.js";
 import {
   toNumber,
   computeIsSoldOut,
   computeVariantTotalStock,
-  uploadToCloudinary,
   shiftOrdersForInsert,
   normalizeOrders,
   sanitizeRichText,
@@ -180,7 +179,7 @@ const convertAndOverwriteProductImage = async (file) => {
 };
 
 /**
- * ✅ Convert all req.files before uploading cloudinary
+ * ✅ Convert all req.files before uploading to R2
  */
 const convertAllReqFiles = async (req) => {
   const files = req.files || [];
@@ -312,8 +311,8 @@ export const createProduct = async (req, res) => {
       }
 
       for (let file of galleryFiles) {
-        const uploaded = await uploadToCloudinary(file, "products/gallery");
-        galleryImages.push(uploaded.optimizedUrl);
+        const uploaded = await uploadToR2(file, `shops/${req.shopStorageNumber}/products/gallery`);
+        galleryImages.push(uploaded.url);
         safeUnlink(file.path);
       }
 
@@ -350,11 +349,11 @@ export const createProduct = async (req, res) => {
         if (colorFiles.length > 0) {
           const urls = [];
           for (let file of colorFiles) {
-            const uploaded = await uploadToCloudinary(
+            const uploaded = await uploadToR2(
               file,
-              "products/variants",
+              `shops/${req.shopStorageNumber}/products/variants`,
             );
-            urls.push(uploaded.optimizedUrl);
+            urls.push(uploaded.url);
             safeUnlink(file.path);
           }
           parsedColors[i].images = urls;
@@ -498,8 +497,8 @@ export const updateProduct = async (req, res) => {
       }));
 
       // ✅ delete old non-variant images
-      if (product.image) await deleteFromCloudinary(product.image);
-      for (let url of product.images) await deleteFromCloudinary(url);
+      if (product.image) await deleteFromR2(product.image);
+      for (let url of product.images) await deleteFromR2(url);
 
       product.image = "";
       product.images = [];
@@ -523,11 +522,11 @@ export const updateProduct = async (req, res) => {
         if (colorFiles.length > 0) {
           const urls = [];
           for (let file of colorFiles) {
-            const uploaded = await uploadToCloudinary(
+            const uploaded = await uploadToR2(
               file,
-              "products/variants",
+              `shops/${req.shopStorageNumber}/products/variants`,
             );
-            urls.push(uploaded.optimizedUrl);
+            urls.push(uploaded.url);
             safeUnlink(file.path);
           }
           incomingColors[i].images = [
@@ -554,7 +553,7 @@ export const updateProduct = async (req, res) => {
       // switching from variants to normal
       if (product.colors && product.colors.length > 0) {
         for (let color of product.colors) {
-          for (let url of color.images) await deleteFromCloudinary(url);
+          for (let url of color.images) await deleteFromR2(url);
         }
         product.colors = [];
       }
@@ -565,7 +564,7 @@ export const updateProduct = async (req, res) => {
       const imagesToRemove = product.images.filter(
         (img) => !keepImages.includes(img),
       );
-      for (let url of imagesToRemove) await deleteFromCloudinary(url);
+      for (let url of imagesToRemove) await deleteFromR2(url);
 
       let galleryFiles = allFiles.filter((f) => f.fieldname === "images");
       let newUploads = [];
@@ -579,8 +578,8 @@ export const updateProduct = async (req, res) => {
       }
 
       for (let file of galleryFiles) {
-        const uploaded = await uploadToCloudinary(file, "products/gallery");
-        newUploads.push(uploaded.optimizedUrl);
+        const uploaded = await uploadToR2(file, `shops/${req.shopStorageNumber}/products/gallery`);
+        newUploads.push(uploaded.url);
         safeUnlink(file.path);
       }
 

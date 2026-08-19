@@ -43,7 +43,16 @@ export async function serverFetch(path, { revalidate = 30, ...options } = {}) {
   });
 
   if (!res.ok) {
-    throw new Error(`API error: ${res.status} → ${path}`);
+    let body = null;
+    try {
+      body = await res.json();
+    } catch {
+      // Non-JSON error body — leave body null, status is still useful.
+    }
+    const error = new Error(`API error: ${res.status} → ${path}`);
+    error.status = res.status;
+    error.body = body;
+    throw error;
   }
 
   return res.json();
@@ -53,8 +62,16 @@ export async function serverFetch(path, { revalidate = 30, ...options } = {}) {
 // controllers/shop/public.shop.controller.js). Called from both
 // shop/[shopSlug]/layout.js and page.js — Next's per-request fetch cache
 // dedupes the two calls into one actual backend hit.
+//
+// revalidate: 0 (never cached by Next) — this response also carries the
+// suspended/active gate that ShopLayout uses to block a suspended shop's
+// storefront, so it can't ride the default 30s Data Cache: an admin
+// suspending a shop needs that to take effect on the very next request, not
+// up to 30s later. The backend already micro-caches shop lookups for 60s
+// and invalidates that cache instantly on status change (publicShopResolver.js),
+// so this still doesn't hit MongoDB on every request.
 export async function getShopInfo() {
-  return serverFetch("/shop-info");
+  return serverFetch("/shop-info", { revalidate: 0 });
 }
 
 // Single-product ad landing page — publicly readable only when isPublished

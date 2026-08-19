@@ -3,8 +3,7 @@ import sharp from "sharp";
 import InvoiceTemplate from "../../src/models/InvoiceTemplate.js";
 import { normalizeTemplate } from "../../src/constants/invoiceTemplate.js";
 import { resolveInvoiceTemplateForShop } from "../../src/services/invoiceTemplateService.js";
-import { uploadToCloudinary } from "../../utils/product/index.js";
-import { deleteByPublicId } from "../../utils/cloudinary/cloudinaryHelpers.js";
+import { uploadToR2, deleteByKey } from "../../utils/r2/r2Helpers.js";
 
 const safeUnlink = (filePath) => {
   if (!filePath) return;
@@ -74,7 +73,7 @@ export const saveMyTemplate = async (req, res) => {
 
 /**
  * ✅ POST /invoice-template/mine/background — plan-gated। ব্যাকগ্রাউন্ড
- * ইমেজ আপলোড করে, পুরনো Cloudinary asset (থাকলে) ডিলিট করে। ক্লায়েন্ট এই
+ * ইমেজ আপলোড করে, পুরনো R2 asset (থাকলে) ডিলিট করে। ক্লায়েন্ট এই
  * রেসপন্সের url/publicId নিজে template.background এ বসিয়ে PUT /mine কল করবে।
  */
 export const uploadBackgroundImage = async (req, res) => {
@@ -106,19 +105,19 @@ export const uploadBackgroundImage = async (req, res) => {
     fs.writeFileSync(outputPath, buffer);
     safeUnlink(file.path);
 
-    const uploaded = await uploadToCloudinary(
-      { path: outputPath },
-      `invoice_backgrounds/${req.shopId}`,
+    const uploaded = await uploadToR2(
+      { path: outputPath, mimetype: "image/webp" },
+      `shops/${req.shopStorageNumber}/invoice_backgrounds`,
     );
 
     const existing = await InvoiceTemplate.findOne({ shopId: req.shopId }).select(
       "background.imagePublicId",
     );
     if (existing?.background?.imagePublicId) {
-      await deleteByPublicId(existing.background.imagePublicId);
+      await deleteByKey(existing.background.imagePublicId);
     }
 
-    res.json({ url: uploaded.optimizedUrl, publicId: uploaded.public_id });
+    res.json({ url: uploaded.url, publicId: uploaded.key });
   } catch (err) {
     console.error("❌ uploadBackgroundImage error:", err);
     safeUnlink(file?.path);
