@@ -62,6 +62,13 @@ function getDomainStatusInfo(shop) {
   };
 }
 
+// ✅ কাস্টম ডোমেইন থাকলে সরাসরি সেই ডোমেইনে, নাহলে platform-এর নিজস্ব
+// slug-based path (/shop/<slug>) দিয়ে শপটা খোলার লিংক বানায়।
+const SHOP_BASE_URL = process.env.NEXT_PUBLIC_SHOP_BASE_URL || "";
+function getShopPublicUrl(shop) {
+  return shop.domain ? `https://${shop.domain}` : `${SHOP_BASE_URL}/shop/${shop.slug}`;
+}
+
 // ✅ প্ল্যান এখন super-admin থেকে dynamically যোগ/এডিট/ডিলিট করা যায় (দেখুন
 // Plans পেজ), তাই এখানে fixed free/starter/pro constants নেই — badge রঙ
 // একটা ছোট rotating palette থেকে index অনুযায়ী বসে
@@ -578,10 +585,16 @@ export default function Shops() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h2 className="font-bold text-lg text-gray-900 dark:text-slate-100">{shop.name}</h2>
-                    <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+                    <a
+                      href={getShopPublicUrl(shop)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="নতুন ট্যাবে শপটা খুলুন"
+                      className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mt-0.5 hover:text-rose-600 dark:hover:text-rose-400 hover:underline w-fit"
+                    >
                       <Globe size={14} />
                       {shop.domain || `/shop/${shop.slug}`}
-                    </div>
+                    </a>
                     {shop.storageNumber != null && (
                       <div
                         className="mt-1 inline-flex items-center gap-1 text-xs font-mono text-gray-400 dark:text-slate-500"
