@@ -903,7 +903,11 @@ async function attachDomainToCoolify(domain) {
 
     return { attempted: true, ok: true, alreadyAttached: false };
   } catch (err) {
-    return { attempted: true, ok: false, error: err.message };
+    // "fetch failed" (undici) নিজে কিছু বলে না — আসল কারণ (DNS, connection
+    // refused, TLS, ইত্যাদি) err.cause-এ থাকে, সেটাই লগ ও রেসপন্সে বের করা হয়।
+    const detail = err.cause?.code || err.cause?.message || err.message;
+    console.error("❌ attachDomainToCoolify error:", err.cause || err);
+    return { attempted: true, ok: false, error: detail };
   }
 }
 
