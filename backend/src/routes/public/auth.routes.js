@@ -8,6 +8,58 @@ import { resolveShopByDomain } from "../../tenancy/publicShopResolver.js";
 
 const router = express.Router();
 
+/**
+ * 🔹 resolveTrustedOrigin
+ * Login flow কোথা থেকে শুরু হয়েছে (platform-এর নিজস্ব ডোমেইন, নাকি কোনো
+ * শপের custom domain) সেটা resolve করে, যাতে login শেষে ঠিক সেই origin-এই
+ * ফেরত পাঠানো যায়। এটাই একমাত্র জায়গা যেখানে redirect target ঠিক হয়,
+ * তাই open-redirect ঠেকাতে শুধু দুই ধরনের trusted origin-ই ফেরত দেয়:
+ *
+ *   1. platform-এর নিজস্ব fixed domain (CLIENT_URLS env, ছোট static list —
+ *      main site/admin panel, শপ-count বাড়লেও এটা বদলায় না)
+ *   2. request যে শপের context-এ resolve হয়েছে, ঠিক তারই registered/verified
+ *      domain (DB-driven, তাই ১০০/২০০+ শপে নতুন custom domain যোগ হলেও
+ *      কোনো env/deploy change লাগে না)
+ *
+ * অন্য যেকোনো hostname (attacker-controlled বা ভুল) ফাঁকা string ফেরত পায়,
+ * যাতে caller নিরাপদে platform-এর default origin-এ fallback করতে পারে।
+ */
+function resolveTrustedOrigin(hostname, shop) {
+  const normalizedHost = (hostname || "")
+    .toString()
+    .toLowerCase()
+    .replace(/^www\./, "")
+    .split(":")[0]
+    .trim();
+
+  if (!normalizedHost) return "";
+
+  const platformUrls = (process.env.CLIENT_URLS || "")
+    .split(",")
+    .map((u) => u.trim())
+    .filter(Boolean);
+
+  const matchedPlatformUrl = platformUrls.find((u) => {
+    try {
+      return new URL(u).hostname.toLowerCase().replace(/^www\./, "") === normalizedHost;
+    } catch {
+      return false;
+    }
+  });
+  if (matchedPlatformUrl) return matchedPlatformUrl;
+
+  // ✅ resolveShopByDomain-এর মতোই, production-এ DNS ownership প্রমাণিত
+  // (verified) ডোমেইনকেই trust করা হয় — নাহলে যেকোনো শপ admin panel-এ
+  // অনভেরিফাইড কোনো ডোমেইন বসিয়ে সেখানে redirect পাওয়ার সুযোগ পেয়ে যেত।
+  const isDev = process.env.NODE_ENV !== "production";
+  const domainVerified = shop?.domain && (isDev || shop.domainStatus === "verified");
+  if (domainVerified && shop.domain.toLowerCase() === normalizedHost) {
+    return `https://${shop.domain}`;
+  }
+
+  return "";
+}
+
 // 🔹 JWT Middleware
 function authenticateJWT(req, res, next) {
   const authHeader = req.headers["authorization"];
@@ -40,26 +92,17 @@ router.get("/google", resolveShopByDomain, (req, res, next) => {
 
   // ✅ কাস্টমার আসলে কোন origin থেকে লগইন শুরু করেছে (path-based platform
   // domain, নাকি কোনো শপের custom domain) সেটা x-shop-domain হেডারে থাকে
-  // (frontend middleware সবসময় এটা বসায়)। CLIENT_URLS (CORS allow-list)
-  // এর বিপরীতে মিলিয়ে নেওয়া হচ্ছে, যাতে callback শেষে ঠিক এই origin-এই
-  // ফেরত পাঠানো যায় — নাহলে সবসময় CLIENT_URLS-এর প্রথম entry-তে চলে যেত।
-  const clientUrls = (process.env.CLIENT_URLS || "")
-    .split(",")
-    .map((u) => u.trim())
-    .filter(Boolean);
-  const requestHost = (req.headers["x-shop-domain"] || "").toString().toLowerCase().trim();
-  const matchedClientUrl = clientUrls.find((u) => {
-    try {
-      return new URL(u).host.toLowerCase() === requestHost;
-    } catch {
-      return false;
-    }
-  });
+  // (frontend middleware সবসময় এটা বসায়)। resolveTrustedOrigin দিয়ে
+  // ভ্যালিডেট করে state-এ carry করা হচ্ছে, যাতে callback শেষে ঠিক এই
+  // origin-এই ফেরত পাঠানো যায় — resolveShopByDomain এর মাধ্যমে req.shop
+  // ইতিমধ্যে resolve হয়ে গেছে বলে শপের custom domain সরাসরি trust করা যায়।
+  const requestHost = req.headers["x-shop-domain"] || "";
+  const originForState = resolveTrustedOrigin(requestHost, req.shop);
 
   const statePayload = JSON.stringify({
     r: redirect,
     s: req.shopId.toString(),
-    c: matchedClientUrl || "",
+    c: originForState,
   });
 
   passport.authenticate("google", {
@@ -102,6 +145,7 @@ router.get(
 
     req._loginRedirect = redirect;
     req._loginShopId = shop._id;
+    req._loginShop = shop;
     req._loginClientUrl = stateClientUrl;
 
     return runWithShopId(shop._id, () => {
@@ -114,22 +158,29 @@ router.get(
   (req, res) => {
     const { token, user } = req.user;
 
-    const clientUrls = process.env.CLIENT_URLS;
-    if (!clientUrls) {
+    const platformUrls = (process.env.CLIENT_URLS || "")
+      .split(",")
+      .map((u) => u.trim())
+      .filter(Boolean);
+    if (!platformUrls.length) {
       return res.status(500).json({
         error: "CLIENT_URLS is not set in environment variables",
       });
     }
-    // ✅ state-এ carry করা origin CLIENT_URLS allow-list-এর মধ্যে থাকলে
-    // (অর্থাৎ কাস্টমার যেখান থেকে লগইন শুরু করেছিল) সেখানেই ফেরত পাঠানো
-    // হবে — নাহলে (state tamper/missing) আগের মতোই প্রথম entry-তে fallback।
-    const allowedClientUrls = clientUrls
-      .split(",")
-      .map((u) => u.trim())
-      .filter(Boolean);
-    const clientUrl = allowedClientUrls.includes(req._loginClientUrl)
-      ? req._loginClientUrl
-      : allowedClientUrls[0];
+
+    // ✅ state-এ carry করা origin আবার resolveTrustedOrigin দিয়ে re-validate
+    // করা হচ্ছে (state query param হওয়ায় client-side থেকে tamper করা সম্ভব,
+    // তাই আগে থেকে trust করা যায় না) — resolved শপের registered domain বা
+    // platform-এর নিজস্ব domain হলেই সেখানে ফেরত পাঠানো হবে, নাহলে (tamper/
+    // missing) platform-এর প্রথম entry-তে fallback।
+    let stateHostname = "";
+    try {
+      stateHostname = req._loginClientUrl ? new URL(req._loginClientUrl).hostname : "";
+    } catch {
+      // malformed — নিচে fallback হবে
+    }
+    const trustedOrigin = resolveTrustedOrigin(stateHostname, req._loginShop);
+    const clientUrl = trustedOrigin || platformUrls[0];
 
     let redirect = req._loginRedirect || "/";
 

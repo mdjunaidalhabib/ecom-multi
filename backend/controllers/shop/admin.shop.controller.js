@@ -822,23 +822,41 @@ export const removeShopAdmin = async (req, res) => {
 };
 
 // ✅ DNS ঠিক থাকলেও ডোমেইনটা হোস্টিং প্যানেলে (Coolify/Traefik) অ্যাপের সাথে
-// attach করা না থাকলে সাইট লোড হয় না — তাই DNS verify এর পর সরাসরি
-// https://domain এ রিকোয়েস্ট পাঠিয়ে দেখা হয় আসলে response আসছে কিনা।
+// attach করা না থাকলে সাইট লোড হয় না। backend আর shop-এর ডোমেইন একই
+// সার্ভারে থাকায় সরাসরি https://domain এ নিজে-নিজেকে কল করলে hairpin
+// NAT-এর কারণে সবসময় ব্যর্থ হয় (এমনকি সাইট বাইরে থেকে ঠিকই লোড হলেও) —
+// তাই public internet ঘুরে না গিয়ে সরাসরি একই Docker network-এর Traefik
+// কনটেইনারকে (`coolify-proxy`) জিজ্ঞাসা করা হয় এই host-এর জন্য কোনো router
+// match করে কিনা (plain HTTP port 80, Host header ম্যানুয়ালি সেট করে —
+// force_https থাকায় match করলে 30x redirect আসে, না করলে Traefik-এর
+// নিজস্ব catch-all 404 "page not found" আসে)।
 async function checkShopDomainLive(domain) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  try {
-    const response = await fetch(`https://${domain}/`, {
-      method: "GET",
-      redirect: "follow",
-      signal: controller.signal,
+  const http = await import("node:http");
+  return new Promise((resolve) => {
+    const req = http.request(
+      {
+        host: "coolify-proxy",
+        port: 80,
+        path: "/",
+        method: "GET",
+        headers: { Host: domain },
+        timeout: 8000,
+      },
+      (res) => {
+        res.resume();
+        resolve({ live: res.statusCode < 400, status: res.statusCode });
+      },
+    );
+    req.on("timeout", () => {
+      req.destroy();
+      resolve({ live: false, error: "TIMEOUT" });
     });
-    return response.ok;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timeout);
-  }
+    req.on("error", (err) => {
+      console.error("❌ checkShopDomainLive error:", err);
+      resolve({ live: false, error: err.code || err.message });
+    });
+    req.end();
+  });
 }
 
 // ✅ DNS verified হওয়ার পরও সাইট লোড না হলে — Coolify API দিয়ে এই ডোমেইনটা
@@ -975,14 +993,14 @@ export const verifyShopDomain = async (req, res) => {
     shop.domainLastCheckedAt = new Date();
     if (verified) shop.domainVerifiedAt = new Date();
 
-    let live = false;
+    let liveResult = { live: false };
     let coolify = { attempted: false };
     if (verified) {
-      live = await checkShopDomainLive(shop.domain);
-      if (!live) {
+      liveResult = await checkShopDomainLive(shop.domain);
+      if (!liveResult.live) {
         coolify = await attachDomainToCoolify(shop.domain);
       }
-      shop.domainLiveStatus = live ? "live" : "unreachable";
+      shop.domainLiveStatus = liveResult.live ? "live" : "unreachable";
       shop.domainLiveCheckedAt = new Date();
     } else {
       shop.domainLiveStatus = "unknown";
@@ -995,12 +1013,15 @@ export const verifyShopDomain = async (req, res) => {
     let message;
     if (!verified) {
       message = `❌ ডোমেইন এখনো ${expectedIp}-এ পয়েন্ট করছে না`;
-    } else if (live) {
+    } else if (liveResult.live) {
       message = "✅ ডোমেইন verified এবং সাইট সরাসরি লোড হচ্ছে";
     } else if (coolify.attempted && coolify.ok) {
+      const errNote = liveResult.error
+        ? ` (backend থেকে Traefik-এ ইন্টারনাল কানেকশন চেক করতে সমস্যা হয়েছে: ${liveResult.error} — এটা বারবার এলে backend আর coolify-proxy একই Docker network-এ আছে কিনা যাচাই করুন)`
+        : "";
       message = coolify.alreadyAttached
-        ? "✅ DNS ঠিক আছে — Coolify-কে আবার restart করার অনুরোধ পাঠানো হয়েছে (আগে attach হয়েছিল কিন্তু এখনো live হয়নি)। SSL সেটাপ হতে ১-২ মিনিট লাগতে পারে, একটু পর আবার Verify চাপুন"
-        : "✅ DNS ঠিক আছে — ডোমেইনটা Coolify-তে attach করার অনুরোধ পাঠানো হয়েছে। SSL সেটাপ হতে ১-২ মিনিট লাগতে পারে, একটু পর আবার Verify চাপুন";
+        ? `✅ DNS ঠিক আছে — Coolify-কে আবার restart করার অনুরোধ পাঠানো হয়েছে (আগে attach হয়েছিল কিন্তু এখনো live দেখাচ্ছে না)${errNote}। ১-২ মিনিট পর আবার Verify চাপুন`
+        : `✅ DNS ঠিক আছে — ডোমেইনটা Coolify-তে attach করার অনুরোধ পাঠানো হয়েছে${errNote}। SSL সেটাপ হতে ১-২ মিনিট লাগতে পারে, একটু পর আবার Verify চাপুন`;
     } else if (coolify.attempted && !coolify.ok) {
       message = `⚠️ DNS ঠিক আছে, কিন্তু Coolify-তে অটোমেটিক attach করতে সমস্যা হয়েছে (${coolify.error}) — ম্যানুয়ালি Coolify ড্যাশবোর্ডে গিয়ে ডোমেইনটা যোগ করুন`;
     } else {
@@ -1010,7 +1031,8 @@ export const verifyShopDomain = async (req, res) => {
 
     res.json({
       verified,
-      live,
+      live: liveResult.live,
+      liveCheckError: liveResult.error || null,
       resolvedIps,
       expectedIp,
       coolify,

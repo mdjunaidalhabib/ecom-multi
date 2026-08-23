@@ -25,6 +25,49 @@ export function invalidateShopCache({ domain, slug } = {}) {
 }
 
 /**
+ * ✅ findShopByDomain
+ * domain (www/port বাদ দিয়ে normalize করা) দিয়ে cache-সহ শপ খুঁজে বের করে।
+ * resolveShopByDomain আর isKnownShopDomain দুটোই এই একই cached lookup
+ * ব্যবহার করে, যাতে duplicate query logic না থাকে।
+ */
+async function findShopByDomain(domain) {
+  const cacheKey = DOMAIN_CACHE_PREFIX + domain;
+  let shop = cacheGet(cacheKey);
+
+  if (shop === undefined) {
+    shop = await Shop.findOne({ domain });
+    // null-ও cache করা হয় (negative caching) যাতে অচেনা ডোমেইনে বারবার
+    // হিট হলেও (bot/misconfigured DNS) DB-তে বারবার query না যায়
+    cacheSet(cacheKey, shop, shop ? SHOP_CACHE_TTL_MS : NOT_FOUND_CACHE_TTL_MS);
+  }
+
+  return shop;
+}
+
+/**
+ * ✅ isKnownShopDomain
+ * CORS / OAuth redirect-এর মতো জায়গায় ব্যবহারের জন্য — কোনো hostname
+ * আমাদের কোনো (active, non-suspended) শপের registered custom domain কিনা,
+ * সেটা DB (cache-সহ) থেকে চেক করে। এটা static allow-list (env var) এর
+ * বদলে ব্যবহার করা হয়, যাতে ১০০/২০০+ শপের প্রতিটা custom domain আলাদাভাবে
+ * env-এ বসিয়ে redeploy করার দরকার না পড়ে — নতুন শপ/domain সাথে সাথেই
+ * স্বয়ংক্রিয়ভাবে কাজ করবে।
+ */
+export async function isKnownShopDomain(hostname) {
+  const domain = (hostname || "")
+    .toString()
+    .toLowerCase()
+    .replace(/^www\./, "")
+    .split(":")[0]
+    .trim();
+
+  if (!domain) return false;
+
+  const shop = await findShopByDomain(domain);
+  return !!shop && shop.status !== "suspended";
+}
+
+/**
  * ✅ resolveShopByDomain
  * Customer-facing (public) API-এর প্রতিটা request কোন শপের জন্য সেটা বের
  * করে। দুইভাবে শপ resolve হতে পারে:
@@ -85,15 +128,7 @@ export async function resolveShopByDomain(req, res, next) {
           .json({ message: "শপ শনাক্ত করা যায়নি (missing host/domain)" });
       }
 
-      const cacheKey = DOMAIN_CACHE_PREFIX + domain;
-      shop = cacheGet(cacheKey);
-
-      if (shop === undefined) {
-        shop = await Shop.findOne({ domain });
-        // null-ও cache করা হয় (negative caching) যাতে অচেনা ডোমেইনে বারবার
-        // হিট হলেও (bot/misconfigured DNS) DB-তে বারবার query না যায়
-        cacheSet(cacheKey, shop, shop ? SHOP_CACHE_TTL_MS : NOT_FOUND_CACHE_TTL_MS);
-      }
+      shop = await findShopByDomain(domain);
 
       if (!shop) {
         return res

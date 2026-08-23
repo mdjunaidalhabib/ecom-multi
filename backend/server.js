@@ -12,6 +12,7 @@ import createSuperAdmin from "./src/config/createSuperAdmin.js";
 
 import publicRoutes from "./src/routes/public/index.js";
 import adminRoutes from "./src/routes/admin/index.js";
+import { isKnownShopDomain } from "./src/tenancy/publicShopResolver.js";
 import { purgeExpiredTrash } from "./utils/trash/trash.helpers.js";
 import { autoSuspendExpiredShops } from "./utils/shop/shopAutoSuspend.helpers.js";
 
@@ -92,7 +93,9 @@ app.use(
 // ✅ normalize helper
 const normalize = (url = "") => url.replace(/\/$/, "").trim();
 
-// ✅ CORS allow list
+// ✅ CORS allow list — শুধু platform-এর নিজস্ব (fixed, ছোট সংখ্যক) domain,
+// যেমন main site/admin panel। শপগুলোর custom domain এখানে বসাতে হয় না —
+// নিচে dynamic check DB থেকে সেটা resolve করে (দেখুন isKnownShopDomain)।
 const allowedOrigins = (process.env.CLIENT_URLS || "")
   .split(",")
   .map(normalize)
@@ -102,12 +105,26 @@ if (!isProd) console.log("✅ Allowed CORS Origins:", allowedOrigins);
 
 app.use(
   cors({
-    origin: (origin, cb) => {
+    origin: async (origin, cb) => {
       if (!origin) return cb(null, true); // allow Postman/curl
 
       const normalizedOrigin = normalize(origin);
       if (allowedOrigins.includes(normalizedOrigin)) {
         return cb(null, true);
+      }
+
+      // 🔥 FIX (SaaS scaling): আগে প্রতিটা শপের custom domain এই
+      // static allow-list-এ ম্যানুয়ালি যোগ করে redeploy করতে হতো —
+      // ১০০/২০০+ শপে এটা টেকসই না। এখন origin কোনো registered, active
+      // শপের custom domain কিনা সেটা DB (cache-সহ) থেকে চেক করা হয়,
+      // তাই নতুন শপ/domain যোগ হলে কোনো env/deploy change ছাড়াই কাজ করে।
+      try {
+        const hostname = new URL(origin).hostname;
+        if (await isKnownShopDomain(hostname)) {
+          return cb(null, true);
+        }
+      } catch {
+        // malformed origin header — নিচে reject হবে
       }
 
       if (!isProd) console.log("❌ Blocked by CORS Origin:", origin);
