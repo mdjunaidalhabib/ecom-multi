@@ -841,6 +841,72 @@ async function checkShopDomainLive(domain) {
   }
 }
 
+// ✅ DNS verified হওয়ার পরও সাইট লোড না হলে — Coolify API দিয়ে এই ডোমেইনটা
+// (apex + www) নিজে থেকেই platform-এর frontend app-এর সাথে attach করার
+// চেষ্টা করে, যাতে ৫০০-৬০০ শপের জন্য প্রতিবার Coolify ড্যাশবোর্ডে গিয়ে
+// হাতে হাতে domain যোগ করতে না হয়। env var না থাকলে (COOLIFY_API_URL/
+// COOLIFY_API_TOKEN/COOLIFY_APP_UUID) নিঃশব্দে স্কিপ করে — লোকাল dev-এ
+// দরকার নেই। বর্তমান fqdn list read করে শুধু নতুন domain টুকু append করে,
+// অন্য শপের attach করা domain কখনো মুছে না।
+async function attachDomainToCoolify(domain) {
+  const apiUrl = process.env.COOLIFY_API_URL;
+  const token = process.env.COOLIFY_API_TOKEN;
+  const appUuid = process.env.COOLIFY_APP_UUID;
+  if (!apiUrl || !token || !appUuid) return { attempted: false };
+
+  const base = apiUrl.replace(/\/+$/, "");
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+  const endpoint = `${base}/api/v1/applications/${appUuid}`;
+
+  try {
+    const getRes = await fetch(endpoint, { headers });
+    if (!getRes.ok) {
+      return {
+        attempted: true,
+        ok: false,
+        error: `Coolify থেকে বর্তমান domain list আনা যায়নি (HTTP ${getRes.status})`,
+      };
+    }
+    const app = await getRes.json();
+    const existing = String(app.fqdn || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const wanted = [`https://${domain}`, `https://www.${domain}`];
+    const merged = [...existing];
+    let changed = false;
+    for (const url of wanted) {
+      if (!merged.includes(url)) {
+        merged.push(url);
+        changed = true;
+      }
+    }
+
+    if (!changed) return { attempted: true, ok: true, alreadyAttached: true };
+
+    const patchRes = await fetch(endpoint, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ domains: merged.join(",") }),
+    });
+    if (!patchRes.ok) {
+      return {
+        attempted: true,
+        ok: false,
+        error: `Coolify-তে domain attach করা যায়নি (HTTP ${patchRes.status})`,
+      };
+    }
+
+    return { attempted: true, ok: true, alreadyAttached: false };
+  } catch (err) {
+    return { attempted: true, ok: false, error: err.message };
+  }
+}
+
 /* -------------------------------------------------------
    POST /admin/shops/:id/verify-domain
    — DNS lookup (শপের ডোমেইন আমাদের সার্ভারের দিকে পয়েন্ট করছে কিনা) +
@@ -886,8 +952,12 @@ export const verifyShopDomain = async (req, res) => {
     if (verified) shop.domainVerifiedAt = new Date();
 
     let live = false;
+    let coolify = { attempted: false };
     if (verified) {
       live = await checkShopDomainLive(shop.domain);
+      if (!live) {
+        coolify = await attachDomainToCoolify(shop.domain);
+      }
       shop.domainLiveStatus = live ? "live" : "unreachable";
       shop.domainLiveCheckedAt = new Date();
     } else {
@@ -898,17 +968,27 @@ export const verifyShopDomain = async (req, res) => {
     await shop.save();
     invalidateShopCache({ domain: shop.domain });
 
-    const message = !verified
-      ? `❌ ডোমেইন এখনো ${expectedIp}-এ পয়েন্ট করছে না`
-      : live
-        ? "✅ ডোমেইন verified এবং সাইট সরাসরি লোড হচ্ছে"
-        : "⚠️ DNS সঠিকভাবে পয়েন্ট করা আছে, কিন্তু সাইট এখনো লোড হচ্ছে না — হোস্টিং প্যানেলে (Coolify) এই ডোমেইনটা অ্যাপের সাথে attach করা প্রয়োজন";
+    let message;
+    if (!verified) {
+      message = `❌ ডোমেইন এখনো ${expectedIp}-এ পয়েন্ট করছে না`;
+    } else if (live) {
+      message = "✅ ডোমেইন verified এবং সাইট সরাসরি লোড হচ্ছে";
+    } else if (coolify.attempted && coolify.ok && !coolify.alreadyAttached) {
+      message =
+        "✅ DNS ঠিক আছে — ডোমেইনটা Coolify-তে attach করার অনুরোধ পাঠানো হয়েছে। SSL সেটাপ হতে ১-২ মিনিট লাগতে পারে, একটু পর আবার Verify চাপুন";
+    } else if (coolify.attempted && !coolify.ok) {
+      message = `⚠️ DNS ঠিক আছে, কিন্তু Coolify-তে অটোমেটিক attach করতে সমস্যা হয়েছে (${coolify.error}) — ম্যানুয়ালি Coolify ড্যাশবোর্ডে গিয়ে ডোমেইনটা যোগ করুন`;
+    } else {
+      message =
+        "⚠️ DNS সঠিকভাবে পয়েন্ট করা আছে, কিন্তু সাইট এখনো লোড হচ্ছে না — হোস্টিং প্যানেলে (Coolify) এই ডোমেইনটা অ্যাপের সাথে attach করা প্রয়োজন";
+    }
 
     res.json({
       verified,
       live,
       resolvedIps,
       expectedIp,
+      coolify,
       message,
       shop,
     });
