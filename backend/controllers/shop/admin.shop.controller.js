@@ -886,24 +886,29 @@ async function attachDomainToCoolify(domain) {
       }
     }
 
-    if (!changed) return { attempted: true, ok: true, alreadyAttached: true };
-
-    const patchRes = await fetch(endpoint, {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({ domains: merged.join(",") }),
-    });
-    if (!patchRes.ok) {
-      return {
-        attempted: true,
-        ok: false,
-        error: `Coolify-তে domain attach করা যায়নি (HTTP ${patchRes.status})`,
-      };
+    if (changed) {
+      const patchRes = await fetch(endpoint, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ domains: merged.join(",") }),
+      });
+      if (!patchRes.ok) {
+        return {
+          attempted: true,
+          ok: false,
+          error: `Coolify-তে domain attach করা যায়নি (HTTP ${patchRes.status})`,
+        };
+      }
     }
 
     // ✅ শুধু domains field আপডেট করলে Coolify "Changes pending" অবস্থায়
     // থেকে যায় — Traefik-এর router/SSL config-এ আসলে বসাতে app restart
-    // করা লাগে (rebuild না, শুধু container recreate + label refresh)।
+    // করা লাগে (rebuild না, শুধু container recreate + label refresh)। এই
+    // ফাংশনটা তখনই ডাকা হয় যখন live check ব্যর্থ হয়েছে (verifyShopDomain
+    // দেখুন) — তাই domain আগে থেকেই merged list-এ থাকলেও (changed=false,
+    // অর্থাৎ কোনো এক আগের চেষ্টায় attach হয়েছিল কিন্তু restart কখনো সফল
+    // হয়নি) আবার restart করার চেষ্টা করা হয়, নাহলে সেই শপ চিরকাল "pending"
+    // অবস্থাতেই আটকে থাকবে।
     const restartRes = await fetch(`${endpoint}/restart`, {
       method: "POST",
       headers,
@@ -916,7 +921,7 @@ async function attachDomainToCoolify(domain) {
       };
     }
 
-    return { attempted: true, ok: true, alreadyAttached: false };
+    return { attempted: true, ok: true, alreadyAttached: !changed };
   } catch (err) {
     // "fetch failed" (undici) নিজে কিছু বলে না — আসল কারণ (DNS, connection
     // refused, TLS, ইত্যাদি) err.cause-এ থাকে, সেটাই লগ ও রেসপন্সে বের করা হয়।
@@ -992,9 +997,10 @@ export const verifyShopDomain = async (req, res) => {
       message = `❌ ডোমেইন এখনো ${expectedIp}-এ পয়েন্ট করছে না`;
     } else if (live) {
       message = "✅ ডোমেইন verified এবং সাইট সরাসরি লোড হচ্ছে";
-    } else if (coolify.attempted && coolify.ok && !coolify.alreadyAttached) {
-      message =
-        "✅ DNS ঠিক আছে — ডোমেইনটা Coolify-তে attach করার অনুরোধ পাঠানো হয়েছে। SSL সেটাপ হতে ১-২ মিনিট লাগতে পারে, একটু পর আবার Verify চাপুন";
+    } else if (coolify.attempted && coolify.ok) {
+      message = coolify.alreadyAttached
+        ? "✅ DNS ঠিক আছে — Coolify-কে আবার restart করার অনুরোধ পাঠানো হয়েছে (আগে attach হয়েছিল কিন্তু এখনো live হয়নি)। SSL সেটাপ হতে ১-২ মিনিট লাগতে পারে, একটু পর আবার Verify চাপুন"
+        : "✅ DNS ঠিক আছে — ডোমেইনটা Coolify-তে attach করার অনুরোধ পাঠানো হয়েছে। SSL সেটাপ হতে ১-২ মিনিট লাগতে পারে, একটু পর আবার Verify চাপুন";
     } else if (coolify.attempted && !coolify.ok) {
       message = `⚠️ DNS ঠিক আছে, কিন্তু Coolify-তে অটোমেটিক attach করতে সমস্যা হয়েছে (${coolify.error}) — ম্যানুয়ালি Coolify ড্যাশবোর্ডে গিয়ে ডোমেইনটা যোগ করুন`;
     } else {
