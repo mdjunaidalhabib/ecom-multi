@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  AlertTriangle,
   Pencil,
   ShieldBan,
   ShieldCheck,
@@ -28,11 +29,38 @@ const STATUS_STYLES = {
   suspended: "bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-300 dark:border-red-500/30",
 };
 
-const DOMAIN_STATUS_STYLES = {
-  verified: { icon: CheckCircle2, className: "text-green-600 dark:text-green-400" },
-  pending_dns: { icon: Clock, className: "text-amber-600 dark:text-amber-400" },
-  failed: { icon: XCircle, className: "text-red-600 dark:text-red-400" },
-};
+// ✅ ডোমেইন সেটআপের ২টা আলাদা ধাপ থাকে — DNS ঠিক আছে কিনা (domainStatus),
+// আর DNS ঠিক থাকলে সাইট আসলে লোড হচ্ছে কিনা (domainLiveStatus, দেখুন
+// verifyShopDomain backend controller)। দুটো মিলিয়ে একটাই স্পষ্ট বাংলা
+// মেসেজ + আইকন বানানো হয় যাতে card দেখেই বোঝা যায় কতটুকু কাজ বাকি।
+function getDomainStatusInfo(shop) {
+  if (shop.domainStatus === "failed") {
+    return {
+      icon: XCircle,
+      className: "text-red-600 dark:text-red-400",
+      label: "ডোমেইন ভেরিফিকেশন ব্যর্থ — DNS ঠিক করুন",
+    };
+  }
+  if (shop.domainStatus === "verified") {
+    if (shop.domainLiveStatus === "live") {
+      return {
+        icon: CheckCircle2,
+        className: "text-green-600 dark:text-green-400",
+        label: "সম্পূর্ণ লাইভ — ডোমেইন দিয়ে সাইট চলছে",
+      };
+    }
+    return {
+      icon: AlertTriangle,
+      className: "text-orange-600 dark:text-orange-400",
+      label: "DNS ঠিক আছে, কিন্তু সাইট লোড হচ্ছে না — হোস্টিং প্যানেলে ডোমেইন attach করুন",
+    };
+  }
+  return {
+    icon: Clock,
+    className: "text-amber-600 dark:text-amber-400",
+    label: "DNS ভেরিফিকেশনের অপেক্ষায়",
+  };
+}
 
 // ✅ প্ল্যান এখন super-admin থেকে dynamically যোগ/এডিট/ডিলিট করা যায় (দেখুন
 // Plans পেজ), তাই এখানে fixed free/starter/pro constants নেই — badge রঙ
@@ -535,8 +563,7 @@ export default function Shops() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {shops.map((shop) => {
-            const domainInfo =
-              DOMAIN_STATUS_STYLES[shop.domainStatus] || DOMAIN_STATUS_STYLES.pending_dns;
+            const domainInfo = getDomainStatusInfo(shop);
             const DomainIcon = domainInfo.icon;
             const effectiveTheme =
               shop.branding?.theme || getPlan(shop.plan)?.theme || "classic";
@@ -597,18 +624,14 @@ export default function Shops() {
                 </div>
 
                 {shop.domain ? (
-                  <div className={`flex items-center gap-1.5 text-sm ${domainInfo.className}`}>
-                    <DomainIcon size={15} />
-                    {shop.domainStatus === "verified"
-                      ? "ডোমেইন ভেরিফাইড"
-                      : shop.domainStatus === "failed"
-                        ? "ডোমেইন ভেরিফিকেশন ব্যর্থ"
-                        : "DNS ভেরিফিকেশনের অপেক্ষায়"}
+                  <div className={`flex items-start gap-1.5 text-sm ${domainInfo.className}`}>
+                    <DomainIcon size={15} className="shrink-0 mt-0.5" />
+                    <span className="flex-1">{domainInfo.label}</span>
                     <button
                       onClick={() => handleVerifyDomain(shop)}
                       disabled={verifyingId === shop._id}
                       title="আবার চেক করুন"
-                      className="ml-auto text-gray-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400"
+                      className="shrink-0 mt-0.5 text-gray-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400"
                     >
                       <RefreshCw
                         size={14}

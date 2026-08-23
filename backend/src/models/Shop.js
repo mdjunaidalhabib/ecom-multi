@@ -51,6 +51,16 @@ const shopSchema = new mongoose.Schema(
     domainVerifiedAt: { type: Date, default: null },
     domainLastCheckedAt: { type: Date, default: null },
 
+    // ✅ DNS verified হওয়ার পরের ধাপ — ডোমেইনটা আসলেই সাইট সার্ভ করছে কিনা
+    // (অর্থাৎ hosting panel/reverse proxy-তে domain attach করা হয়েছে কিনা)।
+    // "unknown" = এখনো live check হয়নি বা DNS verified না।
+    domainLiveStatus: {
+      type: String,
+      enum: ["unknown", "live", "unreachable"],
+      default: "unknown",
+    },
+    domainLiveCheckedAt: { type: Date, default: null },
+
     status: {
       type: String,
       enum: ["active", "suspended", "trial"],

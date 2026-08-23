@@ -821,9 +821,30 @@ export const removeShopAdmin = async (req, res) => {
   }
 };
 
+// ✅ DNS ঠিক থাকলেও ডোমেইনটা হোস্টিং প্যানেলে (Coolify/Traefik) অ্যাপের সাথে
+// attach করা না থাকলে সাইট লোড হয় না — তাই DNS verify এর পর সরাসরি
+// https://domain এ রিকোয়েস্ট পাঠিয়ে দেখা হয় আসলে response আসছে কিনা।
+async function checkShopDomainLive(domain) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(`https://${domain}/`, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+    });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 /* -------------------------------------------------------
    POST /admin/shops/:id/verify-domain
-   — সহজ DNS lookup: শপের ডোমেইন আমাদের সার্ভারের দিকে পয়েন্ট করছে কিনা চেক করে
+   — DNS lookup (শপের ডোমেইন আমাদের সার্ভারের দিকে পয়েন্ট করছে কিনা) +
+     verified হলে সাইট আসলে লোড হচ্ছে কিনা তার live check
 ------------------------------------------------------- */
 export const verifyShopDomain = async (req, res) => {
   try {
@@ -847,6 +868,8 @@ export const verifyShopDomain = async (req, res) => {
     } catch (e) {
       shop.domainStatus = "failed";
       shop.domainLastCheckedAt = new Date();
+      shop.domainLiveStatus = "unknown";
+      shop.domainLiveCheckedAt = null;
       await shop.save();
       invalidateShopCache({ domain: shop.domain });
       return res.status(200).json({
@@ -861,16 +884,32 @@ export const verifyShopDomain = async (req, res) => {
     shop.domainStatus = verified ? "verified" : "failed";
     shop.domainLastCheckedAt = new Date();
     if (verified) shop.domainVerifiedAt = new Date();
+
+    let live = false;
+    if (verified) {
+      live = await checkShopDomainLive(shop.domain);
+      shop.domainLiveStatus = live ? "live" : "unreachable";
+      shop.domainLiveCheckedAt = new Date();
+    } else {
+      shop.domainLiveStatus = "unknown";
+      shop.domainLiveCheckedAt = null;
+    }
+
     await shop.save();
     invalidateShopCache({ domain: shop.domain });
 
+    const message = !verified
+      ? `❌ ডোমেইন এখনো ${expectedIp}-এ পয়েন্ট করছে না`
+      : live
+        ? "✅ ডোমেইন verified এবং সাইট সরাসরি লোড হচ্ছে"
+        : "⚠️ DNS সঠিকভাবে পয়েন্ট করা আছে, কিন্তু সাইট এখনো লোড হচ্ছে না — হোস্টিং প্যানেলে (Coolify) এই ডোমেইনটা অ্যাপের সাথে attach করা প্রয়োজন";
+
     res.json({
       verified,
+      live,
       resolvedIps,
       expectedIp,
-      message: verified
-        ? "✅ ডোমেইন সঠিকভাবে সার্ভারে পয়েন্ট করা আছে"
-        : `❌ ডোমেইন এখনো ${expectedIp}-এ পয়েন্ট করছে না`,
+      message,
       shop,
     });
   } catch (err) {
