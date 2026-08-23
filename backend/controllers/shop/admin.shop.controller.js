@@ -901,6 +901,21 @@ async function attachDomainToCoolify(domain) {
       };
     }
 
+    // ✅ শুধু domains field আপডেট করলে Coolify "Changes pending" অবস্থায়
+    // থেকে যায় — Traefik-এর router/SSL config-এ আসলে বসাতে app restart
+    // করা লাগে (rebuild না, শুধু container recreate + label refresh)।
+    const restartRes = await fetch(`${endpoint}/restart`, {
+      method: "POST",
+      headers,
+    });
+    if (!restartRes.ok) {
+      return {
+        attempted: true,
+        ok: false,
+        error: `Domain attach হয়েছে কিন্তু app restart করা যায়নি (HTTP ${restartRes.status}) — Coolify-তে গিয়ে ম্যানুয়ালি Restart করুন`,
+      };
+    }
+
     return { attempted: true, ok: true, alreadyAttached: false };
   } catch (err) {
     // "fetch failed" (undici) নিজে কিছু বলে না — আসল কারণ (DNS, connection
