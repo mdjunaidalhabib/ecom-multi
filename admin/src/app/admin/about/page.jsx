@@ -219,7 +219,7 @@ export default function AboutAdminPage() {
 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-slate-100">📄 About Page</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center flex-wrap gap-2">
           {!isEditMode ? (
             <button
               onClick={handleEnterEditMode}
@@ -377,7 +377,7 @@ export default function AboutAdminPage() {
               activeField !== valPath &&
               activeField !== labelPath;
             return (
-              <div key={i} className="flex gap-2 items-end">
+              <div key={i} className="flex flex-col sm:flex-row gap-2 sm:items-end">
                 <Field label="মান (e.g. 10K+)">
                   <input
                     disabled={fieldDisabled(valPath)}
@@ -409,7 +409,7 @@ export default function AboutAdminPage() {
                 <button
                   onClick={() => removeArrayItem("stats", i)}
                   disabled={!isEditMode || rowLocked}
-                  className="mb-0.5 text-xs font-semibold px-3 py-2.5 rounded-md border dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto sm:mb-0.5 text-xs font-semibold px-3 py-2.5 rounded-md border dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   🗑️
                 </button>

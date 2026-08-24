@@ -39,6 +39,12 @@ export function middleware(req) {
     // Path-based access (/shop/<slug>/...) — forward the slug so the
     // backend resolves the shop by slug instead of by domain.
     requestHeaders.set("x-shop-slug", pathSlugMatch[1]);
+    // Also forward the full original path+query so the shop layout
+    // (frontend/src/app/shop/[shopSlug]/layout.js) can 301 this slug URL to
+    // the shop's verified custom domain, if it has one, at the equivalent
+    // path — it only gets `params.shopSlug` from Next.js, not the rest of
+    // the nested route.
+    requestHeaders.set("x-original-path", pathname + req.nextUrl.search);
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 

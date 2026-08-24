@@ -247,61 +247,116 @@ export default function CourierSettingsPage() {
       {/* Table */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow border dark:border-slate-700">
         <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-slate-100">Courier Accounts</h3>
-        <table className="w-full text-sm border dark:border-slate-700">
-          <thead className="bg-gray-100 dark:bg-slate-800">
-            <tr>
-              <th className="p-2 text-left text-gray-700 dark:text-slate-300">Courier</th>
-              <th className="p-2 text-left text-gray-700 dark:text-slate-300">Merchant</th>
-              <th className="p-2 text-center text-gray-700 dark:text-slate-300">Active</th>
-              <th className="p-2 text-center text-gray-700 dark:text-slate-300">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {couriers.map((c) => {
-              const isActive =
-                activeCourier?.courier?.toLowerCase() ===
-                  c.courier?.toLowerCase() &&
-                activeCourier?.merchantName === c.merchantName;
 
-              return (
-                <tr
-                  key={c._id}
-                  className={`border-t dark:border-slate-700 ${
-                    isActive ? "bg-green-50 dark:bg-green-500/10 border-green-400 dark:border-green-500/30" : ""
-                  }`}
-                >
-                  <td className="p-2 font-medium text-gray-900 dark:text-slate-100">{c.courier}</td>
-                  <td className="p-2 text-gray-700 dark:text-slate-300">{c.merchantName}</td>
-                  <td className="p-2 text-center">
-                    {isActive ? (
-                      <span className="text-green-600 dark:text-green-400 font-semibold">
-                        🟢 Active
-                      </span>
-                    ) : (
-                      <span className="text-gray-500 dark:text-slate-400">Inactive</span>
-                    )}
-                  </td>
-                  <td className="p-2 text-center">
-                    {!isActive && (
+        {/* Desktop / tablet table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm border dark:border-slate-700">
+            <thead className="bg-gray-100 dark:bg-slate-800">
+              <tr>
+                <th className="p-2 text-left text-gray-700 dark:text-slate-300">Courier</th>
+                <th className="p-2 text-left text-gray-700 dark:text-slate-300">Merchant</th>
+                <th className="p-2 text-center text-gray-700 dark:text-slate-300">Active</th>
+                <th className="p-2 text-center text-gray-700 dark:text-slate-300">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {couriers.map((c) => {
+                const isActive =
+                  activeCourier?.courier?.toLowerCase() ===
+                    c.courier?.toLowerCase() &&
+                  activeCourier?.merchantName === c.merchantName;
+
+                return (
+                  <tr
+                    key={c._id}
+                    className={`border-t dark:border-slate-700 ${
+                      isActive ? "bg-green-50 dark:bg-green-500/10 border-green-400 dark:border-green-500/30" : ""
+                    }`}
+                  >
+                    <td className="p-2 font-medium text-gray-900 dark:text-slate-100">{c.courier}</td>
+                    <td className="p-2 text-gray-700 dark:text-slate-300">{c.merchantName}</td>
+                    <td className="p-2 text-center">
+                      {isActive ? (
+                        <span className="text-green-600 dark:text-green-400 font-semibold">
+                          🟢 Active
+                        </span>
+                      ) : (
+                        <span className="text-gray-500 dark:text-slate-400">Inactive</span>
+                      )}
+                    </td>
+                    <td className="p-2 text-center">
+                      {!isActive && (
+                        <button
+                          onClick={() => askSetActive(c.courier, c.merchantName)}
+                          className="bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700"
+                        >
+                          Set Active
+                        </button>
+                      )}
                       <button
-                        onClick={() => askSetActive(c.courier, c.merchantName)}
-                        className="bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700"
+                        onClick={() => askDeleteCourier(c)}
+                        className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 ml-2"
                       >
-                        Set Active
+                        Delete
                       </button>
-                    )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="md:hidden space-y-3">
+          {couriers.map((c) => {
+            const isActive =
+              activeCourier?.courier?.toLowerCase() ===
+                c.courier?.toLowerCase() &&
+              activeCourier?.merchantName === c.merchantName;
+
+            return (
+              <div
+                key={c._id}
+                className={`border rounded-lg p-3 dark:border-slate-700 ${
+                  isActive
+                    ? "bg-green-50 dark:bg-green-500/10 border-green-400 dark:border-green-500/30"
+                    : "bg-gray-50 dark:bg-slate-800"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 dark:text-slate-100 truncate">{c.courier}</p>
+                    <p className="text-sm text-gray-700 dark:text-slate-300 truncate">{c.merchantName}</p>
+                  </div>
+                  {isActive ? (
+                    <span className="shrink-0 text-green-600 dark:text-green-400 font-semibold text-sm">
+                      🟢 Active
+                    </span>
+                  ) : (
+                    <span className="shrink-0 text-gray-500 dark:text-slate-400 text-sm">Inactive</span>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-3">
+                  {!isActive && (
                     <button
-                      onClick={() => askDeleteCourier(c)}
-                      className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 ml-2"
+                      onClick={() => askSetActive(c.courier, c.merchantName)}
+                      className="flex-1 bg-indigo-600 text-white px-3 py-1.5 rounded text-xs hover:bg-indigo-700"
                     >
-                      Delete
+                      Set Active
                     </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  )}
+                  <button
+                    onClick={() => askDeleteCourier(c)}
+                    className="flex-1 bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* ✅ CONFIRM MODAL (No browser popup) */}

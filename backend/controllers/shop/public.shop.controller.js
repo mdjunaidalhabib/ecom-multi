@@ -31,6 +31,8 @@ export const getShopInfo = async (req, res) => {
       name: shop.name,
       slug: shop.slug,
       plan: shop.plan,
+      domain: shop.domain || null,
+      domainStatus: shop.domainStatus,
       branding: {
         logo: shop.branding?.logo || "",
         themeColor: shop.branding?.themeColor || "#0ea5e9",

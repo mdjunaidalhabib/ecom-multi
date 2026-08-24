@@ -1,7 +1,7 @@
 {
-  "name": "Cartvan Admin",
+  "name": "Ecommerce Shop Admin panel",
   "short_name": "Admin panel",
-  "description": "Admin Panel for cartvan",
+  "description": "Admin Panel for your ecommerce shop",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -21,5 +21,34 @@
     }
   ],
 
-  "screenshots": []
+  "screenshots": [
+    {
+      "src": "/screenshot-dashboard.png",
+      "sizes": "1280x604",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard overview"
+    },
+    {
+      "src": "/screenshot-orders.png",
+      "sizes": "1280x604",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Orders management"
+    },
+    {
+      "src": "/screenshot-products.png",
+      "sizes": "1280x608",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Product catalog"
+    },
+    {
+      "src": "/screenshot-footer.png",
+      "sizes": "1280x599",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Footer settings"
+    }
+  ]
 }

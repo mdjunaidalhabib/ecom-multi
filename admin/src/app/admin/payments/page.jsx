@@ -177,7 +177,7 @@ function PendingVerificationTab({ showToast }) {
               </p>
             </div>
 
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 md:shrink-0">
               <button
                 disabled={busyId === o._id}
                 onClick={() =>
@@ -187,7 +187,7 @@ function PendingVerificationTab({ showToast }) {
                     label: `অর্ডার #${o.orderNumber} এর payment Reject করবেন?`,
                   })
                 }
-                className="px-3 py-2 text-xs font-bold rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 disabled:opacity-50"
+                className="flex-1 md:flex-none px-3 py-2 text-xs font-bold rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 disabled:opacity-50"
               >
                 ❌ Reject
               </button>
@@ -200,7 +200,7 @@ function PendingVerificationTab({ showToast }) {
                     label: `অর্ডার #${o.orderNumber} এর payment Verify (Paid মার্ক) করবেন?`,
                   })
                 }
-                className="px-3 py-2 text-xs font-bold rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                className="flex-1 md:flex-none px-3 py-2 text-xs font-bold rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
               >
                 {busyId === o._id ? "..." : "✅ Verify"}
               </button>
@@ -397,12 +397,12 @@ function VerifiedPaymentsTab({ showToast }) {
                 </p>
               </div>
 
-              <div className="flex gap-2 shrink-0">
+              <div className="flex gap-2 md:shrink-0">
                 {showHidden ? (
                   <button
                     disabled={busyId === o._id}
                     onClick={() => setVisibility(o._id, false)}
-                    className="px-3 py-2 text-xs font-bold rounded-lg bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/20 hover:bg-green-100 dark:hover:bg-green-500/20 disabled:opacity-50"
+                    className="w-full md:w-auto px-3 py-2 text-xs font-bold rounded-lg bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/20 hover:bg-green-100 dark:hover:bg-green-500/20 disabled:opacity-50"
                   >
                     {busyId === o._id ? "..." : "♻️ Restore"}
                   </button>
@@ -410,7 +410,7 @@ function VerifiedPaymentsTab({ showToast }) {
                   <button
                     disabled={busyId === o._id}
                     onClick={() => setConfirmTarget(o)}
-                    className="px-3 py-2 text-xs font-bold rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 disabled:opacity-50"
+                    className="w-full md:w-auto px-3 py-2 text-xs font-bold rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 disabled:opacity-50"
                   >
                     {busyId === o._id ? "..." : "🗑️ Remove"}
                   </button>
@@ -706,10 +706,10 @@ function PaymentMethodsTab({ showToast }) {
           methods.map((m) => (
             <div
               key={m._id}
-              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between gap-3"
+              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
-              <div>
-                <div className="flex items-center gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-gray-800 dark:text-slate-200 text-sm">
                     {m.name}
                   </span>
@@ -723,13 +723,13 @@ function PaymentMethodsTab({ showToast }) {
                     {m.active ? "Active" : "Inactive"}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 break-words">
                   {m.number} · {m.accountType} · &ldquo;
                   {m.actionLabel || "Send Money"}&rdquo;
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center flex-wrap gap-2 shrink-0">
                 <button
                   onClick={() => toggleActive(m)}
                   className="text-[11px] font-bold text-gray-600 dark:text-slate-300 border border-gray-300 dark:border-slate-600 rounded-md px-2 py-1 hover:bg-gray-50 dark:hover:bg-slate-800"
@@ -786,13 +786,13 @@ function PaymentsPage() {
         />
       )}
 
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100">💳 Payments</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-slate-100">💳 Payments</h2>
 
-        <div className="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
+        <div className="grid grid-cols-3 sm:flex gap-1 bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
           <button
             onClick={() => setTab("pending")}
-            className={`px-4 py-2 text-sm font-bold rounded-md transition ${
+            className={`px-2 sm:px-4 py-2 text-[11px] sm:text-sm font-bold rounded-md transition text-center leading-tight ${
               tab === "pending"
                 ? "bg-white dark:bg-slate-700 shadow text-pink-600 dark:text-pink-400"
                 : "text-gray-500 dark:text-slate-400"
@@ -802,7 +802,7 @@ function PaymentsPage() {
           </button>
           <button
             onClick={() => setTab("verified")}
-            className={`px-4 py-2 text-sm font-bold rounded-md transition ${
+            className={`px-2 sm:px-4 py-2 text-[11px] sm:text-sm font-bold rounded-md transition text-center leading-tight ${
               tab === "verified"
                 ? "bg-white dark:bg-slate-700 shadow text-pink-600 dark:text-pink-400"
                 : "text-gray-500 dark:text-slate-400"
@@ -812,7 +812,7 @@ function PaymentsPage() {
           </button>
           <button
             onClick={() => setTab("methods")}
-            className={`px-4 py-2 text-sm font-bold rounded-md transition ${
+            className={`px-2 sm:px-4 py-2 text-[11px] sm:text-sm font-bold rounded-md transition text-center leading-tight ${
               tab === "methods"
                 ? "bg-white dark:bg-slate-700 shadow text-pink-600 dark:text-pink-400"
                 : "text-gray-500 dark:text-slate-400"

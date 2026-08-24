@@ -138,7 +138,7 @@ export default function FooterAdminPanel() {
           onChange={(e) => setTempItem(e.target.value)}
           className="w-full md:flex-1 p-2 border dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded"
         />
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={() => {
               const updated = {
@@ -149,13 +149,13 @@ export default function FooterAdminPanel() {
               setEditing(null);
               handleSave(updated);
             }}
-            className="bg-green-500 text-white px-3 py-1 rounded w-full md:w-auto"
+            className="bg-green-500 text-white px-3 py-2 sm:py-1 rounded w-full sm:w-auto"
           >
             Save
           </button>
           <button
             onClick={() => setEditing(null)}
-            className="bg-gray-400 text-white px-3 py-1 rounded w-full md:w-auto"
+            className="bg-gray-400 text-white px-3 py-2 sm:py-1 rounded w-full sm:w-auto"
           >
             Cancel
           </button>
@@ -166,13 +166,13 @@ export default function FooterAdminPanel() {
         <p className="flex-1 break-words text-sm text-gray-700 dark:text-slate-300">
           <strong>{field}:</strong> {value || "Not set"}
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={() => {
               setEditing(key);
               setTempItem(value || "");
             }}
-            className="bg-blue-500 text-white px-3 py-1 rounded w-full md:w-auto"
+            className="bg-blue-500 text-white px-3 py-2 sm:py-1 rounded w-full sm:w-auto"
           >
             Edit
           </button>
@@ -185,7 +185,7 @@ export default function FooterAdminPanel() {
               setFooter(updated);
               handleSave(updated);
             }}
-            className="bg-red-500 text-white px-3 py-1 rounded w-full md:w-auto"
+            className="bg-red-500 text-white px-3 py-2 sm:py-1 rounded w-full sm:w-auto"
           >
             Delete
           </button>
@@ -366,7 +366,7 @@ export default function FooterAdminPanel() {
 
             <button
               onClick={handleAddSocialLink}
-              className="bg-pink-500 text-white px-3 py-2 rounded"
+              className="bg-pink-500 text-white px-3 py-2 rounded w-full md:w-auto"
             >
               Add
             </button>

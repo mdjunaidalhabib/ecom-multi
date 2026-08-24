@@ -1,4 +1,6 @@
 import { Store } from "lucide-react";
+import { permanentRedirect } from "next/navigation";
+import { headers } from "next/headers";
 import { CartProvider } from "../../../../context/CartContext";
 import { UserProvider } from "../../../../context/UserContext";
 import FloatingActionButton from "../../../../components/home/FloatingActionButton";
@@ -64,6 +66,21 @@ export default async function ShopLayout({ children, params }) {
         </a>
       </div>
     );
+  }
+
+  // ✅ কেউ /shop/<slug>/... দিয়ে ঢুকলেও, শপের নিজস্ব কাস্টম ডোমেইন verified
+  // থাকলে সেটাই canonical URL — নাহলে একই কনটেন্ট দুই URL-এ থেকে SEO
+  // duplicate-content সমস্যা হয়। domain-mode ভিজিটর (shopSlug ===
+  // DOMAIN_MODE_MARKER) ইতিমধ্যেই কাস্টম ডোমেইনে আছে, তাদের বাদ দেওয়া হচ্ছে।
+  // প্রোডাকশনের বাইরে স্কিপ করা হয় (backend/src/tenancy/publicShopResolver.js
+  // একই কারণে করে) — নাহলে DB-তে verified থাকা কোনো শপ লোকাল dev-এও লাইভ
+  // ডোমেইনে রিডাইরেক্ট করে দেবে, স্লাগ-ভিত্তিক লোকাল টেস্টিং ভেঙে যাবে।
+  const isDev = process.env.NODE_ENV !== "production";
+  if (!isDev && shopSlug !== DOMAIN_MODE_MARKER && shop.domain && shop.domainStatus === "verified") {
+    const incomingHeaders = await headers();
+    const originalPath = incomingHeaders.get("x-original-path") || `/shop/${shopSlug}`;
+    const restPath = originalPath.slice(`/shop/${shopSlug}`.length) || "/";
+    permanentRedirect(`https://${shop.domain}${restPath}`);
   }
 
   const { Navbar, Footer, mainClassName = "bg-white" } = getTheme(shop.effectiveTheme);

@@ -54,7 +54,7 @@ export default function AdminProfilePage() {
     : "—";
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       {/* ✅ Header (Desktop same, Mobile compact like sidebar + name/email centered) */}
       <div className="bg-white dark:bg-slate-900 shadow rounded-2xl p-5">
         <div className="flex items-start justify-between gap-4 sm:items-center sm:justify-start sm:gap-4">
@@ -113,7 +113,7 @@ export default function AdminProfilePage() {
       </div>
 
       {/* Tabs */}
-      <div className="mt-6 flex gap-2">
+      <div className="mt-6 flex flex-wrap gap-2">
         <TabButton active={tab === "view"} onClick={() => setTab("view")}>
           Profile
         </TabButton>

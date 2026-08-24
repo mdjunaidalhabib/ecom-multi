@@ -7,11 +7,11 @@ function Modal({ isOpen, onClose, children }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-6">
       {/* Modal Container */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl shadow-2xl relative flex flex-col max-h-[85vh]">
         {/* Header (Fixed) */}
-        <div className="flex items-center justify-between px-8 py-5 border-b dark:border-slate-700 bg-gray-50 dark:bg-slate-800 rounded-t-2xl">
+        <div className="flex items-center justify-between px-4 sm:px-8 py-4 sm:py-5 border-b dark:border-slate-700 bg-gray-50 dark:bg-slate-800 rounded-t-2xl">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-200">
             📦 Tracking Updates
           </h2>

@@ -15,9 +15,9 @@ export default function Toast({ message, type = "info", onClose }) {
       : "bg-blue-500";
 
   return (
-    <div className="fixed top-6 right-6 z-50 animate-slideUp animate-fadeIn">
+    <div className="fixed top-6 left-4 right-4 sm:left-auto sm:right-6 z-50 flex justify-end animate-slideUp animate-fadeIn">
       <div
-        className={`${color} text-white px-5 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-2`}
+        className={`${color} text-white px-5 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-2 max-w-full sm:max-w-sm break-words`}
       >
         <span>{message}</span>
       </div>

@@ -142,16 +142,16 @@ export default function FacebookGroupAdmin() {
                     }}
                   />
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <button
                       onClick={() => commitEdit(key)}
-                      className="bg-green-500 text-white px-3 py-1 rounded w-full md:w-auto"
+                      className="bg-green-500 text-white px-3 py-2 sm:py-1 rounded w-full sm:w-auto"
                     >
                       Save
                     </button>
                     <button
                       onClick={() => setEditing(null)}
-                      className="bg-gray-400 text-white px-3 py-1 rounded w-full md:w-auto"
+                      className="bg-gray-400 text-white px-3 py-2 sm:py-1 rounded w-full sm:w-auto"
                     >
                       Cancel
                     </button>
@@ -165,13 +165,13 @@ export default function FacebookGroupAdmin() {
                     )}
                   </p>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <button
                       onClick={() => {
                         setEditing(key);
                         setTempValue(config[key] || "");
                       }}
-                      className="bg-blue-500 text-white px-3 py-1 rounded w-full md:w-auto"
+                      className="bg-blue-500 text-white px-3 py-2 sm:py-1 rounded w-full sm:w-auto"
                     >
                       Edit
                     </button>
@@ -179,7 +179,7 @@ export default function FacebookGroupAdmin() {
                     {config[key] && (
                       <button
                         onClick={() => clearField(key)}
-                        className="bg-red-500 text-white px-3 py-1 rounded w-full md:w-auto"
+                        className="bg-red-500 text-white px-3 py-2 sm:py-1 rounded w-full sm:w-auto"
                       >
                         Delete
                       </button>

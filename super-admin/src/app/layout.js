@@ -9,9 +9,10 @@ export const metadata = {
   },
 };
 
-// ✅ React hydrate করার আগেই localStorage/system preference থেকে থিম পড়ে
-// html এ dark class বসিয়ে দেয় — এতে পেজ লোডের সময় লাইট থিমের flash দেখা যায় না।
-const NO_FLASH_THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('super-admin-theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+// ✅ React hydrate করার আগেই localStorage থেকে থিম পড়ে html এ dark class
+// বসিয়ে দেয় — এতে পেজ লোডের সময় থিম flash দেখা যায় না। কোনো preference
+// সেভ করা না থাকলে ডিফল্ট সবসময় light (system preference অনুসরণ করা হয় না)।
+const NO_FLASH_THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('super-admin-theme');if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
 
 export default function RootLayout({ children }) {
   return (

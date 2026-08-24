@@ -3,7 +3,7 @@
 export default function ConfirmModal({ title, onClose, onConfirm }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center">
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 w-[280px] space-y-3 border border-transparent dark:border-slate-700">
+      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 w-[280px] max-w-[90vw] space-y-3 border border-transparent dark:border-slate-700">
         <div className="font-semibold text-center text-gray-900 dark:text-slate-100">{title}</div>
 
         <div className="flex gap-2">

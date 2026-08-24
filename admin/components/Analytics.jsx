@@ -32,11 +32,11 @@ const Dashboard = () => {
     return <div className="p-10 text-center text-lg text-gray-900 dark:text-slate-100">Loading analytics...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 p-8">
-      <h1 className="text-3xl font-bold mb-10 text-gray-900 dark:text-slate-100">📊 Visitor Dashboard</h1>
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 p-4 sm:p-8">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-10 text-gray-900 dark:text-slate-100">📊 Visitor Dashboard</h1>
 
       {/* MAIN STATS */}
-      <div className="grid md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         <Card
           title="Total Visitors"
           value={data.totalVisitors}

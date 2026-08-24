@@ -146,27 +146,29 @@ function TeamSocialLinksEditor({
             const meta = PLATFORM_META[sl.platform];
             const urlPath = `team.${teamIndex}.socialLinks.${si}.url`;
             return (
-              <div key={si} className="flex items-center gap-2">
-                <span className="w-32 sm:w-36 shrink-0 text-xs text-gray-600 dark:text-slate-300 flex items-center gap-1.5">
+              <div key={si} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="sm:w-32 md:w-36 shrink-0 text-xs text-gray-600 dark:text-slate-300 flex items-center gap-1.5">
                   <span>{meta?.emoji || "🔗"}</span> {meta?.label || sl.platform}
                 </span>
-                <input
-                  disabled={fieldDisabled(urlPath)}
-                  onFocus={() => setActiveField(urlPath)}
-                  onBlur={() => setActiveField((cur) => (cur === urlPath ? null : cur))}
-                  placeholder="https://..."
-                  className={`${inputBase} !mt-0 flex-1 ${fieldDisabled(urlPath) ? disabledCls : ""}`}
-                  value={sl.url}
-                  onChange={(e) => updateSocialLink(teamIndex, si, "url", e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeSocialLink(teamIndex, si)}
-                  disabled={!isEditMode || cardLocked}
-                  className="text-xs font-semibold px-2.5 py-2 rounded-md border dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  ✖️
-                </button>
+                <div className="flex items-center gap-2">
+                  <input
+                    disabled={fieldDisabled(urlPath)}
+                    onFocus={() => setActiveField(urlPath)}
+                    onBlur={() => setActiveField((cur) => (cur === urlPath ? null : cur))}
+                    placeholder="https://..."
+                    className={`${inputBase} !mt-0 flex-1 ${fieldDisabled(urlPath) ? disabledCls : ""}`}
+                    value={sl.url}
+                    onChange={(e) => updateSocialLink(teamIndex, si, "url", e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeSocialLink(teamIndex, si)}
+                    disabled={!isEditMode || cardLocked}
+                    className="shrink-0 text-xs font-semibold px-2.5 py-2 rounded-md border dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    ✖️
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -481,7 +483,7 @@ export default function SupportAdminPage() {
 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-slate-100">🛟 Support Page</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center flex-wrap gap-2">
           {!isEditMode ? (
             <button
               onClick={handleEnterEditMode}

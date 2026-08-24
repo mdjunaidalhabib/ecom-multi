@@ -792,12 +792,12 @@ function PromoManagementPage() {
                 className="w-full rounded-xl border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-pink-300 focus:ring-2 focus:ring-pink-100 dark:focus:ring-pink-500/20"
               />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
+            <div className="flex flex-wrap gap-2">
               {statusOptions.map((item) => (
                 <button
                   key={item}
                   onClick={() => setStatus(item)}
-                  className={`whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold capitalize ${
+                  className={`rounded-lg px-3 py-2 text-xs font-bold capitalize ${
                     status === item
                       ? "bg-pink-600 text-white"
                       : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700"
@@ -1418,52 +1418,95 @@ function PromoManagementPage() {
               No redemption yet.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border dark:border-slate-700">
-              <table className="w-full min-w-[760px] text-left text-xs">
-                <thead className="bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400">
-                  <tr>
-                    <th className="p-3">Order</th>
-                    <th className="p-3">Customer</th>
-                    <th className="p-3">Eligible amount</th>
-                    <th className="p-3">Savings</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3">Used at</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y dark:divide-slate-700">
-                  {usageRows.map((row) => (
-                    <tr key={row._id}>
-                      <td className="p-3 font-bold text-gray-900 dark:text-slate-100">
+            <>
+              {/* Desktop / tablet table */}
+              <div className="hidden md:block overflow-x-auto rounded-xl border dark:border-slate-700">
+                <table className="w-full min-w-[760px] text-left text-xs">
+                  <thead className="bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400">
+                    <tr>
+                      <th className="p-3">Order</th>
+                      <th className="p-3">Customer</th>
+                      <th className="p-3">Eligible amount</th>
+                      <th className="p-3">Savings</th>
+                      <th className="p-3">Status</th>
+                      <th className="p-3">Used at</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y dark:divide-slate-700">
+                    {usageRows.map((row) => (
+                      <tr key={row._id}>
+                        <td className="p-3 font-bold text-gray-900 dark:text-slate-100">
+                          #{row.order?.orderNumber || "—"}
+                        </td>
+                        <td className="p-3">
+                          <p className="font-bold text-gray-700 dark:text-slate-300">
+                            {row.order?.billing?.name || "Guest"}
+                          </p>
+                          <p className="text-gray-400 dark:text-slate-500">
+                            {row.customerPhone || row.customerKey}
+                          </p>
+                        </td>
+                        <td className="p-3 text-gray-700 dark:text-slate-300">
+                          {money(row.eligibleSubtotal)}
+                        </td>
+                        <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
+                          {money(
+                            Number(row.discountAmount || 0) +
+                              Number(row.shippingDiscount || 0),
+                          )}
+                        </td>
+                        <td className="p-3 capitalize text-gray-700 dark:text-slate-300">
+                          {row.order?.status || "—"}
+                        </td>
+                        <td className="p-3 text-gray-500 dark:text-slate-400">
+                          {formatDateTime(row.createdAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile card list */}
+              <div className="md:hidden space-y-3">
+                {usageRows.map((row) => (
+                  <div
+                    key={row._id}
+                    className="rounded-xl border dark:border-slate-700 bg-gray-50 dark:bg-slate-800 p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-sm text-gray-900 dark:text-slate-100">
                         #{row.order?.orderNumber || "—"}
-                      </td>
-                      <td className="p-3">
-                        <p className="font-bold text-gray-700 dark:text-slate-300">
-                          {row.order?.billing?.name || "Guest"}
-                        </p>
-                        <p className="text-gray-400 dark:text-slate-500">
-                          {row.customerPhone || row.customerKey}
-                        </p>
-                      </td>
-                      <td className="p-3 text-gray-700 dark:text-slate-300">
-                        {money(row.eligibleSubtotal)}
-                      </td>
-                      <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
+                      </span>
+                      <span className="capitalize text-[11px] font-bold text-gray-500 dark:text-slate-400">
+                        {row.order?.status || "—"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs font-bold text-gray-700 dark:text-slate-300">
+                      {row.order?.billing?.name || "Guest"}
+                    </p>
+                    <p className="text-[11px] text-gray-400 dark:text-slate-500">
+                      {row.customerPhone || row.customerKey}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between gap-2 text-xs">
+                      <span className="text-gray-500 dark:text-slate-400">
+                        Eligible: {money(row.eligibleSubtotal)}
+                      </span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                        Saved:{" "}
                         {money(
                           Number(row.discountAmount || 0) +
                             Number(row.shippingDiscount || 0),
                         )}
-                      </td>
-                      <td className="p-3 capitalize text-gray-700 dark:text-slate-300">
-                        {row.order?.status || "—"}
-                      </td>
-                      <td className="p-3 text-gray-500 dark:text-slate-400">
-                        {formatDateTime(row.createdAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-gray-400 dark:text-slate-500">
+                      {formatDateTime(row.createdAt)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </Modal>

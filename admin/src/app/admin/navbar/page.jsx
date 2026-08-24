@@ -121,11 +121,11 @@ export default function NavbarAdminPanel() {
           value={tempItem ?? ""}
           onChange={(e) => setTempItem(e.target.value)}
           placeholder="Set value..."
-          className="flex-1 p-2 border rounded dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
+          className="w-full sm:flex-1 p-2 border rounded dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
           disabled={saving}
         />
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             disabled={saving}
             onClick={() => {
@@ -138,7 +138,7 @@ export default function NavbarAdminPanel() {
               setTempItem(null);
               handleSave(updated);
             }}
-            className="bg-green-500 text-white px-2 py-1 rounded disabled:opacity-60"
+            className="w-full sm:w-auto bg-green-500 text-white px-3 py-2 sm:py-1 rounded disabled:opacity-60"
           >
             Save
           </button>
@@ -149,7 +149,7 @@ export default function NavbarAdminPanel() {
               setEditing(null);
               setTempItem(null);
             }}
-            className="bg-gray-400 text-white px-2 py-1 rounded disabled:opacity-60"
+            className="w-full sm:w-auto bg-gray-400 text-white px-3 py-2 sm:py-1 rounded disabled:opacity-60"
           >
             Cancel
           </button>
@@ -157,18 +157,18 @@ export default function NavbarAdminPanel() {
       </>
     ) : (
       <>
-        <p className="flex-1 text-gray-700 dark:text-slate-300">
+        <p className="w-full sm:flex-1 text-gray-700 dark:text-slate-300 break-words">
           <strong>{field}:</strong> {value || "Not set"}
         </p>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             disabled={saving}
             onClick={() => {
               setEditing(`${section}-${field}`);
               setTempItem(value || "");
             }}
-            className="bg-blue-500 text-white px-2 py-1 rounded disabled:opacity-60"
+            className="w-full sm:w-auto bg-blue-500 text-white px-3 py-2 sm:py-1 rounded disabled:opacity-60"
           >
             Edit
           </button>
@@ -184,7 +184,7 @@ export default function NavbarAdminPanel() {
               handleSave(updated);
               toast.success(`🗑 Cleared ${section} field: ${field}`);
             }}
-            className="bg-red-500 text-white px-2 py-1 rounded disabled:opacity-60"
+            className="w-full sm:w-auto bg-red-500 text-white px-3 py-2 sm:py-1 rounded disabled:opacity-60"
           >
             Delete
           </button>
@@ -193,7 +193,7 @@ export default function NavbarAdminPanel() {
     );
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white dark:bg-slate-900 rounded shadow space-y-6 transition-colors">
+    <div className="max-w-2xl mx-auto p-4 sm:p-6 bg-white dark:bg-slate-900 rounded shadow space-y-6 transition-colors">
       <Toaster
         position="top-right"
         toastOptions={{
@@ -224,7 +224,7 @@ export default function NavbarAdminPanel() {
       <div className="space-y-2 border dark:border-slate-700 p-3 rounded">
         <h3 className="font-semibold text-gray-900 dark:text-slate-100">Brand Info</h3>
 
-        <div className="flex justify-between items-center gap-4 border-b dark:border-slate-700 py-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 border-b dark:border-slate-700 py-1">
           {renderFieldEditor("brand", "name", navbar.brand?.name || "")}
         </div>
 

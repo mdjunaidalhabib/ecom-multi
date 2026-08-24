@@ -494,10 +494,10 @@ export default function AdminSliderPanel() {
                 ডিলিট করতে চান?
               </p>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end">
                 <button
                   onClick={() => setDeleteModal(null)}
-                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded text-gray-700 dark:text-slate-300"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-slate-600 rounded text-gray-700 dark:text-slate-300"
                   disabled={deleting}
                 >
                   Cancel
@@ -505,7 +505,7 @@ export default function AdminSliderPanel() {
 
                 <button
                   onClick={handleDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-red-600 text-white rounded"
                   disabled={deleting}
                 >
                   {deleting ? "Deleting..." : "Delete"}
@@ -534,10 +534,10 @@ export default function AdminSliderPanel() {
                 </span>
               </p>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end">
                 <button
                   onClick={() => setDeleteAllModal(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded text-gray-700 dark:text-slate-300"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-slate-600 rounded text-gray-700 dark:text-slate-300"
                   disabled={deletingAll}
                 >
                   Cancel
@@ -545,7 +545,7 @@ export default function AdminSliderPanel() {
 
                 <button
                   onClick={handleDeleteAll}
-                  className="px-4 py-2 bg-red-600 text-white rounded"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-red-600 text-white rounded"
                   disabled={deletingAll}
                 >
                   {deletingAll ? "Deleting..." : "Delete All"}

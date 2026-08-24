@@ -510,8 +510,8 @@ export default function ProductForm({
       >
         {/* Sticky header */}
         <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b dark:border-slate-700">
-          <div className="flex items-center justify-between px-6 py-3">
-            <div className="text-sm font-bold text-gray-700 dark:text-slate-300 flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3">
+            <div className="text-sm font-bold text-gray-700 dark:text-slate-300 flex flex-wrap items-center gap-2">
               {product ? "✏️ Edit Product" : "➕ Add Product"}
               {!isDirty && (
                 <span className="text-[11px] font-semibold text-gray-400 dark:text-slate-500">
@@ -575,7 +575,7 @@ export default function ProductForm({
           )}
 
           <div
-            className={`p-6 space-y-6 transition-all ${
+            className={`p-4 sm:p-6 space-y-6 transition-all ${
               processing ? "blur-sm pointer-events-none select-none" : ""
             }`}
           >
@@ -655,11 +655,11 @@ export default function ProductForm({
             fullStorefront={fullStorefront}
           />
 
-          <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-xl w-fit border dark:border-slate-700">
+          <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-xl w-full sm:w-fit border dark:border-slate-700">
             <button
               type="button"
               onClick={handleDefaultMode}
-              className={`px-8 py-2.5 rounded-lg font-bold text-sm transition-all ${
+              className={`flex-1 sm:flex-none px-4 sm:px-8 py-2.5 rounded-lg font-bold text-sm transition-all ${
                 variantMode === "default"
                   ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
                   : "text-gray-500 dark:text-slate-400"
@@ -671,7 +671,7 @@ export default function ProductForm({
             <button
               type="button"
               onClick={handleEnableVariant}
-              className={`px-8 py-2.5 rounded-lg font-bold text-sm transition-all ${
+              className={`flex-1 sm:flex-none px-4 sm:px-8 py-2.5 rounded-lg font-bold text-sm transition-all ${
                 variantMode === "variant"
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "text-gray-500 dark:text-slate-400"

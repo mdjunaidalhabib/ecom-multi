@@ -423,47 +423,88 @@ const cards = useMemo(() => {
               </h2>
 
               {recentOrders.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
-                      <tr>
-                        <th className="p-2 text-left font-semibold">Order</th>
-                        <th className="p-2 text-left font-semibold">Customer</th>
-                        <th className="p-2 text-left font-semibold">Status</th>
-                        <th className="p-2 text-left font-semibold">Amount</th>
-                        <th className="p-2 text-left font-semibold">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentOrders.map((o) => (
-                        <tr key={o._id} className="border-t border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800">
-                          <td className="p-2 font-mono text-xs text-gray-600 dark:text-slate-400">
+                <>
+                  {/* Mobile: stacked cards — a 5-column table forces
+                      horizontal scroll on phones, so below sm we swap to
+                      one card per order instead. */}
+                  <div className="sm:hidden space-y-2">
+                    {recentOrders.map((o) => (
+                      <div
+                        key={o._id}
+                        className="rounded-xl border border-gray-200 dark:border-slate-700 p-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs text-gray-500 dark:text-slate-400">
                             #{o.orderNumber ?? o._id?.slice(-6)}
-                          </td>
-                          <td className="p-2 text-gray-900 dark:text-slate-200">{o.billing?.name || "—"}</td>
-                          <td className="p-2">
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
-                                STATUS_BADGE_COLOR[o.status] ||
-                                "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-600"
-                              }`}
-                            >
-                              {STATUS_LABEL[o.status] || o.status}
-                            </span>
-                          </td>
-                          <td className="p-2 font-semibold text-emerald-600 dark:text-emerald-400">
+                          </span>
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                              STATUS_BADGE_COLOR[o.status] ||
+                              "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-600"
+                            }`}
+                          >
+                            {STATUS_LABEL[o.status] || o.status}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 flex items-center justify-between gap-2">
+                          <span className="text-sm text-gray-900 dark:text-slate-200 truncate">
+                            {o.billing?.name || "—"}
+                          </span>
+                          <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                             ৳{o.total}
-                          </td>
-                          <td className="p-2 text-gray-500 dark:text-slate-400 text-xs">
-                            {o.createdAt
-                              ? new Date(o.createdAt).toLocaleDateString()
-                              : "-"}
-                          </td>
+                          </span>
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+                          {o.createdAt
+                            ? new Date(o.createdAt).toLocaleDateString()
+                            : "-"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
+                        <tr>
+                          <th className="p-2 text-left font-semibold">Order</th>
+                          <th className="p-2 text-left font-semibold">Customer</th>
+                          <th className="p-2 text-left font-semibold">Status</th>
+                          <th className="p-2 text-left font-semibold">Amount</th>
+                          <th className="p-2 text-left font-semibold">Date</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {recentOrders.map((o) => (
+                          <tr key={o._id} className="border-t border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800">
+                            <td className="p-2 font-mono text-xs text-gray-600 dark:text-slate-400">
+                              #{o.orderNumber ?? o._id?.slice(-6)}
+                            </td>
+                            <td className="p-2 text-gray-900 dark:text-slate-200">{o.billing?.name || "—"}</td>
+                            <td className="p-2">
+                              <span
+                                className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                                  STATUS_BADGE_COLOR[o.status] ||
+                                  "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-600"
+                                }`}
+                              >
+                                {STATUS_LABEL[o.status] || o.status}
+                              </span>
+                            </td>
+                            <td className="p-2 font-semibold text-emerald-600 dark:text-emerald-400">
+                              ৳{o.total}
+                            </td>
+                            <td className="p-2 text-gray-500 dark:text-slate-400 text-xs">
+                              {o.createdAt
+                                ? new Date(o.createdAt).toLocaleDateString()
+                                : "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               ) : (
                 <div className="text-center text-gray-500 dark:text-slate-400 py-10">
                   No recent orders
@@ -538,7 +579,27 @@ const cards = useMemo(() => {
 
             {topProducts.length > 0 ? (
               <>
-                <div className="overflow-x-auto">
+                {/* Mobile: stacked cards, same reasoning as Recent Orders
+                    above — a 3-column table still forces sideways scroll
+                    on narrow phones for long product names. */}
+                <div className="sm:hidden space-y-2">
+                  {topProducts.map((p, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-xl border border-gray-200 dark:border-slate-700 p-3"
+                    >
+                      <div className="text-sm text-gray-900 dark:text-slate-200">{p.name}</div>
+                      <div className="mt-1.5 flex items-center justify-between text-xs">
+                        <span className="text-gray-500 dark:text-slate-400">Qty: {p.qty}</span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                          ৳{p.revenue}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden sm:block overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead className="bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
                       <tr>

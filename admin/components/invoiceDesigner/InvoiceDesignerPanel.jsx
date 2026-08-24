@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
 import InvoiceCanvas from "./InvoiceCanvas";
@@ -8,7 +8,8 @@ import InvoiceStylePanel from "./InvoiceStylePanel";
 import { useShopFeatures } from "../../hooks/useShopFeatures";
 import { buildSampleOrder, buildSampleShop } from "../../lib/invoiceTemplateContract";
 
-const CANVAS_SCALE = 0.7;
+const CANVAS_WRAP_PADDING = 16; // wrapper-এর p-4 এর সাথে মেলাতে হবে
+const CANVAS_MAX_SCALE = 0.85;
 
 export default function InvoiceDesignerPanel() {
   const features = useShopFeatures();
@@ -17,6 +18,9 @@ export default function InvoiceDesignerPanel() {
   const [saving, setSaving] = useState(false);
   const [bgUploading, setBgUploading] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+
+  const canvasWrapRef = useRef(null);
+  const [canvasScale, setCanvasScale] = useState(CANVAS_MAX_SCALE);
 
   const allowed = features ? !!features.invoiceCustomization : null;
 
@@ -31,6 +35,26 @@ export default function InvoiceDesignerPanel() {
       .catch(() => toast.error("❌ টেমপ্লেট লোড করতে সমস্যা হয়েছে"))
       .finally(() => setLoading(false));
   }, [allowed]);
+
+  // ✅ Canvas সবসময় নিজের wrapper-এর প্রস্থ অনুযায়ী fit করে scale হবে —
+  // মোবাইলে horizontal scroll ছাড়াই পুরো ইনভয়েস পেজ দেখা ও এডিট করা যাবে
+  useEffect(() => {
+    if (!template) return;
+    const el = canvasWrapRef.current;
+    if (!el) return;
+
+    const compute = () => {
+      const available = el.clientWidth - CANVAS_WRAP_PADDING * 2;
+      if (available > 0) {
+        setCanvasScale(Math.min(available / template.pageSize.width, CANVAS_MAX_SCALE));
+      }
+    };
+
+    compute();
+    const observer = new ResizeObserver(compute);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [template]);
 
   const updateElement = (id, patch) => {
     setTemplate((prev) => ({
@@ -91,15 +115,23 @@ export default function InvoiceDesignerPanel() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
       <Toaster position="top-center" />
-      <div className="flex-1 overflow-auto border rounded-lg bg-gray-100 dark:bg-slate-900 dark:border-slate-700 p-4">
-        <div style={{ width: template.pageSize.width * CANVAS_SCALE, height: template.pageSize.height * CANVAS_SCALE }}>
+      <div
+        ref={canvasWrapRef}
+        className="flex-1 min-w-0 overflow-auto border rounded-lg bg-gray-100 dark:bg-slate-900 dark:border-slate-700 p-4"
+      >
+        <div
+          style={{
+            width: template.pageSize.width * canvasScale,
+            height: template.pageSize.height * canvasScale,
+          }}
+        >
           <InvoiceCanvas
             template={template}
             order={buildSampleOrder()}
             shop={buildSampleShop()}
-            scale={CANVAS_SCALE}
+            scale={canvasScale}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onChangeElement={updateElement}
