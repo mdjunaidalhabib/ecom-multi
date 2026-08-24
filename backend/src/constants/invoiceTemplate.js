@@ -7,10 +7,13 @@
 
 export const ELEMENT_IDS = [
   "logo",
-  "shopInfo",
+  "shopName",
+  "shopPhone",
+  "shopEmail",
   "customerInfo",
   "orderInfo",
   "itemsTable",
+  "orderNote",
   "totals",
   "footerText",
 ];
@@ -50,14 +53,42 @@ export function buildSeedTemplateElements() {
       content: "",
     },
     {
-      id: "shopInfo",
+      id: "shopName",
       visible: true,
       x: 200,
       y: 20,
       width: 340,
-      height: 90,
+      height: 30,
       zIndex: 1,
-      fontSize: 14,
+      fontSize: 17,
+      color: "#111827",
+      fontWeight: "bold",
+      textAlign: "left",
+      content: "",
+    },
+    {
+      id: "shopPhone",
+      visible: true,
+      x: 200,
+      y: 54,
+      width: 340,
+      height: 26,
+      zIndex: 1,
+      fontSize: 13,
+      color: "#111827",
+      fontWeight: "normal",
+      textAlign: "left",
+      content: "",
+    },
+    {
+      id: "shopEmail",
+      visible: true,
+      x: 200,
+      y: 82,
+      width: 340,
+      height: 26,
+      zIndex: 1,
+      fontSize: 13,
       color: "#111827",
       fontWeight: "normal",
       textAlign: "left",
@@ -83,7 +114,7 @@ export function buildSeedTemplateElements() {
       x: 60,
       y: 150,
       width: 400,
-      height: 150,
+      height: 120,
       zIndex: 1,
       fontSize: 17,
       color: "#111827",
@@ -105,6 +136,20 @@ export function buildSeedTemplateElements() {
       textAlign: "center",
       content: "",
       columns: buildDefaultItemsTableColumns(),
+    },
+    {
+      id: "orderNote",
+      visible: true,
+      x: 60,
+      y: 670,
+      width: 474,
+      height: 150,
+      zIndex: 1,
+      fontSize: 13,
+      color: "#111827",
+      fontWeight: "normal",
+      textAlign: "left",
+      content: "",
     },
     {
       id: "totals",
@@ -224,6 +269,78 @@ function normalizeBackground(input) {
     imageUrl: typeof input?.imageUrl === "string" ? input.imageUrl.slice(0, 1000) : "",
     imagePublicId:
       typeof input?.imagePublicId === "string" ? input.imagePublicId.slice(0, 300) : "",
+  };
+}
+
+// ✅ Invoice ডিজাইনারের প্রিভিউতে দেখানো নমুনা/ডেমো অর্ডার — super-admin
+// এডিট করতে পারে (InvoiceTemplateDefault.js এ সেভ হয়), admin এর নিজের
+// ডিজাইনার প্রিভিউও এই একই ডেটা ফেচ করে দেখায়। শুধু প্রিভিউয়ের জন্য —
+// এটা কোনো real order না।
+export function buildDefaultSampleOrder() {
+  return {
+    saleChannel: "online",
+    paymentMethod: "cod",
+    paymentStatus: "pending",
+    billing: {
+      name: "রহিম উদ্দিন",
+      phone: "01712345678",
+      address: "১২৩ মেইন রোড, ঢাকা",
+      note: "দ্রুত পাঠানোর অনুরোধ রইলো",
+    },
+    items: [
+      { name: "নমুনা প্রোডাক্ট ১", price: 350, qty: 2 },
+      { name: "নমুনা প্রোডাক্ট ২", price: 500, qty: 1 },
+    ],
+    deliveryCharge: 120,
+    discount: 0,
+  };
+}
+
+// ✅ Invoice ডিজাইনারের প্রিভিউতে দেখানো নমুনা/ডেমো শপ তথ্য — super-admin
+// এডিট করতে পারে। শুধু super-admin-এর নিজের প্রিভিউয়ের জন্য — admin panel
+// নিজের ডিজাইনারে সবসময় নিজের real shop-এর নাম/ফোন/ইমেইল দেখায় (দেখুন
+// admin/components/invoiceDesigner/InvoiceDesignerPanel.jsx), এটা না।
+export function buildDefaultSampleShop() {
+  return {
+    name: "আপনার শপের নাম",
+    contactPhone: "01700000000",
+    contactEmail: "shop@example.com",
+  };
+}
+
+export function normalizeSampleShop(input) {
+  const fallback = buildDefaultSampleShop();
+  return {
+    name: String(input?.name ?? fallback.name).slice(0, 100),
+    contactPhone: String(input?.contactPhone ?? fallback.contactPhone).slice(0, 30),
+    contactEmail: String(input?.contactEmail ?? fallback.contactEmail).slice(0, 100),
+  };
+}
+
+export function normalizeSampleOrder(input) {
+  const fallback = buildDefaultSampleOrder();
+  const items = Array.isArray(input?.items) && input.items.length ? input.items : fallback.items;
+
+  return {
+    saleChannel: input?.saleChannel === "offline" ? "offline" : "online",
+    paymentMethod:
+      String(input?.paymentMethod ?? "").trim().slice(0, 40) || fallback.paymentMethod,
+    paymentStatus: ["pending", "paid", "failed"].includes(input?.paymentStatus)
+      ? input.paymentStatus
+      : fallback.paymentStatus,
+    billing: {
+      name: String(input?.billing?.name ?? fallback.billing.name).slice(0, 100),
+      phone: String(input?.billing?.phone ?? fallback.billing.phone).slice(0, 30),
+      address: String(input?.billing?.address ?? fallback.billing.address).slice(0, 300),
+      note: String(input?.billing?.note ?? fallback.billing.note).slice(0, 300),
+    },
+    items: items.slice(0, 10).map((it) => ({
+      name: String(it?.name ?? "").slice(0, 100),
+      price: clampNumber(it?.price, 0, 0, 10_000_000),
+      qty: clampNumber(it?.qty, 1, 1, 1000),
+    })),
+    deliveryCharge: clampNumber(input?.deliveryCharge, fallback.deliveryCharge, 0, 1_000_000),
+    discount: clampNumber(input?.discount, fallback.discount, 0, 1_000_000),
   };
 }
 

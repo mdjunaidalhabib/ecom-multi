@@ -2,7 +2,7 @@ import express from "express";
 import Order from "../../models/Order.js";
 import { moveToTrash } from "../../../utils/trash/trash.helpers.js";
 import { releasePromoUsage } from "../../services/promoService.js";
-import { updateInventoryForItem } from "../../services/inventoryService.js";
+import { updateInventoryForItems } from "../../services/inventoryService.js";
 
 const router = express.Router();
 
@@ -188,9 +188,7 @@ router.post("/", async (req, res) => {
          the order is rolled back (not silently created).
     */
     try {
-      await Promise.all(
-        finalItems.map((item) => updateInventoryForItem(item, "decrease")),
-      );
+      await updateInventoryForItems(finalItems, "decrease");
     } catch (stockErr) {
       console.error("❌ Stock/Sold Update Error (admin order):", stockErr);
 
@@ -315,9 +313,7 @@ router.put("/bulk/status", async (req, res) => {
         // ✅ Order cancelled -> restock
         if (status === "cancelled") {
           try {
-            await Promise.all(
-              o.items.map((item) => updateInventoryForItem(item, "increase")),
-            );
+            await updateInventoryForItems(o.items, "increase");
           } catch (restockErr) {
             console.error("❌ Restock Error (admin bulk cancel):", restockErr);
           }
@@ -537,9 +533,7 @@ router.put("/:id", async (req, res) => {
     // ✅ Order cancelled -> restock (mirrors the customer-side cancel flow)
     if (updateData.status === "cancelled" && current.status !== "cancelled") {
       try {
-        await Promise.all(
-          current.items.map((item) => updateInventoryForItem(item, "increase")),
-        );
+        await updateInventoryForItems(current.items, "increase");
       } catch (restockErr) {
         console.error("❌ Restock Error (admin cancel):", restockErr);
       }

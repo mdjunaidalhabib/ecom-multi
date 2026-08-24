@@ -5,20 +5,26 @@
 
 export const ELEMENT_IDS = [
   "logo",
-  "shopInfo",
+  "shopName",
+  "shopPhone",
+  "shopEmail",
   "customerInfo",
   "orderInfo",
   "itemsTable",
+  "orderNote",
   "totals",
   "footerText",
 ];
 
 export const ELEMENT_LABELS = {
   logo: "লোগো",
-  shopInfo: "শপ তথ্য",
+  shopName: "শপের নাম",
+  shopPhone: "শপের ফোন",
+  shopEmail: "শপের ইমেইল",
   customerInfo: "কাস্টমার তথ্য",
   orderInfo: "অর্ডার তথ্য",
   itemsTable: "আইটেম টেবিল",
+  orderNote: "কাস্টমার নোট",
   totals: "টোটাল/সামারি",
   footerText: "নোট / ফুটার",
 };
@@ -40,10 +46,13 @@ export function buildDefaultItemsTableColumns() {
 export function buildSeedTemplateElements() {
   return [
     { id: "logo", visible: true, x: 60, y: 20, width: 120, height: 70, zIndex: 1, fontSize: 14, color: "#111827", fontWeight: "normal", textAlign: "left", content: "" },
-    { id: "shopInfo", visible: true, x: 200, y: 20, width: 340, height: 90, zIndex: 1, fontSize: 14, color: "#111827", fontWeight: "normal", textAlign: "left", content: "" },
+    { id: "shopName", visible: true, x: 200, y: 20, width: 340, height: 30, zIndex: 1, fontSize: 17, color: "#111827", fontWeight: "bold", textAlign: "left", content: "" },
+    { id: "shopPhone", visible: true, x: 200, y: 54, width: 340, height: 26, zIndex: 1, fontSize: 13, color: "#111827", fontWeight: "normal", textAlign: "left", content: "" },
+    { id: "shopEmail", visible: true, x: 200, y: 82, width: 340, height: 26, zIndex: 1, fontSize: 13, color: "#111827", fontWeight: "normal", textAlign: "left", content: "" },
     { id: "orderInfo", visible: true, x: 494, y: 150, width: 240, height: 100, zIndex: 1, fontSize: 14, color: "#111827", fontWeight: "normal", textAlign: "left", content: "" },
-    { id: "customerInfo", visible: true, x: 60, y: 150, width: 400, height: 150, zIndex: 1, fontSize: 17, color: "#111827", fontWeight: "normal", textAlign: "left", content: "" },
+    { id: "customerInfo", visible: true, x: 60, y: 150, width: 400, height: 120, zIndex: 1, fontSize: 17, color: "#111827", fontWeight: "normal", textAlign: "left", content: "" },
     { id: "itemsTable", visible: true, x: 50, y: 330, width: 694, height: 320, zIndex: 1, fontSize: 13, color: "#111827", fontWeight: "normal", textAlign: "center", content: "", columns: buildDefaultItemsTableColumns() },
+    { id: "orderNote", visible: true, x: 60, y: 670, width: 474, height: 150, zIndex: 1, fontSize: 13, color: "#111827", fontWeight: "normal", textAlign: "left", content: "" },
     { id: "totals", visible: true, x: 554, y: 670, width: 190, height: 160, zIndex: 1, fontSize: 12, color: "#111827", fontWeight: "normal", textAlign: "left", content: "" },
     { id: "footerText", visible: true, x: 60, y: 860, width: 400, height: 70, zIndex: 1, fontSize: 12, color: "#111827", fontWeight: "normal", textAlign: "left", content: "" },
   ];

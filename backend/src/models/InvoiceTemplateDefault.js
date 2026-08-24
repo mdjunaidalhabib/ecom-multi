@@ -1,9 +1,15 @@
 import mongoose from "mongoose";
-import { buildSeedTemplateElements } from "../constants/invoiceTemplate.js";
+import {
+  buildSeedTemplateElements,
+  buildDefaultSampleOrder,
+  buildDefaultSampleShop,
+} from "../constants/invoiceTemplate.js";
 import {
   invoiceElementSchema,
   invoiceBackgroundSchema,
   invoicePageSizeSchema,
+  invoiceSampleOrderSchema,
+  invoiceSampleShopSchema,
 } from "./invoiceTemplateSchema.js";
 
 /**
@@ -24,6 +30,12 @@ const invoiceTemplateDefaultSchema = new mongoose.Schema(
     pageSize: { type: invoicePageSizeSchema, default: () => ({}) },
     background: { type: invoiceBackgroundSchema, default: () => ({}) },
     elements: { type: [invoiceElementSchema], default: buildSeedTemplateElements },
+    // ✅ ডিজাইনার প্রিভিউতে দেখানো ডেমো অর্ডার — শুধু super-admin এডিট করতে
+    // পারে, admin এর নিজের ডিজাইনারও এই একই ডেটা fetch করে দেখায়
+    sampleOrder: { type: invoiceSampleOrderSchema, default: buildDefaultSampleOrder },
+    // ✅ super-admin-এর নিজের প্রিভিউয়ে দেখানো ডেমো শপ (name/phone/email) —
+    // admin panel এটা ব্যবহার করে না, ওখানে সবসময় real shop দেখায়
+    sampleShop: { type: invoiceSampleShopSchema, default: buildDefaultSampleShop },
   },
   { timestamps: true },
 );

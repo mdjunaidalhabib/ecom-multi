@@ -116,3 +116,25 @@ export const updateInventoryForItem = async (item, mode = "decrease") => {
   await product.save();
   return product;
 };
+
+/**
+ * ✅ Apply inventory updates for a list of order items ONE AT A TIME.
+ *
+ * Why not Promise.all: when an order has 2+ items pointing at the same
+ * product (e.g. two different colors of one product), running
+ * updateInventoryForItem() concurrently makes every one of them
+ * `findById` the SAME starting document before any of them `save()`.
+ * Mongoose then either throws a VersionError (subdocument arrays like
+ * `colors` are version-checked on save) or silently loses one of the
+ * updates — both surface as random/intermittent "failed to create
+ * order" behavior depending on which items happen to share a product.
+ * Awaiting sequentially makes each read-modify-write see the previous
+ * item's committed change.
+ */
+export const updateInventoryForItems = async (items, mode = "decrease") => {
+  const results = [];
+  for (const item of items) {
+    results.push(await updateInventoryForItem(item, mode));
+  }
+  return results;
+};

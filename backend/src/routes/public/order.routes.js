@@ -12,7 +12,7 @@ import {
   reservePromoUsage,
   releasePromoUsage,
 } from "../../services/promoService.js";
-import { updateInventoryForItem } from "../../services/inventoryService.js";
+import { updateInventoryForItems } from "../../services/inventoryService.js";
 import { resolveAuthedCustomer } from "../../auth/resolveAuthedCustomer.js";
 
 // ✅ correct relative path
@@ -303,9 +303,7 @@ router.post("/", async (req, res) => {
        - If stock update fails => rollback order + return 400
     */
     try {
-      await Promise.all(
-        trustedItems.map((item) => updateInventoryForItem(item, "decrease")),
-      );
+      await updateInventoryForItems(trustedItems, "decrease");
     } catch (stockErr) {
       console.error("❌ Stock/Sold Update Error:", stockErr);
 
@@ -467,9 +465,7 @@ router.put("/:id", async (req, res) => {
       order.cancelReason = cancelReason || "Cancelled by user";
 
       try {
-        await Promise.all(
-          order.items.map((item) => updateInventoryForItem(item, "increase"))
-        );
+        await updateInventoryForItems(order.items, "increase");
       } catch (restockErr) {
         console.error("❌ Restock Error:", restockErr);
       }

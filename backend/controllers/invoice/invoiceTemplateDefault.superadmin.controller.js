@@ -3,7 +3,11 @@ import sharp from "sharp";
 import InvoiceTemplateDefault, {
   getOrCreateDefaultInvoiceTemplate,
 } from "../../src/models/InvoiceTemplateDefault.js";
-import { normalizeTemplate } from "../../src/constants/invoiceTemplate.js";
+import {
+  normalizeTemplate,
+  normalizeSampleOrder,
+  normalizeSampleShop,
+} from "../../src/constants/invoiceTemplate.js";
 import { uploadToR2, deleteByKey } from "../../utils/r2/r2Helpers.js";
 
 const safeUnlink = (filePath) => {
@@ -31,9 +35,11 @@ export const getDefaultTemplate = async (req, res) => {
 export const saveDefaultTemplate = async (req, res) => {
   try {
     const normalized = normalizeTemplate(req.body);
+    const sampleOrder = normalizeSampleOrder(req.body?.sampleOrder);
+    const sampleShop = normalizeSampleShop(req.body?.sampleShop);
     const updated = await InvoiceTemplateDefault.findOneAndUpdate(
       { key: "global" },
-      { $set: normalized },
+      { $set: { ...normalized, sampleOrder, sampleShop } },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
     res.json({ template: updated });

@@ -20,7 +20,18 @@ export const invoiceElementSchema = new mongoose.Schema(
   {
     id: {
       type: String,
-      enum: ["logo", "shopInfo", "customerInfo", "orderInfo", "itemsTable", "totals", "footerText"],
+      enum: [
+        "logo",
+        "shopName",
+        "shopPhone",
+        "shopEmail",
+        "customerInfo",
+        "orderInfo",
+        "itemsTable",
+        "orderNote",
+        "totals",
+        "footerText",
+      ],
       required: true,
     },
     visible: { type: Boolean, default: true },
@@ -53,6 +64,50 @@ export const invoicePageSizeSchema = new mongoose.Schema(
   {
     width: { type: Number, default: DEFAULT_PAGE_SIZE.width },
     height: { type: Number, default: DEFAULT_PAGE_SIZE.height },
+  },
+  { _id: false },
+);
+
+// ✅ শুধু InvoiceTemplateDefault.js ব্যবহার করে — invoice ডিজাইনারের প্রিভিউতে
+// দেখানো নমুনা/ডেমো অর্ডার, super-admin এডিট করতে পারে (দেখুন
+// invoiceTemplateDefault.superadmin.controller.js)। শপের নিজস্ব InvoiceTemplate.js
+// এর অংশ না — প্রতিটা শপের নিজের অর্ডার নেই এমন প্রিভিউয়ের জন্যই শুধু।
+const sampleOrderItemSchema = new mongoose.Schema(
+  {
+    name: { type: String, default: "" },
+    price: { type: Number, default: 0 },
+    qty: { type: Number, default: 1 },
+  },
+  { _id: false },
+);
+
+export const invoiceSampleOrderSchema = new mongoose.Schema(
+  {
+    saleChannel: { type: String, enum: ["online", "offline"], default: "online" },
+    paymentMethod: { type: String, default: "cod" },
+    paymentStatus: { type: String, enum: ["pending", "paid", "failed"], default: "pending" },
+    billing: {
+      name: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      address: { type: String, default: "" },
+      note: { type: String, default: "" },
+    },
+    items: { type: [sampleOrderItemSchema], default: undefined },
+    deliveryCharge: { type: Number, default: 120 },
+    discount: { type: Number, default: 0 },
+  },
+  { _id: false },
+);
+
+// ✅ শুধু InvoiceTemplateDefault.js ব্যবহার করে — invoice ডিজাইনারের প্রিভিউতে
+// দেখানো নমুনা/ডেমো শপ তথ্য (name/phone/email), super-admin এডিট করতে পারে।
+// শুধু প্রিভিউয়ের জন্য — এটা কোনো real shop না (real shop-এর জন্য দেখুন
+// invoiceTemplateService.js এর resolveInvoiceTemplateForShop)।
+export const invoiceSampleShopSchema = new mongoose.Schema(
+  {
+    name: { type: String, default: "" },
+    contactPhone: { type: String, default: "" },
+    contactEmail: { type: String, default: "" },
   },
   { _id: false },
 );

@@ -4,6 +4,7 @@ import OrderSummarySkeleton from "../skeletons/OrderSummarySkeleton";
 import { formatDateTime } from "../../lib/utils";
 import useShopPath from "../../hooks/useShopPath";
 import downloadInvoicePdf from "../../utils/invoiceDownload";
+import { normalizeTemplate } from "../../lib/invoiceTemplateContract";
 
 export default function OrderSummary({ orderId }) {
   const { base } = useShopPath();
@@ -22,7 +23,7 @@ export default function OrderSummary({ orderId }) {
       .then((res) => res.json())
       .then((data) => {
         setOrder(data.order || null);
-        setInvoiceTemplate(data.template || null);
+        setInvoiceTemplate(data.template ? normalizeTemplate(data.template) : null);
         setInvoiceShop(data.shop || null);
       })
       .catch((err) => {

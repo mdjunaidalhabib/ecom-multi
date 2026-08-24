@@ -20,6 +20,8 @@ import {
   UserPlus,
   X,
   Trash2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Toast from "./Toast";
 
@@ -131,6 +133,7 @@ export default function Shops() {
   const [adminForm, setAdminForm] = useState({ name: "", email: "", password: "", role: "admin" });
   const [invitingAdmin, setInvitingAdmin] = useState(false);
   const [adminErrors, setAdminErrors] = useState({});
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   // ================== LOAD ==================
   const loadShops = async () => {
@@ -464,6 +467,7 @@ export default function Shops() {
     setAdminsModal(shop);
     setAdminForm({ name: "", email: "", password: "", role: "admin" });
     setAdminErrors({});
+    setShowAdminPassword(false);
     loadShopAdmins(shop);
   };
 
@@ -708,6 +712,22 @@ export default function Shops() {
                     >
                       <ShieldCheck size={14} /> Activate
                     </button>
+                  ) : shop.status === "trial" ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => confirmSuspend(shop)}
+                        title="Suspend"
+                        className="flex items-center justify-center gap-1 bg-red-600 text-white px-2 py-1.5 rounded text-sm hover:bg-red-700"
+                      >
+                        <ShieldBan size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleActivate(shop)}
+                        className="flex-1 flex items-center justify-center gap-1 bg-green-600 text-white px-2 py-1.5 rounded text-sm hover:bg-green-700"
+                      >
+                        <ShieldCheck size={14} /> Active করুন
+                      </button>
+                    </div>
                   ) : (
                     <button
                       onClick={() => confirmSuspend(shop)}
@@ -737,7 +757,7 @@ export default function Shops() {
             <form
               onSubmit={handleSubmit}
               noValidate
-              className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-xl dark:shadow-black/40 border border-gray-200 dark:border-slate-700 w-full max-w-md space-y-4"
+              className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-xl dark:shadow-black/40 border border-gray-200 dark:border-slate-700 w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4"
             >
               <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">
                 {editingShop ? "শপ এডিট করুন" : "নতুন শপ তৈরি করুন"}
@@ -1087,6 +1107,9 @@ export default function Shops() {
                       <label className="text-sm font-medium text-gray-700 dark:text-slate-300">ইমেইল <span className="text-red-600">*</span></label>
                       <input
                         type="email"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck="false"
                         value={adminForm.email}
                         onChange={(e) => {
                           setAdminForm((f) => ({ ...f, email: e.target.value }));
@@ -1098,6 +1121,9 @@ export default function Shops() {
                     <div>
                       <label className="text-sm font-medium text-gray-700 dark:text-slate-300">নাম <span className="text-red-600">*</span></label>
                       <input
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck="false"
                         value={adminForm.name}
                         onChange={(e) => {
                           setAdminForm((f) => ({ ...f, name: e.target.value }));
@@ -1108,15 +1134,26 @@ export default function Shops() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700 dark:text-slate-300">পাসওয়ার্ড <span className="text-red-600">*</span></label>
-                      <input
-                        type="password"
-                        value={adminForm.password}
-                        onChange={(e) => {
-                          setAdminForm((f) => ({ ...f, password: e.target.value }));
-                          if (e.target.value.length >= 6) setAdminErrors((prev) => ({ ...prev, password: false }));
-                        }}
-                        className={`w-full border rounded-lg px-3 py-2 mt-1 text-sm outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${adminErrors.password ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20" : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"}`}
-                      />
+                      <div className="relative mt-1">
+                        <input
+                          type={showAdminPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          value={adminForm.password}
+                          onChange={(e) => {
+                            setAdminForm((f) => ({ ...f, password: e.target.value }));
+                            if (e.target.value.length >= 6) setAdminErrors((prev) => ({ ...prev, password: false }));
+                          }}
+                          className={`w-full border rounded-lg px-3 py-2 pr-10 text-sm outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 ${adminErrors.password ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-500/20" : "border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowAdminPassword((v) => !v)}
+                          title={showAdminPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300"
+                        >
+                          {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700 dark:text-slate-300">ভূমিকা <span className="text-red-600">*</span></label>

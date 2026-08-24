@@ -68,21 +68,25 @@ function ElementContent({ element, order, shop }) {
   switch (element.id) {
     case "logo":
       return shop?.logo ? (
-        <img src={shop.logo} alt="logo" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+        <img
+          src={shop.logo}
+          alt="logo"
+          style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+        />
       ) : (
         <div style={{ width: "100%", height: "100%", border: "1px dashed #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#9ca3af" }}>
           Logo
         </div>
       );
 
-    case "shopInfo":
-      return (
-        <div>
-          <div style={{ fontWeight: 700, fontSize: "1.2em" }}>{shop?.name || ""}</div>
-          {shop?.contactPhone && <div>{shop.contactPhone}</div>}
-          {shop?.contactEmail && <div>{shop.contactEmail}</div>}
-        </div>
-      );
+    case "shopName":
+      return shop?.name ? <div>{shop.name}</div> : null;
+
+    case "shopPhone":
+      return shop?.contactPhone ? <div>{shop.contactPhone}</div> : null;
+
+    case "shopEmail":
+      return shop?.contactEmail ? <div>{shop.contactEmail}</div> : null;
 
     case "orderInfo": {
       const { datePart, timePart } = formatOrderDateTime(order?.createdAt);
@@ -94,6 +98,9 @@ function ElementContent({ element, order, shop }) {
           </div>
           <div>
             <strong>Date:</strong> {datePart} ; {timePart}
+          </div>
+          <div>
+            <strong>Order Type:</strong> {order?.saleChannel === "offline" ? "Offline" : "Online"}
           </div>
           <div>
             <strong>Payment:</strong> {String(order?.paymentMethod || "cod").toUpperCase()}
@@ -114,9 +121,25 @@ function ElementContent({ element, order, shop }) {
           <Row label="Name" value={order?.billing?.name} />
           <Row label="Phone" value={order?.billing?.phone} />
           <Row label="Address" value={order?.billing?.address} />
-          {order?.billing?.note && <Row label="Note" value={order.billing.note} />}
         </div>
       );
+
+    case "orderNote":
+      return order?.billing?.note ? (
+        <div
+          style={{
+            height: "100%",
+            boxSizing: "border-box",
+            background: "#fff6cf",
+            borderLeft: "4px solid #ff36ac",
+            borderRadius: 8,
+            padding: "8px 14px",
+            overflow: "hidden",
+          }}
+        >
+          <span style={{ fontWeight: 700 }}>Note:</span> {order.billing.note}
+        </div>
+      ) : null;
 
     case "itemsTable":
       return <ItemsTable element={element} order={order} />;

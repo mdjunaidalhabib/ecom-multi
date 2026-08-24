@@ -5,6 +5,21 @@ import { deleteByKey, uploadToR2 } from "../../../utils/r2/r2Helpers.js";
 
 const router = express.Router();
 
+// ✅ GET Navbar (Admin — editing form এর জন্য, active shop অনুযায়ী)
+// FINAL path: GET /api/v1/admin/navbar
+router.get("/", async (req, res) => {
+  try {
+    let navbar = await Navbar.findOne();
+    if (!navbar) {
+      navbar = await Navbar.create({});
+    }
+    res.json({ navbar });
+  } catch (err) {
+    console.error("❌ Error fetching navbar (admin):", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ✅ POST Navbar + optional logo upload (Admin only)
 // FINAL path: POST /api/v1/admin/navbar
 router.post("/", upload.single("logo"), async (req, res) => {

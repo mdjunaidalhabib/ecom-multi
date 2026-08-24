@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 const phoneRegex = /^(01[3-9]\d{8})$/;
+const PRODUCTS_PAGE_SIZE = 20;
 
 function SectionHeader({ icon: Icon, title }) {
   return (
@@ -36,9 +37,16 @@ function SectionHeader({ icon: Icon, title }) {
 export default function CreateOrderModal({ open, onClose, onCreate, API }) {
   /* ===========================
      ✅ PRODUCTS
+     পুরো ক্যাটালগ একসাথে লোড না করে, item হিসেবে PICK করা প্রোডাক্টগুলোই
+     এখানে id দিয়ে ম্যাপ করে রাখা হয় (getProduct/stock/price দেখানোর জন্য)।
+     ব্রাউজ/সার্চ লিস্টের জন্য নিচে আলাদা paginated picker state আছে।
   ============================ */
-  const [products, setProducts] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [selectedProducts, setSelectedProducts] = useState({});
+
+  /* ===========================
+     ✅ CATEGORIES (picker ফিল্টারের জন্য, একবার লোড হয়)
+  ============================ */
+  const [categories, setCategories] = useState([]);
 
   /* ===========================
      ✅ DELIVERY CHARGE (DB)
@@ -47,12 +55,19 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
   const [deliveryLoading, setDeliveryLoading] = useState(true);
 
   /* ===========================
-     ✅ PRODUCT PICKER POPUP
+     ✅ PRODUCT PICKER POPUP (server-side pagination + search, একসাথে
+     পুরো ক্যাটালগ লোড না করে per-page নির্দিষ্ট সংখ্যক প্রোডাক্ট আনা হয়)
   ============================ */
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerIndex, setPickerIndex] = useState(null);
   const [productQuery, setProductQuery] = useState("");
+  const [productQueryDebounced, setProductQueryDebounced] = useState("");
   const [pickerCategoryId, setPickerCategoryId] = useState("");
+  const [pickerProducts, setPickerProducts] = useState([]);
+  const [pickerLoading, setPickerLoading] = useState(true);
+  const [pickerPage, setPickerPage] = useState(1);
+  const [pickerTotalPages, setPickerTotalPages] = useState(1);
+  const [pickerTotal, setPickerTotal] = useState(0);
 
   /* ===========================
      ✅ SALE CHANNEL
@@ -90,36 +105,87 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
   const [items, setItems] = useState([{ productId: "", qty: 1, color: null }]);
 
   /* ===========================
-     ✅ LOAD PRODUCTS WHEN OPEN
+     ✅ LOAD CATEGORIES ONCE WHEN OPEN (picker ফিল্টার ড্রপডাউনের জন্য)
   ============================ */
   useEffect(() => {
     if (!open) return;
 
     let alive = true;
-    setLoadingProducts(true);
 
-    // ✅ Admin endpoint ব্যবহার করা হচ্ছে (public endpoint শুধু active category-এর
-    // active প্রোডাক্ট দেখায়, ফলে হিডেন/ইনঅ্যাক্টিভ প্রোডাক্ট পিকারে আসত না) —
-    // এখানে বড় limit দিয়ে পুরো ক্যাটালগ একসাথে আনা হচ্ছে
-    fetch(`${API}/admin/products?limit=2000`)
+    fetch(`${API}/admin/categories`)
       .then((res) => res.json())
       .then((data) => {
         if (!alive) return;
-        setProducts(Array.isArray(data?.products) ? data.products : []);
+        setCategories(Array.isArray(data) ? data : []);
       })
       .catch(() => {
         if (!alive) return;
-        setProducts([]);
-      })
-      .finally(() => {
-        if (!alive) return;
-        setLoadingProducts(false);
+        setCategories([]);
       });
 
     return () => {
       alive = false;
     };
   }, [open, API]);
+
+  /* ===========================
+     ✅ DEBOUNCE SEARCH INPUT
+  ============================ */
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setProductQueryDebounced(productQuery.trim());
+    }, 350);
+    return () => clearTimeout(t);
+  }, [productQuery]);
+
+  // ✅ সার্চ/ক্যাটাগরি বদলালে পেজ ১-এ ফিরে যায়
+  useEffect(() => {
+    setPickerPage(1);
+  }, [productQueryDebounced, pickerCategoryId]);
+
+  /* ===========================
+     ✅ LOAD PICKER PRODUCTS (PAGINATED, SEARCH/CATEGORY অনুযায়ী)
+     পুরো ক্যাটালগ একসাথে লোড না করে per-page নির্দিষ্ট সংখ্যক প্রোডাক্ট আনা হয়,
+     ফলে বড় ক্যাটালগেও পিকার খুলতে/সার্চ করতে দ্রুত লোড হয়।
+  ============================ */
+  useEffect(() => {
+    if (!open || !pickerOpen) return;
+
+    let alive = true;
+    setPickerLoading(true);
+
+    const params = new URLSearchParams();
+    params.set("page", String(pickerPage));
+    params.set("limit", String(PRODUCTS_PAGE_SIZE));
+    if (pickerCategoryId) params.set("category", pickerCategoryId);
+    if (productQueryDebounced) params.set("search", productQueryDebounced);
+
+    // ✅ Admin endpoint ব্যবহার করা হচ্ছে (public endpoint শুধু active category-এর
+    // active প্রোডাক্ট দেখায়, ফলে হিডেন/ইনঅ্যাক্টিভ প্রোডাক্ট পিকারে আসত না)
+    fetch(`${API}/admin/products?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!alive) return;
+        const list = Array.isArray(data?.products) ? data.products : [];
+        setPickerProducts(list);
+        setPickerTotal(Number(data?.total) || 0);
+        setPickerTotalPages(Math.max(1, Number(data?.totalPages) || 1));
+      })
+      .catch(() => {
+        if (!alive) return;
+        setPickerProducts([]);
+        setPickerTotal(0);
+        setPickerTotalPages(1);
+      })
+      .finally(() => {
+        if (!alive) return;
+        setPickerLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [open, pickerOpen, pickerPage, pickerCategoryId, productQueryDebounced, API]);
 
   /* ===========================
      ✅ LOAD DELIVERY CHARGE FROM DB
@@ -160,7 +226,10 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     setPickerOpen(false);
     setPickerIndex(null);
     setProductQuery("");
+    setProductQueryDebounced("");
     setPickerCategoryId("");
+    setPickerPage(1);
+    setSelectedProducts({});
 
     setSaleChannel("online");
     setTouched({ name: false, phone: false, address: false });
@@ -181,8 +250,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     return Number.isFinite(n) ? n : fallback;
   };
 
-  const getProduct = (pid) =>
-    products.find((p) => String(p._id) === String(pid));
+  const getProduct = (pid) => selectedProducts[String(pid)];
 
   const findVariant = (p, color) => {
     if (!p || !color) return null;
@@ -197,48 +265,6 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
       ) || null
     );
   };
-
-  /* ===========================
-     ✅ CATEGORIES (প্রোডাক্ট লিস্ট থেকেই ইউনিক ক্যাটাগরি বের করা হয়,
-     যেহেতু admin/products এন্ডপয়েন্ট categories populate করেই দেয়)
-  ============================ */
-  const allCategories = useMemo(() => {
-    const map = new Map();
-    products.forEach((p) => {
-      (p.categories || []).forEach((c) => {
-        if (c?._id && !map.has(String(c._id))) map.set(String(c._id), c);
-      });
-    });
-    return Array.from(map.values()).sort((a, b) =>
-      String(a.name || "").localeCompare(String(b.name || ""))
-    );
-  }, [products]);
-
-  /* ===========================
-     ✅ FILTER PRODUCTS (CATEGORY + SEARCH)
-  ============================ */
-  const filteredProducts = useMemo(() => {
-    let list = products;
-
-    if (pickerCategoryId) {
-      list = list.filter((p) =>
-        (p.categories || []).some(
-          (c) => String(c?._id) === String(pickerCategoryId)
-        )
-      );
-    }
-
-    if (productQuery.trim()) {
-      const q = productQuery.trim().toLowerCase();
-      list = list.filter((p) => {
-        const name = String(p?.name || "").toLowerCase();
-        const id = String(p?._id || "").toLowerCase();
-        return name.includes(q) || id.includes(q);
-      });
-    }
-
-    return list;
-  }, [productQuery, products, pickerCategoryId]);
 
   /* ===========================
      ✅ VIEW ITEMS FOR SUMMARY
@@ -268,7 +294,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
         };
       })
       .filter(Boolean);
-  }, [items, products]);
+  }, [items, selectedProducts]);
 
   const subtotal = viewItems.reduce(
     (sum, it) => sum + toNumber(it.price, 0) * toNumber(it.qty, 0),
@@ -295,12 +321,40 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     address: !isOffline && !billing.address.trim(),
   };
 
+  const hasValidItem = items.some(
+    (x) => x.productId && toNumber(x.qty, 0) > 0
+  );
+
+  // ✅ কোনো আইটেমের প্রোডাক্ট/কালার সিলেক্ট করা থাকলে কিন্তু স্টক না থাকলে
+  // (বা qty 0 হলে) Create Order বাটন disable থাকবে
+  const hasOutOfStockItem = items.some((x) => {
+    if (!x.productId) return false;
+    const p = getProduct(x.productId);
+    if (!p) return false;
+    const variant = findVariant(p, x.color);
+    const stock = toNumber(variant?.stock ?? p?.stock ?? 0, 0);
+    return stock <= 0 || toNumber(x.qty, 0) <= 0;
+  });
+
   const canSubmit =
     (isOffline || !deliveryLoading) &&
     !errors.name &&
     !errors.phone &&
     !errors.address &&
-    items.some((x) => x.productId && toNumber(x.qty, 0) > 0);
+    hasValidItem &&
+    !hasOutOfStockItem;
+
+  // ✅ ঠিক কী কারণে বাটন disable আছে সেটা admin-কে স্পষ্টভাবে দেখানো হয়,
+  // যাতে fill করে submit করেও error না খেয়ে আগে থেকেই বুঝতে পারে
+  const missingReason = (() => {
+    if (!isOffline && deliveryLoading) return "Delivery charge লোড হচ্ছে...";
+    if (!hasValidItem) return "অন্তত ১টি প্রোডাক্ট যোগ করুন";
+    if (hasOutOfStockItem) return "⚠️ কিছু আইটেমে স্টক নেই";
+    if (!isOffline && errors.name) return "Customer Name দিন";
+    if (!isOffline && errors.phone) return "সঠিক Phone নম্বর দিন";
+    if (!isOffline && errors.address) return "Address দিন";
+    return "Fill required fields...";
+  })();
 
   const inputClass = (hasError) =>
     `w-full h-12 rounded-2xl border px-4 text-sm font-semibold outline-none transition text-gray-900 dark:text-slate-100 ${
@@ -329,20 +383,41 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     setPickerIndex(idx);
     setPickerOpen(true);
     setProductQuery("");
+    setProductQueryDebounced("");
     setPickerCategoryId("");
+    setPickerPage(1);
   };
 
   const pickProduct = (prod) => {
     if (pickerIndex === null) return;
 
+    // ✅ স্টক না থাকলে qty 0 থেকে শুরু হবে (আর buttons ডিসেবল থাকবে)
+    const stock = toNumber(prod?.stock ?? 0, 0);
+
+    setSelectedProducts((prev) => ({ ...prev, [String(prod._id)]: prod }));
+
     updateItem(pickerIndex, "productId", String(prod._id));
     updateItem(pickerIndex, "color", null);
-    updateItem(pickerIndex, "qty", 1);
+    updateItem(pickerIndex, "qty", stock > 0 ? 1 : 0);
 
     setPickerOpen(false);
     setPickerIndex(null);
     setProductQuery("");
+    setProductQueryDebounced("");
     setPickerCategoryId("");
+    setPickerPage(1);
+  };
+
+  // ✅ কালার/ভ্যারিয়েন্ট পরিবর্তন হলে সেই ভ্যারিয়েন্টের স্টক অনুযায়ী qty রিক্যালকুলেট
+  const changeColor = (idx, color) => {
+    const it = items[idx];
+    const p = getProduct(it.productId);
+    const variant = findVariant(p, color);
+    const stock = toNumber(variant?.stock ?? p?.stock ?? 0, 0);
+    const current = toNumber(it.qty, 1);
+
+    updateItem(idx, "color", color);
+    updateItem(idx, "qty", stock <= 0 ? 0 : Math.min(Math.max(current, 1), stock));
   };
 
   const changeQty = (idx, delta) => {
@@ -353,12 +428,16 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
     const variant = findVariant(p, it.color);
     const stock = toNumber(variant?.stock ?? p?.stock ?? 0, 0);
 
+    if (stock <= 0) {
+      updateItem(idx, "qty", 0);
+      return;
+    }
+
     const current = toNumber(it.qty, 1);
     let next = current + delta;
 
     next = Math.max(1, next);
     next = Math.min(stock, next);
-    if (next < 1) next = current;
 
     updateItem(idx, "qty", next);
   };
@@ -632,6 +711,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                         (Array.isArray(p?.images) ? p.images[0] : null) ||
                         "/no-image.png";
 
+                      const outOfStock = !!p && stock <= 0;
+
                       return (
                         <div
                           key={idx}
@@ -652,9 +733,17 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                               <div className="text-sm font-black truncate text-gray-900 dark:text-slate-100">
                                 {p ? p.name : "Select product"}
                               </div>
-                              <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
+                              <div
+                                className={`text-[11px] font-semibold ${
+                                  outOfStock
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-gray-500 dark:text-slate-400"
+                                }`}
+                              >
                                 {p
-                                  ? `৳${toNumber(p.price, 0)} • Stock: ${stock}`
+                                  ? outOfStock
+                                    ? `৳${toNumber(p.price, 0)} • Out of stock`
+                                    : `৳${toNumber(p.price, 0)} • Stock: ${stock}`
                                   : "Click to choose product"}
                               </div>
                             </div>
@@ -667,7 +756,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                               className="w-full sm:col-span-7 h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
                               value={it.color || ""}
                               onChange={(e) =>
-                                updateItem(idx, "color", e.target.value || null)
+                                changeColor(idx, e.target.value || null)
                               }
                               disabled={!p || !colors.length}
                             >
@@ -703,9 +792,9 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                               <button
                                 type="button"
                                 onClick={() => changeQty(idx, 1)}
-                                disabled={!p || it.qty >= stock}
+                                disabled={!p || toNumber(it.qty, 0) >= stock}
                                 className={`w-9 h-9 rounded-xl font-black flex items-center justify-center transition ${
-                                  !p || it.qty >= stock
+                                  !p || toNumber(it.qty, 0) >= stock
                                     ? "bg-gray-100 dark:bg-slate-700 text-gray-300 dark:text-slate-500 cursor-not-allowed"
                                     : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600"
                                 }`}
@@ -716,8 +805,18 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
                           </div>
 
                           <div className="flex justify-between items-center pt-1">
-                            <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
-                              {p ? `Stock: ${stock}` : "Pick a product first"}
+                            <div
+                              className={`text-[11px] font-semibold ${
+                                outOfStock
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-gray-500 dark:text-slate-400"
+                              }`}
+                            >
+                              {p
+                                ? outOfStock
+                                  ? "Out of stock"
+                                  : `Stock: ${stock}`
+                                : "Pick a product first"}
                             </div>
 
                             <button
@@ -946,10 +1045,14 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
           <div className="shrink-0 px-4 sm:px-6 py-3 border-t border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sticky bottom-0 z-20">
             <div
               className={`text-[11px] font-bold flex items-center gap-1.5 ${
-                canSubmit ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400 dark:text-slate-500"
+                canSubmit
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : hasOutOfStockItem
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-gray-400 dark:text-slate-500"
               }`}
             >
-              {canSubmit ? "✅ Ready to create" : "Fill required fields..."}
+              {canSubmit ? "✅ Ready to create" : missingReason}
             </div>
 
             <div className="flex gap-2">
@@ -985,16 +1088,22 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
           setPickerOpen(false);
           setPickerIndex(null);
           setProductQuery("");
+          setProductQueryDebounced("");
           setPickerCategoryId("");
+          setPickerPage(1);
         }}
         query={productQuery}
         setQuery={setProductQuery}
-        products={filteredProducts}
-        loading={loadingProducts}
+        products={pickerProducts}
+        loading={pickerLoading}
         onPick={pickProduct}
-        categories={allCategories}
+        categories={categories}
         selectedCategoryId={pickerCategoryId}
         onSelectCategory={setPickerCategoryId}
+        page={pickerPage}
+        totalPages={pickerTotalPages}
+        total={pickerTotal}
+        onPageChange={setPickerPage}
       />
     </>
   );
@@ -1137,6 +1246,10 @@ function ProductPickerModal({
   categories = [],
   selectedCategoryId,
   onSelectCategory,
+  page = 1,
+  totalPages = 1,
+  total = 0,
+  onPageChange,
 }) {
   const selectedCategory = categories.find(
     (c) => String(c._id) === String(selectedCategoryId)
@@ -1184,11 +1297,17 @@ function ProductPickerModal({
             />
           </div>
           <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
-            Showing <b>{products.length}</b> products
+            Showing <b>{products.length}</b> of <b>{total}</b> products
             {selectedCategory ? (
               <>
                 {" "}
                 in <b>{selectedCategory.name}</b>
+              </>
+            ) : null}
+            {totalPages > 1 ? (
+              <>
+                {" "}
+                • Page <b>{page}</b>/<b>{totalPages}</b>
               </>
             ) : null}
           </div>
@@ -1261,6 +1380,39 @@ function ProductPickerModal({
             })
           )}
         </div>
+
+        {/* PAGINATION FOOTER */}
+        {!loading && totalPages > 1 && (
+          <div className="shrink-0 px-4 py-3 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => onPageChange?.(Math.max(1, page - 1))}
+              disabled={page <= 1}
+              className={`h-9 px-4 rounded-xl text-xs font-black transition ${
+                page <= 1
+                  ? "bg-gray-100 dark:bg-slate-700 text-gray-300 dark:text-slate-500 cursor-not-allowed"
+                  : "bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              Prev
+            </button>
+            <div className="text-[11px] font-bold text-gray-500 dark:text-slate-400">
+              Page {page} / {totalPages}
+            </div>
+            <button
+              type="button"
+              onClick={() => onPageChange?.(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages}
+              className={`h-9 px-4 rounded-xl text-xs font-black transition ${
+                page >= totalPages
+                  ? "bg-gray-100 dark:bg-slate-700 text-gray-300 dark:text-slate-500 cursor-not-allowed"
+                  : "bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

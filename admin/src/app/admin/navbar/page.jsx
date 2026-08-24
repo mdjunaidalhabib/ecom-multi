@@ -19,13 +19,13 @@ export default function NavbarAdminPanel() {
   useEffect(() => {
     const fetchNavbar = async () => {
       try {
-        const res = await fetch(`${API_URL}/navbar`);
+        const res = await fetch(`${API_URL}/admin/navbar`);
         const data = await res.json();
 
-        const brand = data.brand || {};
+        const brand = data.navbar?.brand || {};
         if (!("name" in brand)) brand.name = "";
 
-        setNavbar({ ...data, brand });
+        setNavbar({ ...(data.navbar || {}), brand });
 
         // ✅ server এর existing logo preview set করো
         setLogoPreview(brand.logo || "");

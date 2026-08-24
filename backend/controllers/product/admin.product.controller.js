@@ -6,7 +6,7 @@ export const getProductsAdmin = async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 50, 2000); // cap max page size (raised so tools like the admin order picker can fetch the full catalog)
     const skip = (page - 1) * limit;
 
-    const { status, badge, search } = req.query; // status: active|hidden ; badge: freeDelivery|bestDiscount|cartvanBox
+    const { status, badge, search, category } = req.query; // status: active|hidden ; badge: freeDelivery|bestDiscount|cartvanBox
 
     const filter = {};
     if (status === "active") filter.isActive = true;
@@ -15,11 +15,19 @@ export const getProductsAdmin = async (req, res) => {
     if (badge === "bestDiscount") filter.bestDiscount = true;
     if (badge === "cartvanBox") filter.cartvanBox = true;
 
-    // ✅ product name diye quick search (case-insensitive, partial match)
+    // ✅ category diye filter (admin order picker-এর মতো UI-তে ব্যবহৃত)
+    if (typeof category === "string" && category.trim()) {
+      filter.categories = category.trim();
+    }
+
+    // ✅ product name diye quick search (case-insensitive, partial match);
+    // পুরো একটা ObjectId পেস্ট করলে সেটাকে _id দিয়েও ম্যাচ করা হয়
     const q = typeof search === "string" ? search.trim() : "";
     if (q) {
       const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      filter.name = { $regex: escaped, $options: "i" };
+      const or = [{ name: { $regex: escaped, $options: "i" } }];
+      if (/^[0-9a-fA-F]{24}$/.test(q)) or.push({ _id: q });
+      filter.$or = or;
     }
 
     const [

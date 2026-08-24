@@ -4,6 +4,24 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import InvoiceRenderer from "../components/invoiceDesigner/InvoiceRenderer";
 
+// ✅ কন্টেইনারের ভেতরের সব <img> (লোগো ইত্যাদি) সত্যিকারের লোড হওয়া পর্যন্ত
+// অপেক্ষা করে — শুধু ২টা animation frame অপেক্ষা করলে cross-origin (R2)
+// ইমেজের নেটওয়ার্ক ফেচ শেষ হওয়ার আগেই html2canvas ক্যাপচার করে ফেলত,
+// ফলে প্রিভিউতে ঠিক দেখালেও ডাউনলোড করা PDF-এ লোগো মিসিং থাকত।
+function waitForImages(container) {
+  const imgs = Array.from(container.querySelectorAll("img"));
+  return Promise.all(
+    imgs.map((img) =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise((resolve) => {
+            img.addEventListener("load", resolve, { once: true });
+            img.addEventListener("error", resolve, { once: true }); // ভাঙা ইমেজে চিরকাল আটকে না থাকার জন্য
+          }),
+    ),
+  );
+}
+
 // ✅ browser-এই PDF তৈরি করে ও ডাউনলোড করে দেয় (admin/utils/invoiceDownload.js
 // এর ডুপ্লিকেট — কোনো শেয়ার্ড প্যাকেজ নেই এই monorepo-তে)।
 export async function downloadInvoicePdf(order, shop, template) {
@@ -20,8 +38,9 @@ export async function downloadInvoicePdf(order, shop, template) {
   try {
     await new Promise((resolve) => {
       root.render(createElement(InvoiceRenderer, { template, order, shop }));
-      requestAnimationFrame(() => requestAnimationFrame(resolve));
+      requestAnimationFrame(resolve); // DOM মাউন্ট হওয়া পর্যন্ত এক ফ্রেম অপেক্ষা
     });
+    await waitForImages(container);
 
     const pageNode = container.querySelector("[data-invoice-page]");
     const canvas = await html2canvas(pageNode, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
