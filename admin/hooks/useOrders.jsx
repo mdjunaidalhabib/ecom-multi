@@ -23,14 +23,26 @@ export default function useOrders(API) {
   const queueRef = useRef(Promise.resolve());
 
   const enqueue = (task) => {
-    queueRef.current = queueRef.current.then(() => task()).catch(() => {});
-    return queueRef.current;
+    // ✅ `result` is the task's own promise — it must resolve/reject exactly
+    // as task() does, so callers (e.g. CreateOrderModal awaiting onCreate)
+    // can tell success from failure. `queueRef.current` is a *separate*
+    // derived promise that swallows rejection only so the queue itself
+    // keeps advancing — a failed task must not block the next enqueued one.
+    const result = queueRef.current.then(() => task());
+    queueRef.current = result.catch(() => {});
+    return result;
   };
 
   /* ===============================
      🔔 TOAST
      =============================== */
   const [toast, setToast] = useState(null);
+
+  /* ===============================
+     🚨 ALERT (persistent card — for actionable errors that need more
+     than a 2.5s toast, e.g. "delete the old order or fix Settings")
+     =============================== */
+  const [alertBox, setAlertBox] = useState(null);
 
   /* ===============================
      ❓ CONFIRM
@@ -41,6 +53,11 @@ export default function useOrders(API) {
      🗑 DELETE LOADING
      =============================== */
   const [deleting, setDeleting] = useState(false);
+
+  /* ===============================
+     ➕ CREATE ORDER LOADING
+     =============================== */
+  const [creating, setCreating] = useState(false);
 
   /* ===============================
      Auto hide toast
@@ -262,6 +279,39 @@ const sendCourierDirect = (order) =>
     });
 
   /* ===============================
+     ➕ CREATE ORDER
+     Routed through the same `enqueue` queue as every other mutation so a
+     fast double-click can never fire two concurrent POST requests — the
+     second click's task simply waits for the first to finish.
+     =============================== */
+  const createOrder = (payload) =>
+    enqueue(async () => {
+      try {
+        setCreating(true);
+        const res = await fetch(`${API}/admin/orders`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Order create failed");
+
+        setToast({ message: "✅ Order created successfully!", type: "success" });
+        fetchOrders();
+        return data;
+      } catch (err) {
+        setAlertBox({
+          title: "❌ Order create করা যায়নি",
+          message: err?.message || "Order create failed",
+        });
+        throw err;
+      } finally {
+        setCreating(false);
+      }
+    });
+
+  /* ===============================
      🗑 DELETE (single)
      =============================== */
   const handleDelete = async (order) => {
@@ -352,9 +402,15 @@ const sendCourierDirect = (order) =>
     deleteMany,
     deleting,
 
+    // create
+    createOrder,
+    creating,
+
     // ui
     toast,
     setToast,
+    alertBox,
+    setAlertBox,
     confirm,
     setConfirm,
   };

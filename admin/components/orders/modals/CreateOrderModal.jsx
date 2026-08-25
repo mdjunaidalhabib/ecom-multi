@@ -34,7 +34,7 @@ function SectionHeader({ icon: Icon, title }) {
   );
 }
 
-export default function CreateOrderModal({ open, onClose, onCreate, API }) {
+export default function CreateOrderModal({ open, onClose, onCreate, submitting = false, API }) {
   /* ===========================
      ✅ PRODUCTS
      পুরো ক্যাটালগ একসাথে লোড না করে, item হিসেবে PICK করা প্রোডাক্টগুলোই
@@ -444,8 +444,17 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
 
   /* ===========================
      ✅ SUBMIT
+     `submittingRef` blocks a second click synchronously (before React even
+     re-renders with the disabled button), and `localSubmitting` keeps the
+     button visually disabled/labelled for the whole request — including
+     the one render tick before the parent's own `submitting` prop catches up.
   ============================ */
-  const submit = () => {
+  const submittingRef = useRef(false);
+  const [localSubmitting, setLocalSubmitting] = useState(false);
+
+  const submit = async () => {
+    if (submittingRef.current) return;
+
     setTouched({ name: true, phone: true, address: true });
     if (errors.name || errors.phone || errors.address) return;
 
@@ -475,21 +484,34 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
 
     if (!cleaned.length) return;
 
-    onCreate({
-      items: cleaned,
-      billing,
-      discount: toNumber(discount, 0),
-      deliveryCharge: effectiveDeliveryCharge,
-      paymentMethod,
-      paymentStatus,
-      status,
+    submittingRef.current = true;
+    setLocalSubmitting(true);
 
-      createdBy: "admin",
-      createdByName: "Admin",
+    try {
+      await onCreate({
+        items: cleaned,
+        billing,
+        discount: toNumber(discount, 0),
+        deliveryCharge: effectiveDeliveryCharge,
+        paymentMethod,
+        paymentStatus,
+        status,
 
-      saleChannel,
-    });
+        createdBy: "admin",
+        createdByName: "Admin",
+
+        saleChannel,
+      });
+    } catch {
+      // ❗ error already toasted upstream (useOrders' createOrder) — keep
+      // the modal open so the admin can fix input and retry.
+    } finally {
+      submittingRef.current = false;
+      setLocalSubmitting(false);
+    }
   };
+
+  const isBusy = submitting || localSubmitting;
 
   /* ===========================
      ✅ HIDE WHEN CLOSED
@@ -531,7 +553,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
 
             <button
               onClick={onClose}
-              className="relative h-10 w-10 rounded-2xl grid place-items-center bg-white/15 hover:bg-white/25 text-white font-black backdrop-blur transition"
+              disabled={isBusy}
+              className="relative h-10 w-10 rounded-2xl grid place-items-center bg-white/15 hover:bg-white/25 text-white font-black backdrop-blur transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <X size={18} />
             </button>
@@ -1058,23 +1081,24 @@ export default function CreateOrderModal({ open, onClose, onCreate, API }) {
             <div className="flex gap-2">
               <button
                 onClick={onClose}
-                className="flex-1 sm:flex-none h-11 px-4 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-black text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                disabled={isBusy}
+                className="flex-1 sm:flex-none h-11 px-4 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-black text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
 
               <button
                 onClick={submit}
-                disabled={!canSubmit}
+                disabled={!canSubmit || isBusy}
                 className={`flex-1 sm:flex-none h-11 px-5 rounded-2xl font-black text-white transition ${
-                  !canSubmit
+                  !canSubmit || isBusy
                     ? "bg-gray-300 dark:bg-slate-600 cursor-not-allowed"
                     : isOffline
                       ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:opacity-90"
                       : "bg-gradient-to-r from-indigo-600 to-blue-600 hover:opacity-90"
                 }`}
               >
-                Create Order
+                {isBusy ? "Creating..." : "Create Order"}
               </button>
             </div>
           </div>

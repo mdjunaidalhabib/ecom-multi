@@ -5,10 +5,7 @@ const toNumber = (val, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
-const normalizeString = (s) =>
-  String(s || "")
-    .trim()
-    .toLowerCase();
+const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const hasVariants = (product) =>
   Array.isArray(product?.colors) && product.colors.length > 0;
@@ -28,6 +25,13 @@ const computeSoldOut = (product) => {
  * ✅ Inventory update (stock & sold) for a single item — shared by every
  * order-creation / cancellation path (customer checkout, admin order
  * create, admin cancel) so stock/sold stays consistent everywhere.
+ *
+ * Uses atomic `findOneAndUpdate`/`$inc` with a stock-guard filter instead
+ * of findById -> mutate -> save. Two concurrent requests touching the
+ * same product/variant (double-submit, two admins, checkout racing an
+ * admin order) can no longer lose an update or throw a VersionError —
+ * MongoDB applies each $inc atomically regardless of request ordering.
+ *
  * item: { productId, qty, color }
  * mode: "decrease" | "increase"
  */
@@ -42,94 +46,124 @@ export const updateInventoryForItem = async (item, mode = "decrease") => {
     );
   }
 
-  const product = await Product.findById(productId);
-  if (!product) {
+  const existing = await Product.findById(productId).lean();
+  if (!existing) {
     throw new Error(`Product not found: ${productId}`);
   }
 
-  const productHasVariants = hasVariants(product);
+  const delta = mode === "decrease" ? -qty : qty;
+  const soldDelta = mode === "decrease" ? qty : -qty;
 
   // ✅ Variant Mode
-  if (productHasVariants && color) {
-    const targetColor = normalizeString(color);
-
-    const idx = product.colors.findIndex(
-      (c) => normalizeString(c?.name) === targetColor
+  if (hasVariants(existing) && color) {
+    const colorRegex = new RegExp(`^${escapeRegex(color)}$`, "i");
+    const targetColor = existing.colors.find((c) =>
+      colorRegex.test(String(c?.name || ""))
     );
 
-    if (idx === -1) {
+    if (!targetColor) {
       throw new Error(
-        `Variant not found: "${color}" for product: ${product.name}`
+        `Variant not found: "${color}" for product: ${existing.name}`
       );
     }
 
-    const currentVariantStock = toNumber(product.colors[idx]?.stock, 0);
+    const filter = {
+      _id: productId,
+      colors: {
+        $elemMatch:
+          mode === "decrease"
+            ? { name: colorRegex, stock: { $gte: qty } }
+            : { name: colorRegex },
+      },
+    };
 
-    if (mode === "decrease") {
-      if (currentVariantStock < qty) {
-        throw new Error(
-          `${product.name} (${product.colors[idx]?.name}) stock not enough. Available: ${currentVariantStock}`
-        );
-      }
+    const updated = await Product.findOneAndUpdate(
+      filter,
+      {
+        $inc: {
+          "colors.$.stock": delta,
+          "colors.$.sold": soldDelta,
+          sold: soldDelta,
+        },
+      },
+      { new: true }
+    );
 
-      product.colors[idx].stock = currentVariantStock - qty;
-      product.colors[idx].sold = toNumber(product.colors[idx]?.sold, 0) + qty;
-
-      product.sold = toNumber(product.sold, 0) + qty;
-    } else {
-      product.colors[idx].stock = currentVariantStock + qty;
-      product.colors[idx].sold = toNumber(product.colors[idx]?.sold, 0) - qty;
-      if (product.colors[idx].sold < 0) product.colors[idx].sold = 0;
-
-      product.sold = toNumber(product.sold, 0) - qty;
-      if (product.sold < 0) product.sold = 0;
+    if (!updated) {
+      const fresh = await Product.findById(productId).lean();
+      const freshColor = fresh?.colors?.find((c) =>
+        colorRegex.test(String(c?.name || ""))
+      );
+      throw new Error(
+        `${existing.name} (${color}) stock not enough. Available: ${toNumber(
+          freshColor?.stock,
+          0
+        )}`
+      );
     }
 
-    product.stock = computeVariantTotalStock(product.colors);
-    product.isSoldOut = computeSoldOut(product);
+    // ✅ Clamp theoretical negatives (e.g. "increase" past what was ever sold)
+    await Product.updateOne(
+      { _id: productId, "colors.name": targetColor.name },
+      { $max: { "colors.$.sold": 0, sold: 0 } }
+    );
 
-    await product.save();
-    return product;
+    const totalStock = computeVariantTotalStock(updated.colors);
+    const soldOut = computeSoldOut(updated);
+    await Product.updateOne(
+      { _id: productId },
+      { $set: { stock: totalStock, isSoldOut: soldOut } }
+    );
+
+    return updated;
   }
 
   // ✅ Normal Product (No variant)
-  const baseStock = toNumber(product.stock, 0);
+  const filter = {
+    _id: productId,
+    ...(mode === "decrease" ? { stock: { $gte: qty } } : {}),
+  };
 
-  if (mode === "decrease") {
-    if (baseStock < qty) {
-      throw new Error(
-        `${product.name} stock not enough. Available: ${baseStock}`
-      );
-    }
+  const updated = await Product.findOneAndUpdate(
+    filter,
+    { $inc: { stock: delta, sold: soldDelta } },
+    { new: true }
+  );
 
-    product.stock = baseStock - qty;
-    product.sold = toNumber(product.sold, 0) + qty;
-
-    if (product.stock <= 0) product.stock = 0;
-  } else {
-    product.stock = baseStock + qty;
-    product.sold = toNumber(product.sold, 0) - qty;
-    if (product.sold < 0) product.sold = 0;
+  if (!updated) {
+    const fresh = await Product.findById(productId).lean();
+    throw new Error(
+      `${existing.name} stock not enough. Available: ${toNumber(
+        fresh?.stock,
+        0
+      )}`
+    );
   }
 
-  product.isSoldOut = computeSoldOut(product);
-  await product.save();
-  return product;
+  const clampedStock = Math.max(0, toNumber(updated.stock, 0));
+  const clampedSold = Math.max(0, toNumber(updated.sold, 0));
+  const soldOut = clampedStock <= 0;
+
+  if (
+    clampedStock !== updated.stock ||
+    clampedSold !== updated.sold ||
+    updated.isSoldOut !== soldOut
+  ) {
+    await Product.updateOne(
+      { _id: productId },
+      { $set: { stock: clampedStock, sold: clampedSold, isSoldOut: soldOut } }
+    );
+  }
+
+  return updated;
 };
 
 /**
- * ✅ Apply inventory updates for a list of order items ONE AT A TIME.
- *
- * Why not Promise.all: when an order has 2+ items pointing at the same
- * product (e.g. two different colors of one product), running
- * updateInventoryForItem() concurrently makes every one of them
- * `findById` the SAME starting document before any of them `save()`.
- * Mongoose then either throws a VersionError (subdocument arrays like
- * `colors` are version-checked on save) or silently loses one of the
- * updates — both surface as random/intermittent "failed to create
- * order" behavior depending on which items happen to share a product.
- * Awaiting sequentially makes each read-modify-write see the previous
- * item's committed change.
+ * ✅ Apply inventory updates for a list of order items, one at a time.
+ * Sequential (not Promise.all) keeps per-item error messages deterministic
+ * when an order has 2+ items pointing at the same product — correctness
+ * under concurrency itself is guaranteed by the atomic $inc above, not by
+ * this ordering.
  */
 export const updateInventoryForItems = async (items, mode = "decrease") => {
   const results = [];

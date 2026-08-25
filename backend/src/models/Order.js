@@ -199,23 +199,62 @@ orderSchema.plugin(tenantPlugin);
 
 // ✅ Pre-save hook to auto-increment orderNumber safely, PER SHOP
 // (same Counter-based pattern already used for User.userId, but keyed by shop)
+//
+// If the Counter's `seq` ever falls behind the orders that actually exist
+// for this shop (e.g. admin deliberately lowered the starting serial from
+// Settings → Order Number with `force`, or an old order was restored),
+// a plain $inc can re-generate a number that's already in use. We do NOT
+// silently skip past it — the admin owns that numbering — so instead we
+// roll the counter back (the number stays available) and block the save
+// with a clear, actionable message: delete the conflicting order, or go
+// fix the starting serial in Settings → Order Number, then retry.
 orderSchema.pre("save", async function (next) {
   if (
     this.isNew &&
     (this.orderNumber === undefined || this.orderNumber === null)
   ) {
     const shopId = this.shopId || getCurrentShopId();
+    const counterName = `orderNumber:${shopId}`;
+    const OrderModel = this.constructor;
+
+    let counter;
     try {
-      const counter = await Counter.findOneAndUpdate(
-        { name: `orderNumber:${shopId}` },
+      counter = await Counter.findOneAndUpdate(
+        { name: counterName },
         { $inc: { seq: 1 } },
         { new: true, upsert: true },
       );
-      this.orderNumber = counter?.seq ?? 1001;
     } catch (e) {
-      // fallback if counter fails — still lets the order save
+      // counter itself failed — still let the order save with a fallback number
       this.orderNumber = Date.now();
+      return next();
     }
+
+    const candidate = counter?.seq ?? 1001;
+
+    let clash;
+    try {
+      clash = await OrderModel.exists({ shopId, orderNumber: candidate });
+    } catch (e) {
+      // lookup failed — don't block the order over this, just assign the number
+      this.orderNumber = candidate;
+      return next();
+    }
+
+    if (clash) {
+      await Counter.updateOne(
+        { name: counterName },
+        { $inc: { seq: -1 } },
+      ).catch(() => {});
+
+      return next(
+        new Error(
+          `Order number #${candidate} আগে থেকেই একটি অর্ডারে ব্যবহৃত আছে। এই নাম্বারের পুরনো অর্ডারটি Delete করুন, অথবা Settings → Order Number-এ গিয়ে সঠিক Serial নাম্বার বসান — তারপর আবার Create Order করুন।`,
+        ),
+      );
+    }
+
+    this.orderNumber = candidate;
   }
   next();
 });

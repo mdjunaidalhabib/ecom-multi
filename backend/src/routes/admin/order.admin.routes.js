@@ -203,10 +203,20 @@ router.post("/", async (req, res) => {
     res.status(201).json(created);
   } catch (err) {
     console.error("❌ Failed to create order:", err);
-    res.status(400).json({
-      error: "Failed to create order",
-      details: err.message,
-    });
+
+    let message = err?.message || "Order create করা যায়নি।";
+
+    if (err?.code === 11000) {
+      message =
+        "এই Order Number-এ আগে থেকেই একটি অর্ডার আছে। পুরনো অর্ডারটি Delete করুন, অথবা Settings → Order Number-এ গিয়ে সঠিক Serial নাম্বার বসান — তারপর আবার Create Order করুন।";
+    } else if (err?.name === "ValidationError") {
+      const firstError = Object.values(err.errors || {})[0];
+      message = firstError?.message
+        ? `ডেটা ভ্যালিড না: ${firstError.message}`
+        : "কিছু তথ্য সঠিকভাবে দেওয়া হয়নি। ফর্মটি আবার চেক করুন।";
+    }
+
+    res.status(400).json({ error: message });
   }
 });
 

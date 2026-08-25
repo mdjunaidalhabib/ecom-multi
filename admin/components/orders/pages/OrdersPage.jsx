@@ -12,6 +12,7 @@ import Toast from "../../Toast";
 import Pagination from "../../Pagination";
 
 import ConfirmModal from "../modals/ConfirmModal";
+import AlertModal from "../modals/AlertModal";
 
 export default function OrdersPage() {
   const API = "/api";
@@ -34,12 +35,17 @@ export default function OrdersPage() {
 
     toast,
     setToast,
+    alertBox,
+    setAlertBox,
 
     updateStatus,
     updateManyStatus,
     deleteMany,
     sendCourierDirect,
     sendCourierMany,
+
+    createOrder,
+    creating,
 
     confirm,
     setConfirm,
@@ -120,27 +126,13 @@ export default function OrdersPage() {
 
   /* =======================
      ✅ CREATE ORDER
+     Actual request lives in useOrders (queue-serialized); this just
+     closes the modal once it resolves. Errors already toast inside
+     createOrder, so the modal stays open on failure for the admin to retry.
      ======================= */
-  const createOrder = async (payload) => {
-    try {
-      const res = await fetch(`${API}/admin/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Order create failed");
-      }
-
-      setToast({ message: "✅ Order created successfully!", type: "success" });
-      setCreateOpen(false);
-      fetchOrders();
-    } catch (err) {
-      setToast({ message: err.message, type: "error" });
-    }
+  const handleCreateOrder = async (payload) => {
+    await createOrder(payload);
+    setCreateOpen(false);
   };
 
   return (
@@ -227,7 +219,8 @@ export default function OrdersPage() {
       <CreateOrderModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onCreate={createOrder}
+        onCreate={handleCreateOrder}
+        submitting={creating}
         API={API}
       />
 
@@ -243,6 +236,11 @@ export default function OrdersPage() {
       {/* CONFIRM MODAL */}
       {confirm && (
         <ConfirmModal data={confirm} onClose={() => setConfirm(null)} />
+      )}
+
+      {/* ALERT MODAL (actionable errors — order create, etc.) */}
+      {alertBox && (
+        <AlertModal data={alertBox} onClose={() => setAlertBox(null)} />
       )}
 
       {/* TOAST */}

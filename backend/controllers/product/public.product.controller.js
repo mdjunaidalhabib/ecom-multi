@@ -2,6 +2,23 @@ import mongoose from "mongoose";
 import Product from "../../src/models/Product.js";
 import Category from "../../src/models/Category.js";
 
+// ✅ Listing views (home/category grid) only ever render one thumbnail per
+// product — the full images gallery (every color's every photo) was being
+// shipped anyway, which was the single biggest contributor to a ~2.8MB
+// homepage HTML payload (~6000 image URLs for ~180 products). Trim each
+// product down to just what a card needs; the detail page fetches the full
+// gallery separately via getProductByIdPublic.
+const toListingProduct = (p) => ({
+  ...p,
+  images: Array.isArray(p.images) ? p.images.slice(0, 1) : p.images,
+  colors: Array.isArray(p.colors)
+    ? p.colors.map((c) => ({
+        ...c,
+        images: Array.isArray(c.images) ? c.images.slice(0, 1) : c.images,
+      }))
+    : p.colors,
+});
+
 export const getProductsPublic = async (req, res) => {
   try {
     const activeCats = await Category.find({ isActive: true })
@@ -11,11 +28,11 @@ export const getProductsPublic = async (req, res) => {
       categories: { $in: activeCats.map((c) => c._id) },
       isActive: true,
     })
-      .select("-reviews -costPrice")
+      .select("-reviews -costPrice -description -additionalInfo")
       .populate("categories", "name")
       .sort({ createdAt: -1 })
       .lean();
-    res.json(products);
+    res.json(products.map(toListingProduct));
   } catch (err) {
     res.status(500).json({ error: err?.message || "Server error" });
   }
@@ -130,12 +147,12 @@ export const getProductsByCategoryPublic = async (req, res) => {
       categories: category._id,
       isActive: true,
     })
-      .select("-reviews -costPrice")
+      .select("-reviews -costPrice -description -additionalInfo")
       .populate("categories", "name")
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json(products);
+    res.json(products.map(toListingProduct));
   } catch (err) {
     res.status(500).json({ error: err?.message || "Server error" });
   }
