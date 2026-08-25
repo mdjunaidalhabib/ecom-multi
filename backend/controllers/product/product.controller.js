@@ -55,6 +55,11 @@ const cleanupReqFiles = (req) => {
 
 // ✅ Mongoose/Mongo error গুলো raw (ObjectId(), Date() সহ পুরো document)
 // frontend এ পাঠানো হয় না — এখানে user-friendly বাংলা মেসেজে রূপান্তর করা হয়।
+// ⚠️ আগে অচেনা যেকোনো error-এর জন্য শুধু generic "Server error" পাঠানো হতো —
+// আসল কারণ (R2 upload ব্যর্থ, ইনভ্যালিড category id, ইত্যাদি) শুধু server
+// console log-এ থাকতো, admin panel-এ দেখা যেত না। এখন admin/super-admin
+// প্যানেল ইন্টারনাল বলে err.name/err.message-ও রেসপন্সে জুড়ে দেওয়া হচ্ছে,
+// যাতে "Server error" দেখেই বসে না থেকে আসল কারণ বোঝা যায়।
 const sendMongoError = (res, err) => {
   if (err?.code === 11000) {
     return res.status(409).json({
@@ -67,7 +72,13 @@ const sendMongoError = (res, err) => {
       .join(", ");
     return res.status(400).json({ error: message || "প্রোডাক্টের তথ্য সঠিক নয়" });
   }
-  return res.status(500).json({ error: "Server error" });
+  if (err?.name === "CastError") {
+    return res.status(400).json({
+      error: `অবৈধ মান দেওয়া হয়েছে (${err.path}: "${err.value}") — সঠিক ফরম্যাটে দিন`,
+    });
+  }
+  const detail = err?.message ? `: ${err.message}` : "";
+  return res.status(500).json({ error: `Server error${detail}` });
 };
 
 /**
