@@ -100,7 +100,7 @@ async function run() {
       domainStatus: "verified", // ধরে নিচ্ছি এটা ইতিমধ্যে লাইভ ডোমেইন
       domainVerifiedAt: new Date(),
       status: "active",
-      plan: "pro",
+      plan: "business",
     });
     console.log(`🟢 Default Shop তৈরি হলো: ${shop.name} (${shop.domain}) — id: ${shop._id}`);
   } else {

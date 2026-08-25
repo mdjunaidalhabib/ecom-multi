@@ -58,9 +58,8 @@ planSchema.index({ order: 1 });
 const Plan = mongoose.models.Plan || mongoose.model("Plan", planSchema);
 export default Plan;
 
-// ✅ প্রথমবার কল হওয়ার সময় collection খালি থাকলে আজকের free/starter/pro
-// ডিফল্ট মান দিয়ে seed করে — আগের PlatformSettings.planFeatures/planThemeMap
-// এর সাথে হুবহু মিলিয়ে, যাতে migration ছাড়াই বিদ্যমান শপগুলোর আচরণ অপরিবর্তিত থাকে।
+// ✅ প্রথমবার কল হওয়ার সময় collection খালি থাকলে আজকের
+// free/starter/business/custom/reseller ডিফল্ট মান দিয়ে seed করে।
 const SEED_PLANS = [
   {
     key: "free",
@@ -98,8 +97,8 @@ const SEED_PLANS = [
     limits: { maxProducts: 200, maxAdmins: 2 },
   },
   {
-    key: "pro",
-    name: "Pro",
+    key: "business",
+    name: "Business",
     tagline: "পূর্ণাঙ্গ প্রফেশনাল ফিচারের জন্য",
     order: 2,
     theme: "classic",
@@ -108,11 +107,45 @@ const SEED_PLANS = [
       analytics: true,
       promo: true,
       payment: true,
-      landingPages: false,
+      landingPages: true,
       fullStorefront: true,
       invoiceCustomization: true,
     },
     limits: { maxProducts: 1000, maxAdmins: 5 },
+  },
+  {
+    key: "custom",
+    name: "Custom",
+    tagline: "আপনার ব্যবসার চাহিদা অনুযায়ী সম্পূর্ণ কাস্টমাইজড সমাধান",
+    order: 3,
+    theme: "classic",
+    features: {
+      customDomain: true,
+      analytics: true,
+      promo: true,
+      payment: true,
+      landingPages: true,
+      fullStorefront: true,
+      invoiceCustomization: true,
+    },
+    limits: { maxProducts: 5000, maxAdmins: 10 },
+  },
+  {
+    key: "reseller",
+    name: "Reseller",
+    tagline: "একাধিক ক্লায়েন্ট/শপ পরিচালনা ও রিসেল করার জন্য",
+    order: 4,
+    theme: "classic",
+    features: {
+      customDomain: true,
+      analytics: true,
+      promo: true,
+      payment: true,
+      landingPages: true,
+      fullStorefront: true,
+      invoiceCustomization: true,
+    },
+    limits: { maxProducts: 10000, maxAdmins: 20 },
   },
 ];
 
