@@ -365,7 +365,18 @@ export const updateShop = async (req, res) => {
 
     if (plan !== undefined) {
       const planDoc = await Plan.findOne({ key: plan }).select("key");
-      if (planDoc) shop.plan = planDoc.key;
+      if (planDoc && planDoc.key !== shop.plan) {
+        shop.plan = planDoc.key;
+        // ✅ plan সরাসরি এখান থেকে পাল্টালে limits (maxProducts/maxAdmins)-ও
+        // নতুন প্ল্যানের সাথে সিঙ্ক করা হয় — নাহলে shop.limits আগের প্ল্যানের
+        // স্ন্যাপশটেই আটকে থাকে (যেমন reviewPlanRequest-এ হয়, দেখুন
+        // planRequest.superadmin.controller.js)
+        const planFeatures = await getPlanFeatures(planDoc.key);
+        shop.limits = {
+          maxProducts: planFeatures.maxProducts,
+          maxAdmins: planFeatures.maxAdmins,
+        };
+      }
     }
 
     if (subscriptionStartDate !== undefined || subscriptionDays !== undefined) {
@@ -450,7 +461,20 @@ export const updateShop = async (req, res) => {
     invalidateShopCache({ domain: originalDomain, slug: originalSlug });
     invalidateShopCache({ domain: shop.domain, slug: shop.slug });
 
-    res.json({ message: "✅ শপ আপডেট হয়েছে", shop });
+    // ✅ downgrade-এর ফলে বিদ্যমান প্রোডাক্ট সংখ্যা নতুন limit-এর বেশি হয়ে
+    // গেলেও পুরনো প্রোডাক্ট ডিলিট/হাইড করা হয় না (grandfathered) — শুধু নতুন
+    // প্রোডাক্ট অ্যাড ব্লক থাকবে (দেখুন product.controller.js)। এখানে শুধু
+    // super-admin-কে এটা জানিয়ে দেওয়া হচ্ছে যাতে ভুলবশত downgrade করে
+    // পরে কনফিউজড না হয়।
+    const currentProductCount = await Product.countDocuments({ shopId: shop._id }).setOptions({
+      skipTenantScope: true,
+    });
+    const overLimitWarning =
+      currentProductCount > shop.limits.maxProducts
+        ? `⚠️ এই শপে বর্তমানে ${currentProductCount}টি প্রোডাক্ট আছে, কিন্তু নতুন প্ল্যানে সর্বোচ্চ ${shop.limits.maxProducts}টি অনুমোদিত। পুরনো প্রোডাক্টগুলো অক্ষত থাকবে, কিন্তু নতুন প্রোডাক্ট যোগ করা যাবে না যতক্ষণ না লিমিটের নিচে আনা হয়।`
+        : null;
+
+    res.json({ message: "✅ শপ আপডেট হয়েছে", shop, overLimitWarning });
   } catch (err) {
     console.error("❌ updateShop error:", err);
     if (err?.code === 11000) {

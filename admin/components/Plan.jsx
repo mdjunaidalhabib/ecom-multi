@@ -83,7 +83,8 @@ export default function Plan() {
 
   const notify = (message, type = "success") => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    // ✅ warning বার্তা সাধারণত লম্বা (over-limit সতর্কতা) — পড়ার জন্য বেশি সময় দরকার
+    setTimeout(() => setToast(null), type === "warning" ? 7000 : 3000);
   };
 
   const planLabel = (key) => plans.find((p) => p.key === key)?.name || key;
@@ -136,11 +137,15 @@ export default function Plan() {
     }
     setSubmitting(true);
     try {
-      await apiFetch("/admin/plan-requests", {
+      const created = await apiFetch("/admin/plan-requests", {
         method: "POST",
         body: JSON.stringify({ requestedPlan, note }),
       });
-      notify("প্ল্যান পরিবর্তনের অনুরোধ পাঠানো হয়েছে");
+      if (created?.overLimitWarning) {
+        notify(created.overLimitWarning, "warning");
+      } else {
+        notify("প্ল্যান পরিবর্তনের অনুরোধ পাঠানো হয়েছে");
+      }
       setRequestedPlan("");
       setNote("");
       loadAll();
@@ -164,7 +169,11 @@ export default function Plan() {
       {toast && (
         <div
           className={`fixed left-3 right-3 top-3 z-[200] rounded-xl px-4 py-3 text-center text-sm font-bold text-white shadow-xl sm:left-auto sm:right-4 sm:top-4 sm:max-w-sm ${
-            toast.type === "error" ? "bg-red-600" : "bg-emerald-600"
+            toast.type === "error"
+              ? "bg-red-600"
+              : toast.type === "warning"
+              ? "bg-amber-600"
+              : "bg-emerald-600"
           }`}
         >
           {toast.message}

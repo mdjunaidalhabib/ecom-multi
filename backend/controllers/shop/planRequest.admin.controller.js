@@ -1,6 +1,8 @@
 import Shop from "../../src/models/Shop.js";
 import PlanChangeRequest from "../../src/models/PlanChangeRequest.js";
 import Plan from "../../src/models/Plan.js";
+import Product from "../../src/models/Product.js";
+import { getPlanFeatures } from "../../src/services/planFeatureService.js";
 
 /* -------------------------------------------------------
    POST /admin/plan-requests — লগইন করা admin/staff-এর শপের জন্য
@@ -44,7 +46,18 @@ export const createPlanRequest = async (req, res) => {
       requestedBy: req.admin?._id || null,
     });
 
-    res.status(201).json(request);
+    // ✅ ডাউনগ্রেড রিকোয়েস্ট করার আগেই যদি বর্তমান প্রোডাক্ট সংখ্যা নতুন
+    // প্ল্যানের limit-এর বেশি হয়, শপ-অ্যাডমিনকে সাথে সাথে জানিয়ে দেওয়া হচ্ছে —
+    // approve হওয়ার পর নতুন প্রোডাক্ট অ্যাড ব্লক হয়ে যাবে যতক্ষণ না কমানো হয়
+    // (অনুরোধ জমা দেওয়া আটকানো হচ্ছে না, শুধু আগে থেকে সতর্ক করা হচ্ছে)
+    const requestedFeatures = await getPlanFeatures(requestedPlan);
+    const currentProductCount = await Product.countDocuments({ shopId: shop._id });
+    const overLimitWarning =
+      currentProductCount > requestedFeatures.maxProducts
+        ? `⚠️ আপনার শপে বর্তমানে ${currentProductCount}টি প্রোডাক্ট আছে, কিন্তু "${requestedPlan}" প্ল্যানে সর্বোচ্চ ${requestedFeatures.maxProducts}টি অনুমোদিত। অনুমোদনের পর পুরনো প্রোডাক্ট অক্ষত থাকবে, কিন্তু নতুন প্রোডাক্ট যোগ করা যাবে না যতক্ষণ না লিমিটের নিচে আনা হয়।`
+        : null;
+
+    res.status(201).json({ ...request.toObject(), overLimitWarning });
   } catch (err) {
     console.error("❌ createPlanRequest error:", err);
     res.status(500).json({ message: err.message || "Server error" });

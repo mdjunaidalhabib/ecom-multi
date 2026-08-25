@@ -1,5 +1,6 @@
 import Shop from "../../src/models/Shop.js";
 import PlanChangeRequest from "../../src/models/PlanChangeRequest.js";
+import Product from "../../src/models/Product.js";
 import { getPlanFeatures } from "../../src/services/planFeatureService.js";
 
 const VALID_STATUSES = ["pending", "approved", "rejected"];
@@ -47,6 +48,8 @@ export const reviewPlanRequest = async (req, res) => {
         .json({ message: "এই রিকোয়েস্ট ইতিমধ্যে পর্যালোচনা করা হয়েছে" });
     }
 
+    let overLimitWarning = null;
+
     if (action === "approve") {
       const shop = await Shop.findById(request.shopId).setOptions({
         skipTenantScope: true,
@@ -61,6 +64,16 @@ export const reviewPlanRequest = async (req, res) => {
       };
       await shop.save();
 
+      // ✅ downgrade approve করার ফলে বিদ্যমান প্রোডাক্ট সংখ্যা নতুন limit-এর
+      // বেশি হয়ে গেলেও পুরনো প্রোডাক্ট ডিলিট/হাইড করা হয় না (grandfathered) —
+      // শুধু নতুন প্রোডাক্ট অ্যাড ব্লক থাকবে (দেখুন product.controller.js)।
+      const currentProductCount = await Product.countDocuments({ shopId: shop._id }).setOptions({
+        skipTenantScope: true,
+      });
+      if (currentProductCount > shop.limits.maxProducts) {
+        overLimitWarning = `⚠️ এই শপে বর্তমানে ${currentProductCount}টি প্রোডাক্ট আছে, কিন্তু নতুন প্ল্যানে সর্বোচ্চ ${shop.limits.maxProducts}টি অনুমোদিত। পুরনো প্রোডাক্টগুলো অক্ষত থাকবে, কিন্তু নতুন প্রোডাক্ট যোগ করা যাবে না যতক্ষণ না লিমিটের নিচে আনা হয়।`;
+      }
+
       request.status = "approved";
     } else {
       request.status = "rejected";
@@ -71,7 +84,7 @@ export const reviewPlanRequest = async (req, res) => {
     request.reviewNote = reviewNote ? String(reviewNote).trim().slice(0, 500) : "";
     await request.save();
 
-    res.json(request);
+    res.json({ ...request.toObject(), overLimitWarning });
   } catch (err) {
     console.error("❌ reviewPlanRequest error:", err);
     res.status(500).json({ message: err.message || "Server error" });

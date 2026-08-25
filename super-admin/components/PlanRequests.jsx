@@ -76,10 +76,14 @@ export default function PlanRequests() {
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "review failed");
-      notify(
-        reviewing.action === "approve" ? "প্ল্যান অনুমোদন হয়েছে" : "রিকোয়েস্ট বাতিল হয়েছে",
-        "success",
-      );
+      if (data?.overLimitWarning) {
+        notify(data.overLimitWarning, "warning");
+      } else {
+        notify(
+          reviewing.action === "approve" ? "প্ল্যান অনুমোদন হয়েছে" : "রিকোয়েস্ট বাতিল হয়েছে",
+          "success",
+        );
+      }
       setReviewing(null);
       setReviewNote("");
       load();

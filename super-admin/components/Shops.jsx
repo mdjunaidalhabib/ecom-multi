@@ -328,10 +328,14 @@ export default function Shops() {
         setToast({ message, type: "error" });
       } else {
         setShopErrors({});
-        setToast({
-          message: editingShop ? "✅ শপ আপডেট হয়েছে" : "✅ নতুন শপ তৈরি হয়েছে",
-          type: "success",
-        });
+        setToast(
+          data?.overLimitWarning
+            ? { message: data.overLimitWarning, type: "warning" }
+            : {
+                message: editingShop ? "✅ শপ আপডেট হয়েছে" : "✅ নতুন শপ তৈরি হয়েছে",
+                type: "success",
+              },
+        );
         closeModal();
         loadShops();
       }
@@ -674,10 +678,39 @@ export default function Shops() {
                   </div>
                 )}
 
+                {(() => {
+                  const productCount = shop.stats?.products ?? 0;
+                  const maxProducts = shop.limits?.maxProducts;
+                  const isOverLimit = maxProducts != null && productCount > maxProducts;
+                  return isOverLimit ? (
+                    <div
+                      className="flex items-center gap-1.5 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-400"
+                      title="ডাউনগ্রেডের ফলে পুরনো প্রোডাক্ট অক্ষত আছে, কিন্তু নতুন প্রোডাক্ট যোগ করা যাবে না যতক্ষণ না লিমিটের নিচে আনা হয়"
+                    >
+                      <AlertTriangle size={13} className="shrink-0" />
+                      Product limit ছাড়িয়ে গেছে ({productCount}/{maxProducts})
+                    </div>
+                  ) : null;
+                })()}
+
                 <div className="grid grid-cols-3 gap-2 text-center text-xs bg-gray-50 dark:bg-slate-800 rounded-lg py-2">
                   <div className="flex flex-col items-center gap-0.5">
                     <Package size={14} className="text-gray-500 dark:text-slate-400" />
-                    <b className="text-gray-900 dark:text-slate-100">{shop.stats?.products ?? 0}</b>
+                    <b
+                      className={
+                        shop.limits?.maxProducts != null &&
+                        (shop.stats?.products ?? 0) > shop.limits.maxProducts
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-gray-900 dark:text-slate-100"
+                      }
+                    >
+                      {shop.stats?.products ?? 0}
+                      {shop.limits?.maxProducts != null && (
+                        <span className="font-normal text-gray-400 dark:text-slate-500">
+                          /{shop.limits.maxProducts}
+                        </span>
+                      )}
+                    </b>
                     <span className="text-gray-500 dark:text-slate-400">Products</span>
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
