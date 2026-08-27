@@ -49,16 +49,10 @@ const LIMIT_FEATURES = [
   { key: "maxProducts", label: "সর্বোচ্চ Products" },
   { key: "maxAdmins", label: "সর্বোচ্চ Admin/Staff" },
 ];
-const THEME_OPTIONS = [
-  { value: "classic", label: "Classic" },
-  { value: "aurora", label: "Aurora" },
-  { value: "terra", label: "Terra" },
-];
-
 const emptyForm = () => ({
   name: "",
   tagline: "",
-  theme: "classic",
+  theme: "",
   isVisible: true,
   customDomain: false,
   analytics: false,
@@ -90,6 +84,7 @@ const formFromPlan = (plan) => ({
 export default function Plans() {
   const [plans, setPlans] = useState([]);
   const [shops, setShops] = useState([]);
+  const [themes, setThemes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
@@ -111,18 +106,21 @@ export default function Plans() {
   const loadAll = async () => {
     try {
       setLoading(true);
-      const [plansRes, shopsRes, announcementRes] = await Promise.all([
+      const [plansRes, shopsRes, themesRes, announcementRes] = await Promise.all([
         fetch("/api/admin/plans"),
         fetch("/api/admin/shops"),
+        fetch("/api/admin/themes"),
         fetch("/api/admin/announcement"),
       ]);
-      const [plansData, shopsData, announcementData] = await Promise.all([
+      const [plansData, shopsData, themesData, announcementData] = await Promise.all([
         plansRes.json(),
         shopsRes.json(),
+        themesRes.json(),
         announcementRes.json(),
       ]);
       setPlans(Array.isArray(plansData) ? plansData : []);
       setShops(Array.isArray(shopsData) ? shopsData : []);
+      setThemes(Array.isArray(themesData) ? themesData : []);
       setAnnouncement(announcementData?.text || "");
       setAnnouncementInput(announcementData?.text || "");
     } catch {
@@ -145,7 +143,7 @@ export default function Plans() {
   }, [shops]);
 
   const openCreateModal = () => {
-    setForm(emptyForm());
+    setForm({ ...emptyForm(), theme: themes[0]?.key || "" });
     setFormError("");
     setModal({ mode: "create" });
   };
@@ -463,8 +461,8 @@ export default function Plans() {
                   <span className="flex items-center gap-1.5 text-gray-500 dark:text-slate-400">
                     <Palette size={14} /> ডিফল্ট থিম
                   </span>
-                  <span className="font-bold text-gray-900 dark:text-slate-100 capitalize">
-                    {plan.theme}
+                  <span className="font-bold text-gray-900 dark:text-slate-100">
+                    {themes.find((t) => t.key === plan.theme)?.name || plan.theme}
                   </span>
                 </div>
               </div>
@@ -522,9 +520,9 @@ export default function Plans() {
                   onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
                 >
-                  {THEME_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
+                  {themes.map((t) => (
+                    <option key={t.key} value={t.key}>
+                      {t.name}
                     </option>
                   ))}
                 </select>

@@ -27,6 +27,16 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        {/* ✅ Invoice renderer "Hind Siliguri" ফন্ট নাম দিয়ে টেক্সট আঁকে, কিন্তু
+        এই ফন্ট আগে কোথাও লোডই হতো না — দেখুন admin/src/app/layout.js এর কমেন্ট */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="flex flex-col min-h-screen bg-gray-50">
         <PWARegister />
         {children}

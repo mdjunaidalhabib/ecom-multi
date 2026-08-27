@@ -25,6 +25,7 @@ import refundPolicyRoutes from "./refundPolicy.routes.js";
 import faqRoutes from "./faq.routes.js";
 import shopInfoRoutes from "./shopInfo.routes.js";
 import landingPageRoutes from "./landingPage.routes.js";
+import invoiceExportRoutes from "./invoiceExport.routes.js";
 import { resolveShopByDomain } from "../../tenancy/publicShopResolver.js";
 
 const router = express.Router();
@@ -33,6 +34,15 @@ const router = express.Router();
 // কারণ OAuth callback backend-এর নিজের ডোমেইনে আসে, কাস্টমারের শপ
 // ডোমেইনে না) — তাই এটা global domain-resolver এর আগে বসানো, বাইপাস করার জন্য
 router.use("/auth", authRoutes);
+
+// ✅ headless Chromium (invoiceExportService.js) সরাসরি backend-কে হিট করে,
+// কোনো শপ ডোমেইন/স্লাগ হেডার ছাড়াই — তাই /print/invoice ও /invoices দুটোই
+// domain-resolver এর আগে বসানো (একই invoiceRoute রি-ইউজ করা হচ্ছে, কারণ
+// সেটা req.shop/req.shopId এর উপর নির্ভর করে না, order.shopId দিয়ে নিজে থেকেই
+// শপ resolve করে)। export-pdf রুট দুটোও একই কারণে ইচ্ছাকৃতভাবে unauthenticated —
+// অর্ডার-আইডি/ডাউনলোড-আইডি নিজেই unguessable secret হিসেবে কাজ করে।
+router.use("/print/invoice", invoiceRoute);
+router.use("/invoices", invoiceExportRoutes);
 
 // ✅ এর নিচের সব রুট কাস্টমার যে ডোমেইন থেকে হিট করছে সেটা দিয়ে শপ resolve করবে
 router.use(resolveShopByDomain);

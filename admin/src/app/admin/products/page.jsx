@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import ProductForm from "../../../../components/productForm/ProductForm";
 import ProductCard from "../../../../components/ProductCard";
@@ -18,6 +19,9 @@ const emptyCounts = {
 };
 
 export default function ProductsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState(emptyCounts);
@@ -104,6 +108,35 @@ export default function ProductsPage() {
         setHomeBadges(Array.isArray(data?.badges) ? data.badges : []),
       )
       .catch(() => setHomeBadges([]));
+  }, []);
+
+  // ✅ Deep-link: /admin/products?edit=<id> — যেমন Category delete blocked
+  // modal থেকে "Edit" বাটনে ক্লিক করলে সরাসরি সেই প্রোডাক্টের edit ফর্ম খুলে যায়
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (!editId) return;
+
+    let cancelled = false;
+
+    fetch(`/api/admin/products/${editId}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((product) => {
+        if (cancelled) return;
+        setEditProduct(product);
+        setShowForm(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setToast({ message: "❌ Product not found", type: "error" });
+      })
+      .finally(() => {
+        if (!cancelled) router.replace("/admin/products");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getBadgeName = (field, fallback) => {

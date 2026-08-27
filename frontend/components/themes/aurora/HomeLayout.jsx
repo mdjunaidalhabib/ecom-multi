@@ -27,7 +27,7 @@ export default function AuroraHomeLayout({ products = [], categories = [], slide
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-[var(--theme-bg)]">
       <ImageSlider images={slides} />
 
       {activeCategories.length > 0 && (
@@ -77,7 +77,7 @@ export default function AuroraHomeLayout({ products = [], categories = [], slide
                 </h2>
                 <button
                   onClick={() => goToCategoryPage(cat)}
-                  className="flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-amber-600"
+                  className="flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-[var(--theme-accent)]"
                 >
                   View all <ArrowRight className="h-3 w-3" />
                 </button>

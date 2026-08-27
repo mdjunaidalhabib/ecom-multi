@@ -293,7 +293,9 @@ router.delete("/delete-all", async (req, res) => {
     res.json({ message: "✅ All slides moved to Trash" });
   } catch (err) {
     console.error("❌ Delete all error:", err);
-    res.status(500).json({ message: "Failed to delete all slides" });
+    res
+      .status(500)
+      .json({ message: err?.message || "Failed to delete all slides" });
   }
 });
 
@@ -333,7 +335,7 @@ router.delete("/:id", async (req, res) => {
     res.json({ message: "✅ Slide moved to Trash", slides });
   } catch (err) {
     console.error("Delete failed:", err);
-    res.status(500).json({ message: "Delete failed" });
+    res.status(500).json({ message: err?.message || "Delete failed" });
   }
 });
 

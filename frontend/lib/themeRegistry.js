@@ -16,19 +16,19 @@ const THEMES = {
     Navbar: ClassicNavbar,
     Footer: ClassicFooter,
     HomeLayout: ClassicHomeLayout,
-    mainClassName: "bg-pink-50",
+    mainClassName: "bg-[var(--theme-bg)]",
   },
   aurora: {
     Navbar: AuroraNavbar,
     Footer: AuroraFooter,
     HomeLayout: AuroraHomeLayout,
-    mainClassName: "bg-white",
+    mainClassName: "bg-[var(--theme-bg)]",
   },
   terra: {
     Navbar: TerraNavbar,
     Footer: TerraFooter,
     HomeLayout: TerraHomeLayout,
-    mainClassName: "bg-amber-50/40",
+    mainClassName: "bg-[var(--theme-bg)]",
   },
 };
 

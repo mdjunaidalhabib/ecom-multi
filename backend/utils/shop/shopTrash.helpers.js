@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Admin from "../../src/models/Admin.js";
 import About from "../../src/models/About.js";
 import Analytics from "../../src/models/Analytics.js";
@@ -60,26 +61,23 @@ const TENANT_MODELS = [
  * Permanently removes every record and external asset that belongs to a shop.
  * This is only called when a Shop trash entry is manually deleted forever or
  * reaches its 3-day expiry time.
+ *
+ * All DB writes run inside one transaction so a mid-way failure never leaves
+ * orphaned data behind (some models wiped, others not). R2 asset deletion
+ * happens only *after* the transaction commits, since external storage
+ * deletes can't be rolled back — doing it first risks losing files whose DB
+ * records survive a failed/rolled-back transaction.
  */
 export async function permanentlyDeleteShopData(shopId) {
   const id = String(shopId);
 
-  // Active assets must be removed before their database records disappear.
+  // Reads only — figure out which assets need R2 cleanup once the DB side
+  // of the delete has actually committed.
   const [products, categories, sliders] = await Promise.all([
     Product.find({ shopId: id }).setOptions({ skipTenantScope: true }).lean(),
     Category.find({ shopId: id }).setOptions({ skipTenantScope: true }).lean(),
     Slider.find({ shopId: id }).setOptions({ skipTenantScope: true }).lean(),
   ]);
-
-  for (const product of products) {
-    await cleanupAssetGroup("Product", product);
-  }
-  for (const category of categories) {
-    await cleanupAssetGroup("Category", category);
-  }
-  for (const slider of sliders) {
-    await cleanupAssetGroup("Slider", slider);
-  }
 
   // Items already inside this shop's recycle bin may also own assets.
   const tenantTrashEntries = await Trash.find({
@@ -87,21 +85,47 @@ export async function permanentlyDeleteShopData(shopId) {
     collectionName: { $ne: "Shop" },
   }).setOptions({ skipTenantScope: true });
 
-  for (const entry of tenantTrashEntries) {
-    await cleanupAssetGroup(entry.collectionName, entry.data);
+  const assetCleanupTargets = [
+    ...products.map((data) => ["Product", data]),
+    ...categories.map((data) => ["Category", data]),
+    ...sliders.map((data) => ["Slider", data]),
+    ...tenantTrashEntries.map((entry) => [entry.collectionName, entry.data]),
+  ];
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await Promise.all(
+        TENANT_MODELS.map((Model) =>
+          Model.deleteMany({ shopId: id }).setOptions({
+            skipTenantScope: true,
+            session,
+          }),
+        ),
+      );
+
+      await Trash.deleteMany({
+        shopId: id,
+        collectionName: { $ne: "Shop" },
+      }).setOptions({ skipTenantScope: true, session });
+
+      // Remove stale shop assignments from every non-platform account.
+      await Admin.updateMany(
+        { shops: id },
+        { $pull: { shops: id } },
+      ).session(session);
+    });
+  } catch (err) {
+    console.error("❌ permanentlyDeleteShopData transaction failed:", err);
+    throw new Error(
+      "Shop delete ব্যর্থ হয়েছে, কোনো ডেটা পরিবর্তন হয়নি, আবার চেষ্টা করুন",
+    );
+  } finally {
+    await session.endSession();
   }
 
-  await Promise.all(
-    TENANT_MODELS.map((Model) =>
-      Model.deleteMany({ shopId: id }).setOptions({ skipTenantScope: true }),
-    ),
-  );
-
-  await Trash.deleteMany({
-    shopId: id,
-    collectionName: { $ne: "Shop" },
-  }).setOptions({ skipTenantScope: true });
-
-  // Remove stale shop assignments from every non-platform account.
-  await Admin.updateMany({ shops: id }, { $pull: { shops: id } });
+  // DB transaction committed — now safe to remove the now-orphaned R2 files.
+  for (const [collectionName, data] of assetCleanupTargets) {
+    await cleanupAssetGroup(collectionName, data);
+  }
 }

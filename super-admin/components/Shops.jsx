@@ -80,8 +80,6 @@ const PLAN_BADGE_PALETTE = [
   "bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-500/30",
   "bg-teal-100 dark:bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-500/30",
 ];
-const THEME_LABELS = { classic: "Classic", aurora: "Aurora", terra: "Terra" };
-
 // ✅ সাবস্ক্রিপশন মেয়াদের প্রিসেট — সবগুলোই দিনের এককে (backend-ও দিনে হিসাব
 // করে, দেখুন planExpiry.js)। "custom" বাছলে সরাসরি দিনের সংখ্যা input দেখায়,
 // যাতে যেকোনো মেয়াদ (৪৫ দিন, ২ বছর = ৭৩০ দিন, ইত্যাদি) নিখুঁতভাবে দেওয়া যায়।
@@ -99,6 +97,7 @@ export default function Shops() {
   const [pageLoading, setPageLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [plans, setPlans] = useState([]);
+  const [themes, setThemes] = useState([]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingShop, setEditingShop] = useState(null); // null = creating new
@@ -158,6 +157,11 @@ export default function Shops() {
       .then((res) => res.json())
       .then((data) => setPlans(Array.isArray(data) ? data : []))
       .catch(() => {});
+    // ✅ থিম লিস্ট — Theme override dropdown এবং effective theme লেবেলের জন্য
+    fetch("/api/admin/themes")
+      .then((res) => res.json())
+      .then((data) => setThemes(Array.isArray(data) ? data : []))
+      .catch(() => {});
   }, []);
 
   // ✅ শপ কার্ডে মেয়াদ badge দেখানোর জন্য — দিন বাকি থাকলে সংখ্যা, পার হয়ে
@@ -183,6 +187,7 @@ export default function Shops() {
 
   const getPlan = (key) => plans.find((p) => p.key === key);
   const getPlanLabel = (key) => getPlan(key)?.name || key;
+  const getThemeLabel = (key) => themes.find((t) => t.key === key)?.name || key;
   const getPlanBadgeStyle = (key) => {
     const index = plans.findIndex((p) => p.key === key);
     return PLAN_BADGE_PALETTE[index >= 0 ? index % PLAN_BADGE_PALETTE.length : 0];
@@ -631,7 +636,7 @@ export default function Shops() {
                     className="text-xs font-semibold px-2 py-1 rounded-full border bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30"
                     title={themeIsOverridden ? "এই শপে নিজস্ব override করা theme" : "প্ল্যানের default theme"}
                   >
-                    {THEME_LABELS[effectiveTheme] || effectiveTheme} থিম
+                    {getThemeLabel(effectiveTheme)} থিম
                     {themeIsOverridden ? " (override)" : ""}
                   </span>
                   {expiryInfo && (
@@ -960,12 +965,14 @@ export default function Shops() {
                   className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1"
                 >
                   <option value="">Plan অনুযায়ী default</option>
-                  <option value="classic">Classic</option>
-                  <option value="aurora">Aurora</option>
-                  <option value="terra">Terra</option>
+                  {themes.map((t) => (
+                    <option key={t.key} value={t.key}>
+                      {t.name}
+                    </option>
+                  ))}
                 </select>
                 <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-                  খালি রাখলে Settings → Themes-এ ঠিক করা plan-এর default theme ব্যবহার হবে।
+                  খালি রাখলে Themes পেজে ঠিক করা plan-এর default theme ব্যবহার হবে।
                 </p>
               </div>
 

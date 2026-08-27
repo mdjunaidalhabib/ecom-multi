@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Toast from "../components/Toast";
 import CategoriesSkeleton from "../components/Skeleton/CategoriesSkeleton";
 import CategoryModal from "./CategoryModal";
+import CategoryDeleteBlockedModal from "./CategoryDeleteBlockedModal";
 
 
 export default function CategoriesPage() {
@@ -26,6 +27,7 @@ export default function CategoriesPage() {
 
   const [deleteModal, setDeleteModal] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [blockedDelete, setBlockedDelete] = useState(null); // { count, products }
 
   // ================== LOAD ==================
   const loadCategories = async () => {
@@ -139,21 +141,35 @@ export default function CategoriesPage() {
     if (!deleteModal) return;
     setDeleting(true);
 
-    const res = await fetch(`/api/admin/categories/${deleteModal._id}`, {
-      method: "DELETE",
-    });
-
-    if (res.ok) {
-      setToast({ message: "🗑 Category deleted!", type: "success" });
-      setDeleteModal(null);
-      loadCategories();
-    } else {
-      const errData = await res.json().catch(() => ({}));
-      setToast({
-        message: errData?.error || "❌ Error deleting category",
-        type: "error",
+    try {
+      const res = await fetch(`/api/admin/categories/${deleteModal._id}`, {
+        method: "DELETE",
       });
+
+      if (res.ok) {
+        setToast({ message: "🗑 Category deleted!", type: "success" });
+        setDeleteModal(null);
+        loadCategories();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+
+        if (errData?.code === "CATEGORY_HAS_PRODUCTS") {
+          setDeleteModal(null);
+          setBlockedDelete({
+            count: errData.count || 0,
+            products: Array.isArray(errData.products) ? errData.products : [],
+          });
+        } else {
+          setToast({
+            message: errData?.error || "❌ Error deleting category",
+            type: "error",
+          });
+        }
+      }
+    } catch {
+      setToast({ message: "🌐 Network error, please try again", type: "error" });
     }
+
     setDeleting(false);
   };
 
@@ -379,6 +395,14 @@ export default function CategoriesPage() {
           </div>
         </>
       )}
+
+      {/* CATEGORY DELETE BLOCKED (has products) */}
+      <CategoryDeleteBlockedModal
+        open={!!blockedDelete}
+        count={blockedDelete?.count || 0}
+        products={blockedDelete?.products || []}
+        onClose={() => setBlockedDelete(null)}
+      />
 
       {/* TOAST */}
       {toast && (

@@ -1,4 +1,5 @@
 import Category from "../../src/models/Category.js";
+import Product from "../../src/models/Product.js";
 import { deleteFromR2, deleteByKey, uploadToR2 } from "../../utils/r2/r2Helpers.js";
 import fs from "fs";
 import sharp from "sharp";
@@ -227,6 +228,28 @@ export const deleteCategory = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
     if (!category) return res.status(404).json({ error: "Category not found" });
+
+    // ✅ প্রোডাক্ট থাকা অবস্থায় ক্যাটেগরি ডিলিট করতে দেওয়া হয় না — admin panel
+    // এ কোন কোন প্রোডাক্ট আটকাচ্ছে তা দেখানোর জন্য একটা ছোট তালিকা (max 20) ফেরত পাঠানো হয়
+    const blockingProducts = await Product.find({ categories: category._id })
+      .select("name image price stock")
+      .limit(20);
+
+    if (blockingProducts.length > 0) {
+      const count = await Product.countDocuments({ categories: category._id });
+      return res.status(400).json({
+        error: `এই ক্যাটেগরিতে এখনো ${count} টি প্রোডাক্ট আছে। আগে সেগুলো ডিলিট করুন অথবা অন্য ক্যাটেগরিতে সরিয়ে নিন।`,
+        code: "CATEGORY_HAS_PRODUCTS",
+        count,
+        products: blockingProducts.map((p) => ({
+          _id: p._id,
+          name: p.name,
+          image: p.image,
+          price: p.price,
+          stock: p.stock,
+        })),
+      });
+    }
 
     const deletedOrder = category.order;
 

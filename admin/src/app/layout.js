@@ -25,6 +25,17 @@ export default function AdminLayout({ children }) {
         <meta name="theme-color" content="#f472b6" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        {/* ✅ Invoice renderer "Hind Siliguri" ফন্ট নাম দিয়ে টেক্সট আঁকে, কিন্তু
+        এই ফন্ট আগে কোথাও লোডই হতো না — ব্রাউজার নিঃশব্দে Arial-এ fallback করত
+        (তাই লাইভ প্রিভিউ ঠিক দেখাত), কিন্তু html2canvas না-থাকা ফন্ট-নেম রিজলভ
+        করতে গিয়ে ভুল metrics দিয়ে টেক্সট আঁকত — ডাউনলোড করা PDF-এ টেক্সট/bg
+        মিসঅ্যালাইন হওয়ার আসল কারণ ছিল এটাই। */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
       </head>
 

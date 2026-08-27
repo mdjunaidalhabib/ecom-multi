@@ -83,7 +83,7 @@ export default function AuroraFooter() {
   const { brand = {}, contact = {}, socialLinks = [] } = data;
 
   return (
-    <footer className="mb-14 bg-neutral-950 px-4 pb-10 pt-16 text-neutral-300 md:mb-0 md:px-12">
+    <footer className="mb-14 bg-[var(--theme-secondary)] px-4 pb-10 pt-16 text-neutral-300 md:mb-0 md:px-12">
       <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
         {/* Brand block — centered */}
         <div className="flex items-center gap-3">
@@ -120,7 +120,7 @@ export default function AuroraFooter() {
                   href={shopHref(base, social.url)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-700 text-neutral-300 transition hover:border-amber-500 hover:text-amber-500"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-700 text-neutral-300 transition hover:border-[var(--theme-accent)] hover:text-[var(--theme-accent)]"
                 >
                   <Icon className="text-sm" />
                 </Link>
@@ -129,7 +129,7 @@ export default function AuroraFooter() {
         </div>
 
         {/* Gold rule */}
-        <div className="my-10 h-px w-24 bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
+        <div className="my-10 h-px w-24 bg-gradient-to-r from-transparent via-[var(--theme-accent)]/60 to-transparent" />
 
         {/* Links + contact — flowing centered row, wraps on small screens */}
         <div className="flex flex-wrap items-start justify-center gap-x-14 gap-y-8 text-sm">
@@ -142,7 +142,7 @@ export default function AuroraFooter() {
                 <li key={item.href}>
                   <Link
                     href={shopHref(base, item.href)}
-                    className="transition hover:text-amber-500"
+                    className="transition hover:text-[var(--theme-accent)]"
                   >
                     {item.label}
                   </Link>
@@ -160,7 +160,7 @@ export default function AuroraFooter() {
                 <li key={item.href}>
                   <Link
                     href={shopHref(base, item.href)}
-                    className="transition hover:text-amber-500"
+                    className="transition hover:text-[var(--theme-accent)]"
                   >
                     {item.label}
                   </Link>
@@ -176,23 +176,23 @@ export default function AuroraFooter() {
             <ul className="space-y-3">
               {contact.phone && (
                 <li className="flex items-center gap-2.5">
-                  <FaPhoneAlt className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                  <a href={`tel:${contact.phone}`} className="hover:text-amber-500">
+                  <FaPhoneAlt className="h-3.5 w-3.5 shrink-0 text-[var(--theme-accent)]" />
+                  <a href={`tel:${contact.phone}`} className="hover:text-[var(--theme-accent)]">
                     {contact.phone}
                   </a>
                 </li>
               )}
               {contact.email && (
                 <li className="flex items-center gap-2.5">
-                  <FaEnvelope className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                  <a href={`mailto:${contact.email}`} className="hover:text-amber-500">
+                  <FaEnvelope className="h-3.5 w-3.5 shrink-0 text-[var(--theme-accent)]" />
+                  <a href={`mailto:${contact.email}`} className="hover:text-[var(--theme-accent)]">
                     {contact.email}
                   </a>
                 </li>
               )}
               {contact.address && (
                 <li className="flex items-start gap-2.5 text-left">
-                  <FaMapMarkerAlt className="mt-1 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                  <FaMapMarkerAlt className="mt-1 h-3.5 w-3.5 shrink-0 text-[var(--theme-accent)]" />
                   <span className="leading-5">{contact.address}</span>
                 </li>
               )}
@@ -210,7 +210,7 @@ export default function AuroraFooter() {
               href="https://hikmahit.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-neutral-300 hover:text-amber-500"
+              className="font-medium text-neutral-300 hover:text-[var(--theme-accent)]"
             >
               Hikmah IT
             </a>

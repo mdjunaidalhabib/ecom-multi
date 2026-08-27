@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Trash from "../../src/models/Trash.js";
 import Product from "../../src/models/Product.js";
 import Category from "../../src/models/Category.js";
@@ -59,18 +60,40 @@ export const moveToTrash = async (
 ) => {
   const data = doc.toObject({ depopulate: true });
 
-  const trashEntry = await Trash.create({
-    shopId: shopId || data.shopId,
-    collectionName,
-    originalId: doc._id,
-    label: getLabel(collectionName, data),
-    data,
-    deletedAt: new Date(),
-    expiresAt: new Date(Date.now() + TRASH_TTL_DAYS * 24 * 60 * 60 * 1000),
-    metadata,
-  });
+  // Creating the Trash entry and deleting the original document must be
+  // atomic — otherwise a mid-way failure can create a Trash entry whose
+  // original document never actually gets deleted (or vice versa).
+  const session = await mongoose.startSession();
+  let trashEntry;
+  try {
+    await session.withTransaction(async () => {
+      const [created] = await Trash.create(
+        [
+          {
+            shopId: shopId || data.shopId,
+            collectionName,
+            originalId: doc._id,
+            label: getLabel(collectionName, data),
+            data,
+            deletedAt: new Date(),
+            expiresAt: new Date(Date.now() + TRASH_TTL_DAYS * 24 * 60 * 60 * 1000),
+            metadata,
+          },
+        ],
+        { session },
+      );
+      trashEntry = created;
 
-  await doc.deleteOne();
+      await doc.deleteOne({ session });
+    });
+  } catch (err) {
+    console.error("❌ moveToTrash transaction failed:", err);
+    throw new Error(
+      "আইটেম Trash-এ পাঠানো ব্যর্থ হয়েছে, কোনো ডেটা পরিবর্তন হয়নি, আবার চেষ্টা করুন",
+    );
+  } finally {
+    await session.endSession();
+  }
 
   return trashEntry;
 };
@@ -117,11 +140,24 @@ export const restoreFromTrashEntry = async (trashEntry) => {
 
   const data = { ...trashEntry.data };
 
-  const restored = new Model(data);
-  restored.isNew = true;
-  await restored.save();
+  // Restoring the document and removing the Trash entry must be atomic —
+  // otherwise a mid-way failure can restore the document but leave the
+  // Trash entry behind (or vice versa). Duplicate-key (11000) errors from
+  // restored.save() are intentionally left unwrapped so callers can still
+  // detect them (see admin.shop.controller.js's restoreDeletedShop).
+  const session = await mongoose.startSession();
+  let restored;
+  try {
+    await session.withTransaction(async () => {
+      restored = new Model(data);
+      restored.isNew = true;
+      await restored.save({ session });
 
-  await trashEntry.deleteOne();
+      await trashEntry.deleteOne({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
 
   return restored;
 };

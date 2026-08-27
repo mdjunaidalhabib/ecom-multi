@@ -29,9 +29,12 @@ const planSchema = new mongoose.Schema(
     // super-admin নিজে সবসময় সব plan দেখে, visible/hidden নির্বিশেষে।
     isVisible: { type: Boolean, default: true },
 
+    // ✅ theme এখন Theme কালেকশন থেকে dynamically তৈরি/ডিলিট হয় (দেখুন
+    // models/Theme.js), তাই এখানে স্ট্যাটিক enum রাখা যায় না। বৈধতা যাচাই হয়
+    // themes.admin.controller.js-এ (create/update plan) live Theme লিস্টের
+    // বিপরীতে — plan.js-এর মতোই প্লেইন স্ট্রিং FK।
     theme: {
       type: String,
-      enum: ["classic", "aurora", "terra"],
       default: "classic",
     },
 

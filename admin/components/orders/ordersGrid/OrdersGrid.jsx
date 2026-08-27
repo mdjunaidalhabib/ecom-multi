@@ -9,7 +9,6 @@ import BulkBar from "./BulkBar";
 import OrderCard from "./OrderCard";
 import useInvoiceTemplate from "../../../hooks/useInvoiceTemplate";
 import downloadInvoicePdf from "../../../utils/invoiceDownload";
-import toast from "react-hot-toast";
 
 export default function OrdersGrid({
   orders,
@@ -25,15 +24,15 @@ export default function OrdersGrid({
   const [openId, setOpenId] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
-  const { template: invoiceTemplate, shop: invoiceShop } = useInvoiceTemplate();
+  const { template: invoiceTemplate } = useInvoiceTemplate();
 
   const handleDownloadInvoice = async (order) => {
     if (!invoiceTemplate) return;
     setDownloadingId(order._id);
     try {
-      await downloadInvoicePdf(order, invoiceShop, invoiceTemplate);
+      await downloadInvoicePdf(order); // লোডিং/ক্যানসেল/এরর টোস্ট নিজেই দেখায়
     } catch {
-      toast.error("❌ ইনভয়েস তৈরি করতে সমস্যা হয়েছে");
+      // ইতিমধ্যে toast দেখানো হয়ে গেছে — এখানে আলাদা করে দেখানোর দরকার নেই
     } finally {
       setDownloadingId(null);
     }

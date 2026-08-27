@@ -1,6 +1,21 @@
 import Plan from "../../src/models/Plan.js";
+import Theme from "../../src/models/Theme.js";
 import { shopHasFeature } from "../../src/services/planFeatureService.js";
 import LandingPage from "../../src/models/LandingPage.js";
+
+const FALLBACK_THEME = {
+  baseLayout: "classic",
+  colors: {
+    primary: "#db2777",
+    primaryDark: "#be185d",
+    secondary: "#111827",
+    background: "#fdf2f8",
+    surface: "#ffffff",
+    text: "#1f2937",
+    accent: "#ec4899",
+  },
+  fonts: { heading: "default", body: "default" },
+};
 
 /* -------------------------------------------------------
    GET /shop-info — Public: storefront (frontend)-এর জন্য শপের নাম,
@@ -14,7 +29,15 @@ export const getShopInfo = async (req, res) => {
 
     const planDoc = await Plan.findOne({ key: shop.plan }).select("theme");
     const planDefault = planDoc?.theme || "classic";
-    const effectiveTheme = shop.branding?.theme || planDefault;
+    const effectiveThemeKey = shop.branding?.theme || planDefault;
+    const themeDoc = await Theme.findOne({ key: effectiveThemeKey });
+    const themeConfig = themeDoc
+      ? {
+          baseLayout: themeDoc.baseLayout,
+          colors: themeDoc.colors.toObject(),
+          fonts: themeDoc.fonts.toObject(),
+        }
+      : FALLBACK_THEME;
     const fullStorefront = await shopHasFeature(shop, "fullStorefront");
 
     let primaryLandingPageSlug = null;
@@ -37,7 +60,8 @@ export const getShopInfo = async (req, res) => {
         logo: shop.branding?.logo || "",
         themeColor: shop.branding?.themeColor || "#0ea5e9",
       },
-      effectiveTheme,
+      effectiveTheme: effectiveThemeKey,
+      theme: themeConfig,
       fullStorefront,
       primaryLandingPageSlug,
     });

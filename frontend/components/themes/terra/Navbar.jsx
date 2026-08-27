@@ -56,10 +56,10 @@ export default function TerraNavbar() {
   return (
     <>
       <nav className="sticky top-3 z-50 px-3 sm:px-6">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 rounded-[2rem] bg-gradient-to-r from-amber-50 via-amber-50 to-emerald-50 px-4 py-2.5 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-900/5 sm:px-5">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 rounded-[2rem] bg-gradient-to-r from-[var(--theme-bg)] via-[var(--theme-bg)] to-[var(--theme-primary)]/10 px-4 py-2.5 shadow-md shadow-[var(--theme-text)]/10 ring-1 ring-[var(--theme-text)]/5 sm:px-5">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="text-emerald-900 md:hidden"
+            className="text-[var(--theme-text)] md:hidden"
             aria-label="Menu"
           >
             {menuOpen ? <FaTimes className="h-5 w-5" /> : <FaBars className="h-5 w-5" />}
@@ -74,24 +74,24 @@ export default function TerraNavbar() {
                 onError={() => setImgError(true)}
               />
             ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-700">
+              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[var(--theme-primary)]">
                 <FaLeaf className="h-4 w-4 text-white" />
               </div>
             )}
-            <span className="truncate text-lg font-bold text-emerald-900">
+            <span className="truncate text-lg font-bold text-[var(--theme-text)]">
               {navbar?.brand?.name?.trim() || ""}
             </span>
           </Link>
 
-          <div className="hidden items-center gap-1 rounded-full bg-white/80 p-1 shadow-inner md:flex">
+          <div className="hidden items-center gap-1 rounded-full bg-[var(--theme-surface)]/80 p-1 shadow-inner md:flex">
             {NAV_LINKS.map(({ href, label }) => (
               <Link
                 key={href}
                 href={shopHref(base, href)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
                   isActive(href)
-                    ? "bg-emerald-700 text-white shadow-sm"
-                    : "text-emerald-900 hover:bg-emerald-100"
+                    ? "bg-[var(--theme-primary)] text-white shadow-sm"
+                    : "text-[var(--theme-text)] hover:bg-[var(--theme-primary)]/10"
                 }`}
               >
                 {label}
@@ -99,9 +99,9 @@ export default function TerraNavbar() {
             ))}
           </div>
 
-          <div className="flex items-center gap-1 rounded-full bg-white/60 px-1 text-emerald-900">
+          <div className="flex items-center gap-1 rounded-full bg-[var(--theme-surface)]/60 px-1 text-[var(--theme-text)]">
             <button
-              className="p-2 hover:text-emerald-700 md:hidden"
+              className="p-2 hover:text-[var(--theme-primary)] md:hidden"
               onClick={() => setMobileSearchOpen(true)}
               aria-label="Search"
             >
@@ -145,7 +145,7 @@ export default function TerraNavbar() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="fixed bottom-0 left-0 top-0 z-50 w-64 space-y-1 bg-amber-50 p-4"
+              className="fixed bottom-0 left-0 top-0 z-50 w-64 space-y-1 bg-[var(--theme-bg)] p-4"
             >
               {NAV_LINKS.map(({ href, label }) => (
                 <Link
@@ -154,8 +154,8 @@ export default function TerraNavbar() {
                   onClick={() => setMenuOpen(false)}
                   className={`block rounded-full px-4 py-2.5 text-sm font-medium ${
                     isActive(href)
-                      ? "bg-emerald-700 text-white"
-                      : "text-emerald-900 hover:bg-emerald-100"
+                      ? "bg-[var(--theme-primary)] text-white"
+                      : "text-[var(--theme-text)] hover:bg-[var(--theme-primary)]/10"
                   }`}
                 >
                   {label}
@@ -167,26 +167,26 @@ export default function TerraNavbar() {
       </AnimatePresence>
 
       {/* Floating rounded bottom bar — matches the top pill bar's language */}
-      <div className="fixed inset-x-3 bottom-3 z-50 rounded-[1.75rem] bg-gradient-to-r from-amber-50 via-amber-50 to-emerald-50 shadow-md shadow-emerald-900/10 ring-1 ring-emerald-900/5 md:hidden">
-        <div className="flex items-center justify-around px-4 py-2.5 text-emerald-900/70">
+      <div className="fixed inset-x-3 bottom-3 z-50 rounded-[1.75rem] bg-gradient-to-r from-[var(--theme-bg)] via-[var(--theme-bg)] to-[var(--theme-primary)]/10 shadow-md shadow-[var(--theme-text)]/10 ring-1 ring-[var(--theme-text)]/5 md:hidden">
+        <div className="flex items-center justify-around px-4 py-2.5 text-[var(--theme-text)]/70">
           <Link
             href={base || "/"}
-            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/") ? "text-emerald-700" : ""}`}
+            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/") ? "text-[var(--theme-primary)]" : ""}`}
           >
             <FaHome className="h-4 w-4" />
             Home
           </Link>
           <Link
             href={shopHref(base, "/categories")}
-            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/categories") ? "text-emerald-700" : ""}`}
+            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/categories") ? "text-[var(--theme-primary)]" : ""}`}
           >
             <FaThLarge className="h-4 w-4" />
             Categories
           </Link>
-          <div className={`text-[11px] ${isActive("/wishlist") ? "text-emerald-700" : ""}`}>
+          <div className={`text-[11px] ${isActive("/wishlist") ? "text-[var(--theme-primary)]" : ""}`}>
             <WishlistIcon wishlistCount={wishlistCount} mobile />
           </div>
-          <div className={`text-[11px] ${isActive("/cart") ? "text-emerald-700" : ""}`}>
+          <div className={`text-[11px] ${isActive("/cart") ? "text-[var(--theme-primary)]" : ""}`}>
             <CartIcon cartCount={cartCount} mobile />
           </div>
         </div>

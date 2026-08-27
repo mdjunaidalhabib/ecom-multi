@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Toaster } from "react-hot-toast";
 import useOrders from "../../../hooks/useOrders";
 
 import OrdersGrid from "../ordersGrid/OrdersGrid";
@@ -251,6 +252,12 @@ export default function OrdersPage() {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* ✅ ইনভয়েস PDF ডাউনলোড (OrdersGrid/OrdersTable → downloadInvoicePdf)
+      react-hot-toast ব্যবহার করে লোডিং/ক্যানসেল/এরর দেখায় — এই পেজের কোথাও
+      react-hot-toast এর <Toaster/> মাউন্ট করা ছিল না বলে সেই toast কল
+      আগে সাইলেন্টলি কিছুই দেখাতো না। */}
+      <Toaster position="top-right" />
     </div>
   );
 }

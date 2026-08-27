@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Toaster } from "react-hot-toast";
 import OrderSummarySkeleton from "../skeletons/OrderSummarySkeleton";
 import { formatDateTime } from "../../lib/utils";
 import useShopPath from "../../hooks/useShopPath";
@@ -10,7 +11,6 @@ export default function OrderSummary({ orderId }) {
   const { base } = useShopPath();
   const [order, setOrder] = useState(null);
   const [invoiceTemplate, setInvoiceTemplate] = useState(null);
-  const [invoiceShop, setInvoiceShop] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
@@ -24,7 +24,6 @@ export default function OrderSummary({ orderId }) {
       .then((data) => {
         setOrder(data.order || null);
         setInvoiceTemplate(data.template ? normalizeTemplate(data.template) : null);
-        setInvoiceShop(data.shop || null);
       })
       .catch((err) => {
         console.error("❌ Failed to fetch order:", err);
@@ -37,7 +36,7 @@ export default function OrderSummary({ orderId }) {
     if (!order || !invoiceTemplate) return;
     setDownloading(true);
     try {
-      await downloadInvoicePdf(order, invoiceShop, invoiceTemplate);
+      await downloadInvoicePdf(order);
     } catch (err) {
       console.error("❌ Invoice download failed:", err);
     } finally {
@@ -184,6 +183,11 @@ export default function OrderSummary({ orderId }) {
           🏠 Home
         </a>
       </div>
+
+      {/* ✅ ইনভয়েস PDF ডাউনলোডের লোডিং/ক্যানসেল/এরর টোস্ট দেখানোর জন্য —
+      frontend app-এ এর আগে কোথাও react-hot-toast এর <Toaster/> মাউন্ট করা
+      ছিল না। */}
+      <Toaster position="top-right" />
     </div>
   );
 }

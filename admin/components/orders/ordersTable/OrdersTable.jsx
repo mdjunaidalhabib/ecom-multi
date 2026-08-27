@@ -25,7 +25,6 @@ import StatusTabs from "./StatusTabs";
 import BulkActions from "./BulkActions";
 import useInvoiceTemplate from "../../../hooks/useInvoiceTemplate";
 import downloadInvoicePdf from "../../../utils/invoiceDownload";
-import toast from "react-hot-toast";
 
 export default function OrdersTable({
   orders,
@@ -41,15 +40,15 @@ export default function OrdersTable({
   const [q, setQ] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
-  const { template: invoiceTemplate, shop: invoiceShop } = useInvoiceTemplate();
+  const { template: invoiceTemplate } = useInvoiceTemplate();
 
   const handleDownloadInvoice = async (order) => {
     if (!invoiceTemplate) return;
     setDownloadingId(order._id);
     try {
-      await downloadInvoicePdf(order, invoiceShop, invoiceTemplate);
+      await downloadInvoicePdf(order); // লোডিং/ক্যানসেল/এরর টোস্ট নিজেই দেখায়
     } catch {
-      toast.error("❌ ইনভয়েস তৈরি করতে সমস্যা হয়েছে");
+      // ইতিমধ্যে toast দেখানো হয়ে গেছে — এখানে আলাদা করে দেখানোর দরকার নেই
     } finally {
       setDownloadingId(null);
     }

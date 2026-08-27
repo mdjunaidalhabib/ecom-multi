@@ -55,6 +55,11 @@ export function middleware(req) {
   const isNonPageRequest =
     pathname.startsWith("/api") ||
     pathname.startsWith("/auth") ||
+    // ✅ headless Chromium (backend/src/services/invoiceExportService.js)
+    // সরাসরি এই path-এ নেভিগেট করে PDF জেনারেট করে — শপ-ডোমেইন রিরাইটে
+    // পড়লে navbar/footer chrome-সহ ShopLayout-এ ঢুকে যেত (data-print-size/
+    // no-chrome দুটোই ভেঙে যেত), তাই /api, /auth এর মতো এটাও বাদ রাখা হলো।
+    pathname.startsWith("/print") ||
     /\.[^/]+$/.test(pathname);
 
   if (isNonPageRequest) {

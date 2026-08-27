@@ -1,7 +1,7 @@
 import Plan, { listActivePlans } from "../../src/models/Plan.js";
 import Shop from "../../src/models/Shop.js";
+import Theme from "../../src/models/Theme.js";
 
-const THEME_KEYS = ["classic", "aurora", "terra"];
 const BOOLEAN_KEYS = [
   "customDomain",
   "analytics",
@@ -102,7 +102,7 @@ export const createPlan = async (req, res) => {
       return res.status(400).json({ message: "প্ল্যানের নাম প্রয়োজন" });
     }
 
-    if (theme !== undefined && !THEME_KEYS.includes(theme)) {
+    if (theme !== undefined && !(await Theme.exists({ key: theme }))) {
       return res.status(400).json({ message: `অবৈধ theme: ${theme}` });
     }
 
@@ -162,7 +162,7 @@ export const updatePlan = async (req, res) => {
     }
 
     if (theme !== undefined) {
-      if (!THEME_KEYS.includes(theme)) {
+      if (!(await Theme.exists({ key: theme }))) {
         return res.status(400).json({ message: `অবৈধ theme: ${theme}` });
       }
       plan.theme = theme;

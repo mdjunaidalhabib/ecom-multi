@@ -13,6 +13,7 @@ import { permanentlyDeleteShopData } from "../../utils/shop/shopTrash.helpers.js
 import { invalidateShopCache } from "../../src/tenancy/publicShopResolver.js";
 import { getPlanFeatures } from "../../src/services/planFeatureService.js";
 import Plan from "../../src/models/Plan.js";
+import Theme from "../../src/models/Theme.js";
 import {
   isPlanExpired,
   computePlanExpiresAt,
@@ -443,7 +444,7 @@ export const updateShop = async (req, res) => {
     if (themeColor !== undefined) shop.branding.themeColor = themeColor;
     if (theme !== undefined) {
       // খালি স্ট্রিং/"" মানে override সরিয়ে plan-এর default theme ব্যবহার করা
-      if (["", "classic", "aurora", "terra"].includes(theme)) {
+      if (theme === "" || (await Theme.exists({ key: theme }))) {
         shop.branding.theme = theme;
       }
     }
@@ -580,7 +581,9 @@ export const deleteShop = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ deleteShop error:", err);
-    res.status(500).json({ message: "Server error deleting shop" });
+    res
+      .status(500)
+      .json({ message: err?.message || "Server error deleting shop" });
   }
 };
 
@@ -664,7 +667,9 @@ export const permanentDeleteShop = async (req, res) => {
     res.json({ message: "🗑️ Shop এবং এর সব data permanently deleted" });
   } catch (err) {
     console.error("❌ permanentDeleteShop error:", err);
-    res.status(500).json({ message: "Server error permanently deleting shop" });
+    res.status(500).json({
+      message: err?.message || "Server error permanently deleting shop",
+    });
   }
 };
 
@@ -688,7 +693,9 @@ export const emptyShopTrash = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ emptyShopTrash error:", err);
-    res.status(500).json({ message: "Server error emptying shop trash" });
+    res.status(500).json({
+      message: err?.message || "Server error emptying shop trash",
+    });
   }
 };
 

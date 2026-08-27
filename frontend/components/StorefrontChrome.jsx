@@ -15,6 +15,7 @@ export default function StorefrontChrome({
   footer,
   floatingActionButton,
   mainClassName,
+  themeVars,
   children,
 }) {
   const pathname = usePathname();
@@ -25,13 +26,16 @@ export default function StorefrontChrome({
   }
 
   return (
-    <>
+    <div
+      className="flex min-h-screen flex-1 flex-col"
+      style={{ ...themeVars, fontFamily: "var(--theme-font-body)" }}
+    >
       {navbar}
       <main className={`flex-grow ${mainClassName}`}>
         <div className="mx-auto w-full">{children}</div>
       </main>
       {footer}
       {floatingActionButton}
-    </>
+    </div>
   );
 }

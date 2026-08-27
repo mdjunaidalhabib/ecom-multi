@@ -192,8 +192,10 @@ function SummaryRow({ label, value, highlight }) {
     <div
       style={{
         display: "flex",
+        alignItems: "center",
         justifyContent: "space-between",
         fontSize: "1em",
+        lineHeight: 1.4,
         fontWeight: 600,
         padding: highlight ? "5px 7px" : "2px 0",
         borderRadius: highlight ? 5 : 0,
@@ -209,7 +211,6 @@ function SummaryRow({ label, value, highlight }) {
 
 function ItemsTable({ element, order }) {
   const columns = (element.columns || []).filter((c) => c.visible).sort((a, b) => a.order - b.order);
-  const gridTemplate = columns.map((c) => `${c.width}px`).join(" ");
   const items = order?.items || [];
 
   const cellValue = (col, item, index) => {
@@ -221,11 +222,17 @@ function ItemsTable({ element, order }) {
     return "";
   };
 
+  // ✅ CSS Grid এর বদলে flexbox + fixed-width span ব্যবহার করা হচ্ছে —
+  // html2canvas (PDF ক্যাপচারে ব্যবহৃত) grid-template-columns ঠিকমতো
+  // সাপোর্ট করে না, ফলে ডাউনলোড করা PDF-এ কলামের টেক্সট/bg/border ভুল
+  // জায়গায় বসে যেত (এডিটর প্রিভিউতে ঠিক দেখালেও)। alignItems: "center"
+  // ছাড়া flex row-এর height সেলের content-height অনুযায়ী stretch হয় ঠিকই,
+  // কিন্তু টেক্সট নিজে লাইন-বক্সের উপরে/নিচে অসামঞ্জস্যভাবে বসে যেত।
   return (
     <div style={{ width: "100%", height: "100%", overflow: "auto" }}>
-      <div style={{ display: "grid", gridTemplateColumns: gridTemplate, background: "#ff36ac", color: "#fff", fontWeight: 700, borderBottom: "2px solid #111827" }}>
+      <div style={{ display: "flex", alignItems: "center", background: "#ff36ac", color: "#fff", fontWeight: 700, borderBottom: "2px solid #111827" }}>
         {columns.map((c) => (
-          <span key={c.key} style={{ textAlign: "center", padding: "6px 4px" }}>
+          <span key={c.key} style={{ width: c.width, flexShrink: 0, boxSizing: "border-box", textAlign: "center", padding: "6px 4px", lineHeight: 1.3 }}>
             {c.label}
           </span>
         ))}
@@ -234,14 +241,14 @@ function ItemsTable({ element, order }) {
         <div
           key={item.productId || index}
           style={{
-            display: "grid",
-            gridTemplateColumns: gridTemplate,
+            display: "flex",
+            alignItems: "center",
             background: index % 2 === 0 ? "#ffe6f5" : "#ffffff",
             borderBottom: "1px solid #ffc7f3",
           }}
         >
           {columns.map((c) => (
-            <span key={c.key} style={{ textAlign: "center", padding: "5px 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span key={c.key} style={{ width: c.width, flexShrink: 0, boxSizing: "border-box", textAlign: "center", padding: "5px 4px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {cellValue(c, item, index)}
             </span>
           ))}

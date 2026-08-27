@@ -94,10 +94,11 @@ const shopSchema = new mongoose.Schema(
       logoPublicId: { type: String, default: "" },
       themeColor: { type: String, default: "#0ea5e9" },
       // Storefront theme override — খালি থাকলে plan অনুযায়ী default theme
-      // ব্যবহার হয় (দেখুন PlatformSettings.planThemeMap)
+      // ব্যবহার হয়। theme এখন Theme কালেকশন থেকে dynamically তৈরি/ডিলিট
+      // হয় (দেখুন models/Theme.js), তাই এখানে স্ট্যাটিক enum রাখা যায় না —
+      // Plan.theme-এর মতোই প্লেইন স্ট্রিং FK, "" মানে override নেই।
       theme: {
         type: String,
-        enum: ["", "classic", "aurora", "terra"],
         default: "",
       },
     },

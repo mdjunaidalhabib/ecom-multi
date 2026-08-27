@@ -5,7 +5,7 @@ import HomeAllProduct from "../../home/HomeAllProduct";
 // shops on the "classic" theme (default: Pro plan) see zero visual change.
 export default function ClassicHomeLayout({ products, categories, badges, slides }) {
   return (
-    <section className="bg-pink-50">
+    <section className="bg-[var(--theme-bg)]">
       <ImageSlider images={slides} />
       <HomeAllProduct
         initialProducts={products}

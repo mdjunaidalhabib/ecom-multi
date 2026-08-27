@@ -19,6 +19,14 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* ✅ শপের থিম প্রিসেট (super-admin কন্ট্রোল করে, দেখুন
+   backend/src/models/Theme.js) heading font বেছে দিলে সেটা storefront-এর
+   সব heading-এ প্রযোজ্য হয় — --theme-font-heading শুধু StorefrontChrome-এর
+   wrapper div-এ সেট থাকে, তাই বাইরে (admin/other pages) inherit ফলব্যাকেই থামে। */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--theme-font-heading, inherit);
+}
+
 /* ✅ Rich text content — প্রোডাক্ট Description/Additional Info এর জন্য,
    admin এ যা লেখা হয় ঠিক সেভাবেই (bold/color/list/heading) এখানে দেখাবে,
    এবং প্যারাগ্রাফের মাঝে সবসময় সমান/নিয়ন্ত্রিত স্পেসিং থাকবে */

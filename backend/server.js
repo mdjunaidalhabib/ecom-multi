@@ -15,6 +15,7 @@ import adminRoutes from "./src/routes/admin/index.js";
 import { isKnownShopDomain } from "./src/tenancy/publicShopResolver.js";
 import { purgeExpiredTrash } from "./utils/trash/trash.helpers.js";
 import { autoSuspendExpiredShops } from "./utils/shop/shopAutoSuspend.helpers.js";
+import invoiceExportService from "./src/services/invoiceExportService.js";
 
 dotenv.config();
 
@@ -235,6 +236,7 @@ const shutdown = (signal) => {
       console.error("❌ Error while closing HTTP server:", err);
     }
     try {
+      await invoiceExportService.close();
       const mongoose = (await import("mongoose")).default;
       await mongoose.connection.close(false);
       console.log("✅ MongoDB connection closed. Bye 👋");

@@ -22,7 +22,7 @@ export default function TerraHomeLayout({ products = [], categories = [], slides
   const goToCategoryPage = (cat) => router.push(`${base}/categories/${cat._id}`);
 
   return (
-    <div className="bg-amber-50/40">
+    <div className="bg-[var(--theme-bg)]">
       <ImageSlider images={slides} />
 
       {activeCategories.length > 0 && (
@@ -42,7 +42,7 @@ export default function TerraHomeLayout({ products = [], categories = [], slides
                   sizes="200px"
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/70 via-emerald-950/0 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--theme-secondary)]/70 via-emerald-950/0 to-transparent" />
                 <span className="absolute inset-x-0 bottom-2 truncate px-2 text-center text-xs font-semibold text-white">
                   {cat.name}
                 </span>
@@ -64,12 +64,12 @@ export default function TerraHomeLayout({ products = [], categories = [], slides
           return (
             <section key={cat._id}>
               <div className="mb-4 flex items-end justify-between">
-                <h2 className="text-lg font-bold text-emerald-900 sm:text-xl">
+                <h2 className="text-lg font-bold text-[var(--theme-text)] sm:text-xl">
                   {cat.name}
                 </h2>
                 <button
                   onClick={() => goToCategoryPage(cat)}
-                  className="flex items-center gap-1 text-xs font-semibold text-amber-800 hover:text-amber-900"
+                  className="flex items-center gap-1 text-xs font-semibold text-[var(--theme-accent)] hover:text-[var(--theme-accent)]"
                 >
                   See all <ArrowRight className="h-3 w-3" />
                 </button>

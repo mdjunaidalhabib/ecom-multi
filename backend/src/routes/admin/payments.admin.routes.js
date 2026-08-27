@@ -110,7 +110,9 @@ router.delete("/methods/:id", async (req, res) => {
     res.json({ message: "✅ Payment method Trash-এ পাঠানো হয়েছে" });
   } catch (err) {
     console.error("❌ Failed to delete payment method:", err);
-    res.status(500).json({ error: "Failed to delete payment method" });
+    res
+      .status(500)
+      .json({ error: err?.message || "Failed to delete payment method" });
   }
 });
 

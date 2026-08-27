@@ -102,7 +102,7 @@ export default function Navbar() {
   return (
     <>
       {/* ───────────── Top Navbar ───────────── */}
-      <nav className="bg-pink-100 text-gray-800 shadow-md sticky top-0 z-50">
+      <nav className="bg-[var(--theme-primary)]/10 text-gray-800 shadow-md sticky top-0 z-50">
         <div className="container mx-auto w-full flex justify-between items-center py-3 px-4 md:px-8">
           {/* 📱 Hamburger */}
           <button
@@ -113,19 +113,19 @@ export default function Navbar() {
               variants={topBar}
               animate={menuOpen ? "open" : "closed"}
               transition={{ duration: 0.3 }}
-              className="block h-1 w-6 bg-pink-600 rounded"
+              className="block h-1 w-6 bg-[var(--theme-primary)] rounded"
             />
             <motion.span
               variants={middleBar}
               animate={menuOpen ? "open" : "closed"}
               transition={{ duration: 0.3 }}
-              className="block h-1 w-6 bg-pink-600 rounded"
+              className="block h-1 w-6 bg-[var(--theme-primary)] rounded"
             />
             <motion.span
               variants={bottomBar}
               animate={menuOpen ? "open" : "closed"}
               transition={{ duration: 0.3 }}
-              className="block h-1 w-6 bg-pink-600 rounded"
+              className="block h-1 w-6 bg-[var(--theme-primary)] rounded"
             />
           </button>
 
@@ -143,26 +143,26 @@ export default function Navbar() {
                 onError={() => setImgError(true)}
               />
             ) : (
-              <div className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center bg-pink-50 rounded-lg border border-pink-200">
-                <FaUserCircle className="text-pink-300 w-6 h-6" />
+              <div className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center bg-[var(--theme-bg)] rounded-lg border border-[var(--theme-primary)]/20">
+                <FaUserCircle className="text-[var(--theme-primary)]/40 w-6 h-6" />
               </div>
             )}
             {navbar?.brand?.name?.trim() ? (
-              <span className="text-xl font-bold text-pink-600 block min-w-[100px] truncate">
+              <span className="text-xl font-bold text-[var(--theme-primary)] block min-w-[100px] truncate">
                 {navbar.brand.name.trim()}
               </span>
             ) : (
-              <div className="h-6 w-32 bg-pink-200 rounded-lg animate-pulse" />
+              <div className="h-6 w-32 bg-[var(--theme-primary)]/15 rounded-lg animate-pulse" />
             )}
           </Link>
 
           {/* 📱 Mobile — Search icon + Account */}
           <div className="md:hidden flex items-center gap-1.5">
             <button
-              className="p-2 rounded-lg hover:bg-pink-200 transition-colors"
+              className="p-2 rounded-lg hover:bg-[var(--theme-primary)]/15 transition-colors"
               onClick={() => setMobileSearchOpen(true)}
             >
-              <FaSearch className="w-5 h-5 text-pink-600" />
+              <FaSearch className="w-5 h-5 text-[var(--theme-primary)]" />
             </button>
             <AccountMenuMobile topbar />
           </div>
@@ -179,8 +179,8 @@ export default function Navbar() {
                 href={shopHref(base, href)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded transition-all duration-200 ${
                   isActive(href)
-                    ? "text-pink-600 bg-pink-300 border border-pink-400 font-medium"
-                    : "text-gray-900 hover:text-pink-600 hover:bg-pink-200"
+                    ? "text-[var(--theme-primary)] bg-[var(--theme-primary)]/25 border border-[var(--theme-primary)]/40 font-medium"
+                    : "text-gray-900 hover:text-[var(--theme-primary)] hover:bg-[var(--theme-primary)]/15"
                 }`}
               >
                 {label}
@@ -196,17 +196,17 @@ export default function Navbar() {
               setMobileSearchOpen={setMobileSearchOpen}
             />
             <div
-              className={`rounded transition-all duration-200 ${subPath.startsWith("/profile") || subPath.startsWith("/orders") ? "text-pink-600 bg-pink-300 border border-pink-400 font-medium" : "text-gray-900 hover:text-pink-600 hover:bg-pink-200"}`}
+              className={`rounded transition-all duration-200 ${subPath.startsWith("/profile") || subPath.startsWith("/orders") ? "text-[var(--theme-primary)] bg-[var(--theme-primary)]/25 border border-[var(--theme-primary)]/40 font-medium" : "text-gray-900 hover:text-[var(--theme-primary)] hover:bg-[var(--theme-primary)]/15"}`}
             >
               <AccountMenuDesktop />
             </div>
             <div
-              className={`rounded transition-all duration-200 p-2 ${isActive("/cart") ? "text-pink-600 bg-pink-300 border border-pink-400 font-medium" : "text-gray-900 hover:text-pink-600 hover:bg-pink-200"}`}
+              className={`rounded transition-all duration-200 p-2 ${isActive("/cart") ? "text-[var(--theme-primary)] bg-[var(--theme-primary)]/25 border border-[var(--theme-primary)]/40 font-medium" : "text-gray-900 hover:text-[var(--theme-primary)] hover:bg-[var(--theme-primary)]/15"}`}
             >
               <CartIcon cartCount={cartCount} />
             </div>
             <div
-              className={`rounded transition-all duration-200 p-2 ${isActive("/wishlist") ? "text-pink-600 bg-pink-300 border border-pink-400 font-medium" : "text-gray-900 hover:text-pink-600 hover:bg-pink-200"}`}
+              className={`rounded transition-all duration-200 p-2 ${isActive("/wishlist") ? "text-[var(--theme-primary)] bg-[var(--theme-primary)]/25 border border-[var(--theme-primary)]/40 font-medium" : "text-gray-900 hover:text-[var(--theme-primary)] hover:bg-[var(--theme-primary)]/15"}`}
             >
               <WishlistIcon wishlistCount={wishlistCount} />
             </div>
@@ -240,7 +240,7 @@ export default function Navbar() {
               animate="visible"
               exit="exit"
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="fixed top-[60px] left-0 bottom-0 w-56 bg-pink-50 shadow-lg p-3 flex flex-col space-y-2.5 z-50 text-[15px]"
+              className="fixed top-[60px] left-0 bottom-0 w-56 bg-[var(--theme-bg)] shadow-lg p-3 flex flex-col space-y-2.5 z-50 text-[15px]"
             >
               {[
                 {
@@ -269,8 +269,8 @@ export default function Navbar() {
                   href={shopHref(base, href)}
                   className={`flex items-center gap-2.5 px-3 py-2 rounded transition-all duration-200 ${
                     isActive(href)
-                      ? "text-pink-600 bg-pink-200 font-medium"
-                      : "text-gray-700 hover:text-pink-600 hover:bg-pink-100"
+                      ? "text-[var(--theme-primary)] bg-[var(--theme-primary)]/15 font-medium"
+                      : "text-gray-700 hover:text-[var(--theme-primary)] hover:bg-[var(--theme-primary)]/10"
                   }`}
                   onClick={() => setMenuOpen(false)}
                 >
@@ -284,11 +284,11 @@ export default function Navbar() {
       </AnimatePresence>
 
       {/* ───────────── 📱 Bottom Navigation ───────────── */}
-      <div className="fixed bottom-0 left-0 right-0 md:hidden z-50 bg-pink-100 border-t border-pink-300">
+      <div className="fixed bottom-0 left-0 right-0 md:hidden z-50 bg-[var(--theme-primary)]/10 border-t border-[var(--theme-primary)]/25">
         <div className="relative flex justify-between items-center px-4 py-2">
           <Link
             href={base || "/"}
-            className={`flex flex-col items-center text-[11px] gap-0.5 ${isActive("/") ? "text-pink-500" : "text-gray-900"}`}
+            className={`flex flex-col items-center text-[11px] gap-0.5 ${isActive("/") ? "text-[var(--theme-primary)]" : "text-gray-900"}`}
           >
             <FaHome className="w-5 h-5" />
             <span>Home</span>
@@ -296,7 +296,7 @@ export default function Navbar() {
 
           <Link
             href={shopHref(base, "/categories")}
-            className={`flex flex-col items-center text-[11px] gap-0.5 ${isActive("/categories") ? "text-pink-500" : "text-gray-900"}`}
+            className={`flex flex-col items-center text-[11px] gap-0.5 ${isActive("/categories") ? "text-[var(--theme-primary)]" : "text-gray-900"}`}
           >
             <FaThLarge className="w-5 h-5" />
             <span>Category</span>
@@ -311,7 +311,7 @@ export default function Navbar() {
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
-              className="relative w-13 h-13 flex flex-col items-center justify-center rounded-full border-2 border-pink-200 overflow-hidden active:scale-95 transition-transform"
+              className="relative w-13 h-13 flex flex-col items-center justify-center rounded-full border-2 border-[var(--theme-primary)]/20 overflow-hidden active:scale-95 transition-transform"
               style={{
                 background: "linear-gradient(135deg, #ff49db, #ff007f)",
                 boxShadow:
@@ -339,13 +339,13 @@ export default function Navbar() {
           <div className="w-12" />
 
           <div
-            className={`flex flex-col items-center text-[11px] gap-0.5 ${isActive("/wishlist") ? "text-pink-500" : "text-gray-900"}`}
+            className={`flex flex-col items-center text-[11px] gap-0.5 ${isActive("/wishlist") ? "text-[var(--theme-primary)]" : "text-gray-900"}`}
           >
             <WishlistIcon wishlistCount={wishlistCount} mobile />
           </div>
 
           <div
-            className={`flex flex-col items-center text-[11px] gap-0.5 ${isActive("/cart") ? "text-pink-500" : "text-gray-900"}`}
+            className={`flex flex-col items-center text-[11px] gap-0.5 ${isActive("/cart") ? "text-[var(--theme-primary)]" : "text-gray-900"}`}
           >
             <CartIcon cartCount={cartCount} mobile />
           </div>

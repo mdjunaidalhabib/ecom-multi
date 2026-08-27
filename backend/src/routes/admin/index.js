@@ -28,6 +28,7 @@ import planRequestAdminRoutes from "./planRequest.admin.routes.js";
 import analyticsAdminRoutes from "./analytics.admin.routes.js";
 import myFeaturesAdminRoutes from "./myFeatures.admin.routes.js";
 import plansAdminRoutes from "./plans.admin.routes.js";
+import themesAdminRoutes from "./themes.admin.routes.js";
 import announcementAdminRoutes from "./announcement.admin.routes.js";
 import homepagePopupAdminRoutes from "./homepagePopup.admin.routes.js";
 import privacyPolicyAdminRoutes from "./privacyPolicy.admin.routes.js";
@@ -58,6 +59,10 @@ router.use("/shops", shopAdminRoutes);
 // requireShopContext এর আগে বসানো। GET শপ-admin-ও পড়তে পারে (নিজের plan
 // upgrade dropdown-এর জন্য), routes ফাইলেই handle করা আছে।
 router.use("/plans", plansAdminRoutes);
+
+// ✅ Theme preset catalog (name/baseLayout/colors/fonts, super-admin
+// add/edit/delete করে) — /plans-এর মতোই platform-wide, super-admin-only
+router.use("/themes", themesAdminRoutes);
 
 // ✅ "শীঘ্রই আসছে" ব্যানার টেক্সট — /plans এর মতোই platform-wide, কোনো
 // "active shop" ছাড়াই কাজ করতে হয়, নিজস্ব protect+superAdminOnly(শুধু PUT-এ) আছে

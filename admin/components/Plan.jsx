@@ -13,6 +13,7 @@ import {
   Megaphone,
   CalendarClock,
   AlertTriangle,
+  Palette,
 } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { formatDateTime, formatDate } from "../lib/utils";
@@ -63,7 +64,6 @@ const LIMIT_FEATURES = [
   { key: "maxProducts", label: "সর্বোচ্চ Products" },
   { key: "maxAdmins", label: "সর্বোচ্চ Admin/Staff" },
 ];
-
 const STATUS_META = {
   pending: ["পর্যালোচনাধীন", "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20", Clock],
   approved: ["অনুমোদিত", "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20", CheckCircle2],
@@ -74,6 +74,7 @@ export default function Plan() {
   const [planInfo, setPlanInfo] = useState(null);
   const [requests, setRequests] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [themes, setThemes] = useState([]);
   const [announcement, setAnnouncement] = useState("");
   const [loading, setLoading] = useState(true);
   const [requestedPlan, setRequestedPlan] = useState("");
@@ -88,6 +89,7 @@ export default function Plan() {
   };
 
   const planLabel = (key) => plans.find((p) => p.key === key)?.name || key;
+  const themeLabel = (key) => themes.find((t) => t.key === key)?.name || key;
   const planBadgeStyle = (key) => {
     const index = plans.findIndex((p) => p.key === key);
     return PLAN_BADGE_PALETTE[index >= 0 ? index % PLAN_BADGE_PALETTE.length : 0];
@@ -96,15 +98,17 @@ export default function Plan() {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [features, myRequests, allPlans, announcementData] = await Promise.all([
+      const [features, myRequests, allPlans, allThemes, announcementData] = await Promise.all([
         apiFetch("/admin/my-features"),
         apiFetch("/admin/plan-requests"),
         apiFetch("/admin/plans"),
+        apiFetch("/admin/themes").catch(() => []),
         apiFetch("/admin/announcement").catch(() => null),
       ]);
       setPlanInfo(features);
       setRequests(Array.isArray(myRequests) ? myRequests : []);
       setPlans(Array.isArray(allPlans) ? allPlans : []);
+      setThemes(Array.isArray(allThemes) ? allThemes : []);
       setAnnouncement(announcementData?.text || "");
     } catch (error) {
       notify(error.message || "প্ল্যান তথ্য লোড করা যায়নি", "error");
@@ -287,6 +291,33 @@ export default function Plan() {
               </div>
             ))}
           </div>
+
+          {/* ✅ স্টোরফ্রন্ট থিম — শুধুমাত্র super-admin থেকে নিয়ন্ত্রিত (প্ল্যান
+              ডিফল্ট বা এই শপের জন্য আলাদা override), তাই এখানে read-only দেখানো হয় */}
+          {planInfo?.theme && (
+            <div className="mx-4 mb-4 flex items-center justify-between gap-3 rounded-xl border border-gray-100 dark:border-slate-700/60 bg-gray-50 dark:bg-slate-800 px-3 py-2.5">
+              <span className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300">
+                <Palette size={16} className="text-pink-500" />
+                স্টোরফ্রন্ট থিম
+              </span>
+              <div className="text-right">
+                <span className="inline-flex items-center gap-1.5 text-sm font-black text-gray-900 dark:text-slate-100">
+                  {planInfo.theme.primaryColor && (
+                    <span
+                      className="h-2.5 w-2.5 rounded-full border border-black/10"
+                      style={{ backgroundColor: planInfo.theme.primaryColor }}
+                    />
+                  )}
+                  {planInfo.theme.name || themeLabel(planInfo.theme.effective)}
+                </span>
+                <p className="text-[11px] text-gray-400 dark:text-slate-500">
+                  {planInfo.theme.isOverridden
+                    ? "সুপার-অ্যাডমিন এই শপের জন্য আলাদাভাবে সেট করেছেন"
+                    : "আপনার প্ল্যানের ডিফল্ট থিম"}
+                </p>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* All plans comparison — শপ owner এখান থেকেই দেখতে পারবে কোন প্ল্যানে
@@ -347,6 +378,12 @@ export default function Plan() {
                         </span>
                       </div>
                     ))}
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="text-gray-600 dark:text-slate-400">ডিফল্ট থিম</span>
+                      <span className="font-bold text-gray-900 dark:text-slate-100">
+                        {themeLabel(plan.theme)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               );

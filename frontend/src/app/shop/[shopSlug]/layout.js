@@ -8,6 +8,7 @@ import StorefrontChrome from "../../../../components/StorefrontChrome";
 import ShopSuspensionGuard from "../../../../components/ShopSuspensionGuard";
 import { getShopInfo } from "../../../../lib/serverApi";
 import { getTheme } from "../../../../lib/themeRegistry";
+import { buildThemeVars } from "../../../../lib/themeVars";
 import { DOMAIN_MODE_MARKER } from "../../../../lib/shopMode";
 
 // Both custom-domain visitors (rewritten to /shop/__domain__/... by
@@ -83,7 +84,8 @@ export default async function ShopLayout({ children, params }) {
     permanentRedirect(`https://${shop.domain}${restPath}`);
   }
 
-  const { Navbar, Footer, mainClassName = "bg-white" } = getTheme(shop.effectiveTheme);
+  const { Navbar, Footer, mainClassName = "bg-white" } = getTheme(shop.theme?.baseLayout);
+  const themeVars = buildThemeVars(shop.theme);
 
   // ✅ custom-domain ভিজিটর এই routeSlug-এই আসে, শুধু middleware.js এটাকে
   // DOMAIN_MODE_MARKER দিয়ে রিরাইট করে — সেই কেসে x-shop-slug পাঠানো ভুল
@@ -101,6 +103,7 @@ export default async function ShopLayout({ children, params }) {
           footer={<Footer />}
           floatingActionButton={<FloatingActionButton />}
           mainClassName={mainClassName}
+          themeVars={themeVars}
         >
           {children}
         </StorefrontChrome>

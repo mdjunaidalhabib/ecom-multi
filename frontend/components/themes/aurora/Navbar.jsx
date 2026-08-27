@@ -56,7 +56,7 @@ export default function AuroraNavbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-white">
+      <nav className="sticky top-0 z-50 bg-[var(--theme-surface)]">
         {/* Row 1 — slim utility row: menu (mobile) + search/account/wishlist/cart */}
         <div className="border-b border-neutral-100">
           <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2 sm:px-6">
@@ -74,7 +74,7 @@ export default function AuroraNavbar() {
 
             <div className="flex items-center gap-1 text-neutral-600">
               <button
-                className="p-2 hover:text-neutral-950 md:hidden"
+                className="p-2 hover:text-[var(--theme-secondary)] md:hidden"
                 onClick={() => setMobileSearchOpen(true)}
                 aria-label="Search"
               >
@@ -114,14 +114,14 @@ export default function AuroraNavbar() {
                 <FaUserCircle className="h-5 w-5 text-neutral-300" />
               </div>
             )}
-            <span className="truncate font-serif text-xl tracking-tight text-neutral-950">
+            <span className="truncate font-serif text-xl tracking-tight text-[var(--theme-secondary)]">
               {navbar?.brand?.name?.trim() || ""}
             </span>
           </Link>
         </div>
 
         {/* Thin gold accent rule */}
-        <div className="mx-auto mt-3 h-px w-full max-w-7xl bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+        <div className="mx-auto mt-3 h-px w-full max-w-7xl bg-gradient-to-r from-transparent via-[var(--theme-accent)]/50 to-transparent" />
 
         {/* Row 3 — centered underline nav */}
         <div className="hidden justify-center gap-8 px-4 py-3 md:flex">
@@ -131,8 +131,8 @@ export default function AuroraNavbar() {
               href={shopHref(base, href)}
               className={`border-b-2 pb-0.5 text-xs font-medium uppercase tracking-[0.15em] transition ${
                 isActive(href)
-                  ? "border-neutral-950 text-neutral-950"
-                  : "border-transparent text-neutral-400 hover:text-neutral-950"
+                  ? "border-[var(--theme-secondary)] text-[var(--theme-secondary)]"
+                  : "border-transparent text-neutral-400 hover:text-[var(--theme-secondary)]"
               }`}
             >
               {label}
@@ -160,7 +160,7 @@ export default function AuroraNavbar() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="fixed bottom-0 left-0 top-0 z-50 w-64 space-y-1 bg-white p-4"
+              className="fixed bottom-0 left-0 top-0 z-50 w-64 space-y-1 bg-[var(--theme-surface)] p-4"
             >
               {NAV_LINKS.map(({ href, label }) => (
                 <Link
@@ -169,8 +169,8 @@ export default function AuroraNavbar() {
                   onClick={() => setMenuOpen(false)}
                   className={`block border-b border-transparent px-3 py-2.5 text-sm font-medium uppercase tracking-wide ${
                     isActive(href)
-                      ? "border-neutral-950 text-neutral-950"
-                      : "text-neutral-500 hover:text-neutral-950"
+                      ? "border-[var(--theme-secondary)] text-[var(--theme-secondary)]"
+                      : "text-neutral-500 hover:text-[var(--theme-secondary)]"
                   }`}
                 >
                   {label}
@@ -182,26 +182,26 @@ export default function AuroraNavbar() {
       </AnimatePresence>
 
       {/* Mobile bottom bar — flush, minimal, matches the monochrome + gold-line language */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-white md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-[var(--theme-surface)] md:hidden">
         <div className="flex items-center justify-around px-4 py-2 text-neutral-500">
           <Link
             href={base || "/"}
-            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/") ? "text-neutral-950" : ""}`}
+            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/") ? "text-[var(--theme-secondary)]" : ""}`}
           >
             <FaHome className="h-4 w-4" />
             Home
           </Link>
           <Link
             href={shopHref(base, "/categories")}
-            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/categories") ? "text-neutral-950" : ""}`}
+            className={`flex flex-col items-center gap-0.5 text-[11px] ${isActive("/categories") ? "text-[var(--theme-secondary)]" : ""}`}
           >
             <FaThLarge className="h-4 w-4" />
             Categories
           </Link>
-          <div className={`text-[11px] ${isActive("/wishlist") ? "text-neutral-950" : ""}`}>
+          <div className={`text-[11px] ${isActive("/wishlist") ? "text-[var(--theme-secondary)]" : ""}`}>
             <WishlistIcon wishlistCount={wishlistCount} mobile />
           </div>
-          <div className={`text-[11px] ${isActive("/cart") ? "text-neutral-950" : ""}`}>
+          <div className={`text-[11px] ${isActive("/cart") ? "text-[var(--theme-secondary)]" : ""}`}>
             <CartIcon cartCount={cartCount} mobile />
           </div>
         </div>
