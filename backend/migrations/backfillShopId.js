@@ -4,7 +4,7 @@
  * এই স্ক্রিপ্ট কী করে:
  *  1. একটা "default" Shop তৈরি করে (তোমার এখনকার একমাত্র শপ)
  *  2. সব existing document-এ ওই default shop-এর shopId বসিয়ে দেয়
- *  3. সব existing Admin-কে role: "superadmin" বানায়
+ *  3. সব existing Admin-কে role: "superadmin" বানায় ।
  *
  * চালানোর নিয়ম (backend/ ফোল্ডার থেকে):
  *   node migrations/backfillShopId.js --domain=yourshop.com --name="Your Shop Name"
@@ -51,7 +51,8 @@ const args = Object.fromEntries(
 );
 
 const DEFAULT_DOMAIN = args.domain || process.env.DEFAULT_SHOP_DOMAIN;
-const DEFAULT_NAME = args.name || process.env.DEFAULT_SHOP_NAME || "Default Shop";
+const DEFAULT_NAME =
+  args.name || process.env.DEFAULT_SHOP_NAME || "Default Shop";
 
 // প্রতিটা tenant-scoped model backfill করার জন্য: query তে shopId
 // skipTenantScope option ছাড়া চালালে tenantPlugin নিজেই shopId ঢুকিয়ে
@@ -95,16 +96,23 @@ async function run() {
   if (!shop) {
     shop = await Shop.create({
       name: DEFAULT_NAME,
-      slug: DEFAULT_NAME.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "default-shop",
+      slug:
+        DEFAULT_NAME.toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "") || "default-shop",
       domain: DEFAULT_DOMAIN.toLowerCase(),
       domainStatus: "verified", // ধরে নিচ্ছি এটা ইতিমধ্যে লাইভ ডোমেইন
       domainVerifiedAt: new Date(),
       status: "active",
       plan: "business",
     });
-    console.log(`🟢 Default Shop তৈরি হলো: ${shop.name} (${shop.domain}) — id: ${shop._id}`);
+    console.log(
+      `🟢 Default Shop তৈরি হলো: ${shop.name} (${shop.domain}) — id: ${shop._id}`,
+    );
   } else {
-    console.log(`🟡 Default Shop আগে থেকেই আছে: ${shop.name} (${shop.domain}) — id: ${shop._id}`);
+    console.log(
+      `🟡 Default Shop আগে থেকেই আছে: ${shop.name} (${shop.domain}) — id: ${shop._id}`,
+    );
   }
 
   // 2️⃣ সব model-এ shopId backfill (যেখানে shopId নেই বা null)
@@ -119,7 +127,10 @@ async function run() {
       const modified = result.modifiedCount ?? result.nModified ?? 0;
       console.log(`   ✅ ${modelName}: ${modified} ডকুমেন্ট আপডেট হলো`);
     } catch (err) {
-      console.error(`   ❌ ${modelName} backfill করতে সমস্যা হয়েছে:`, err.message);
+      console.error(
+        `   ❌ ${modelName} backfill করতে সমস্যা হয়েছে:`,
+        err.message,
+      );
     }
   }
 
