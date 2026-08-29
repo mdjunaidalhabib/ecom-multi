@@ -6,7 +6,7 @@ export const getProductsAdmin = async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 50, 2000); // cap max page size (raised so tools like the admin order picker can fetch the full catalog)
     const skip = (page - 1) * limit;
 
-    const { status, badge, search, category } = req.query; // status: active|hidden ; badge: freeDelivery|bestDiscount|cartvanBox
+    const { status, badge, search, category } = req.query; // status: active|hidden ; badge: freeDelivery|bestDiscount|cartvanBox|hasVariant
 
     const filter = {};
     if (status === "active") filter.isActive = true;
@@ -14,6 +14,8 @@ export const getProductsAdmin = async (req, res) => {
     if (badge === "freeDelivery") filter.freeDelivery = true;
     if (badge === "bestDiscount") filter.bestDiscount = true;
     if (badge === "cartvanBox") filter.cartvanBox = true;
+    // ✅ variant থাকা প্রোডাক্ট — colors array-তে অন্তত ১টা item থাকলেই ম্যাচ
+    if (badge === "hasVariant") filter["colors.0"] = { $exists: true };
 
     // ✅ category diye filter (admin order picker-এর মতো UI-তে ব্যবহৃত)
     if (typeof category === "string" && category.trim()) {
@@ -39,10 +41,12 @@ export const getProductsAdmin = async (req, res) => {
       freeDelivery,
       bestDiscount,
       cartvanBox,
+      hasVariant,
     ] = await Promise.all([
       Product.find(filter)
         .populate("categories")
-        .sort({ order: 1, createdAt: -1 })
+        // ✅ নতুন প্রোডাক্ট (সর্বোচ্চ order/serial) সবার আগে দেখানোর জন্য descending sort
+        .sort({ order: -1, createdAt: -1 })
         .skip(skip)
         .limit(limit),
       Product.countDocuments(filter),
@@ -52,6 +56,7 @@ export const getProductsAdmin = async (req, res) => {
       Product.countDocuments({ freeDelivery: true }),
       Product.countDocuments({ bestDiscount: true }),
       Product.countDocuments({ cartvanBox: true }),
+      Product.countDocuments({ "colors.0": { $exists: true } }),
     ]);
 
     res.json({
@@ -61,7 +66,15 @@ export const getProductsAdmin = async (req, res) => {
       totalPages: Math.ceil(total / limit),
       // ✅ always reflects the FULL catalog, not just the current page/filter,
       // so the tab counts on the admin page stay accurate
-      counts: { all, active, hidden, freeDelivery, bestDiscount, cartvanBox },
+      counts: {
+        all,
+        active,
+        hidden,
+        freeDelivery,
+        bestDiscount,
+        cartvanBox,
+        hasVariant,
+      },
     });
   } catch (err) {
     res.status(500).json({ error: err?.message || "Server error" });

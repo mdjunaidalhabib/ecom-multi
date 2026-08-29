@@ -102,15 +102,29 @@ export function waitForPort(port, host = "127.0.0.1", timeoutMs = 20000) {
   });
 }
 
-// Rebuilds MONGO_URI with only host:port swapped, treating credentials as an
-// opaque blob so the password is never parsed out or hardcoded here.
+// Rebuilds MONGO_URI with host:port swapped to the tunnel, treating credentials
+// as an opaque blob so the password is never parsed out or hardcoded here.
+//
+// replicaSet=... is dropped in favor of directConnection=true: the tunnel is a
+// single point-to-point link to one node, so replica-set topology discovery
+// breaks it — MongoDB reports the primary by its internal hostname (the
+// Coolify container name), which doesn't resolve on this machine, and the
+// driver reconnects there directly instead of through the tunnel (ENOTFOUND).
+// directConnection=true skips discovery and talks to the tunneled node only;
+// transactions still work since that node is a real replica-set primary.
 export function buildTunneledUri(originalUri, localPort) {
   const m = originalUri.match(/^(mongodb(?:\+srv)?:\/\/)([^/]+)(\/.*)?$/);
   if (!m) throw new Error("MONGO_URI in backend/.env is not in a recognizable mongodb:// format");
   const [, prefix, authority, rest] = m;
   const at = authority.lastIndexOf("@");
   const creds = at >= 0 ? authority.slice(0, at + 1) : "";
-  return `${prefix}${creds}localhost:${localPort}${rest || ""}`;
+
+  const [path, query = ""] = (rest || "/").split("?");
+  const params = new URLSearchParams(query);
+  params.delete("replicaSet");
+  params.set("directConnection", "true");
+
+  return `${prefix}${creds}localhost:${localPort}${path || "/"}?${params.toString()}`;
 }
 
 export function redact(uri) {

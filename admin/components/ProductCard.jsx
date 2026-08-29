@@ -24,6 +24,17 @@ export default function ProductCard({ product, onEdit, onDelete }) {
         : 0;
 
   const displayImage = product?.image || "";
+
+  // ✅ Multi-variant প্রোডাক্টে প্রতিটা variant-এর price ভিন্ন হতে পারে,
+  // তাই একটামাত্র price না দেখিয়ে min-max রেঞ্জ দেখানো হয়
+  const variantPrices =
+    totalVariants > 0
+      ? product.colors.map((v) => Number(v?.price || 0)).filter((p) => p > 0)
+      : [];
+  const minPrice = variantPrices.length > 0 ? Math.min(...variantPrices) : 0;
+  const maxPrice = variantPrices.length > 0 ? Math.max(...variantPrices) : 0;
+  const hasPriceRange = variantPrices.length > 0 && minPrice !== maxPrice;
+
   const hasDiscount = !!product?.oldPrice;
 
   // ✅ Admin-only ক্রয় মূল্য ও profit margin — public API তে costPrice কখনো
@@ -110,13 +121,21 @@ export default function ProductCard({ product, onEdit, onDelete }) {
             {product.name}
           </h2>
           <div className="flex items-baseline gap-1 shrink-0">
-            <span className="text-sm font-bold text-gray-900 dark:text-slate-100">
-              ৳{product.price}
-            </span>
-            {hasDiscount && (
-              <span className="text-[10px] line-through text-gray-400 dark:text-slate-500">
-                ৳{product.oldPrice}
+            {hasPriceRange ? (
+              <span className="text-sm font-bold text-gray-900 dark:text-slate-100">
+                ৳{minPrice} - ৳{maxPrice}
               </span>
+            ) : (
+              <>
+                <span className="text-sm font-bold text-gray-900 dark:text-slate-100">
+                  ৳{product.price}
+                </span>
+                {hasDiscount && (
+                  <span className="text-[10px] line-through text-gray-400 dark:text-slate-500">
+                    ৳{product.oldPrice}
+                  </span>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -154,9 +173,9 @@ export default function ProductCard({ product, onEdit, onDelete }) {
                 <span
                   key={idx}
                   className="text-[9px] px-1 py-0.5 rounded-full border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300"
-                  title={`${v.name} sold`}
+                  title={`${v.name} — ৳${Number(v?.price || 0)}`}
                 >
-                  {v.name}: <b>{Number(v?.sold || 0)}</b>
+                  {v.name}: ৳{Number(v?.price || 0)} · <b>{Number(v?.sold || 0)}</b> sold
                 </span>
               ))}
             </div>

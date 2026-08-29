@@ -16,6 +16,7 @@ const emptyCounts = {
   freeDelivery: 0,
   bestDiscount: 0,
   cartvanBox: 0,
+  hasVariant: 0,
 };
 
 export default function ProductsPage() {
@@ -338,6 +339,11 @@ export default function ProductsPage() {
             key: "cartvanBox",
             label: `🎁 ${getBadgeName("cartvanBox", "Gift Box")}`,
             color: "rose",
+          },
+          {
+            key: "hasVariant",
+            label: "🎨 Variant Product",
+            color: "purple",
           },
         ].map((tab) => {
           const active = badgeFilter === tab.key;

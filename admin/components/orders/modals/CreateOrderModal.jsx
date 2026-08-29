@@ -287,7 +287,9 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
         return {
           ...it,
           name: p.name || "Product",
-          price: toNumber(p.price, 0),
+          // ✅ ভ্যারিয়েন্ট সিলেক্ট করা থাকলে সেই ভ্যারিয়েন্টের নিজস্ব price
+          // ব্যবহার হবে, নাহলে product-এর base price (price mismatch এড়াতে)
+          price: toNumber(variant?.price ?? p.price, 0),
           stock,
           image,
           colorLabel: variant?.name || it.color || null,
@@ -336,19 +338,31 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
     return stock <= 0 || toNumber(x.qty, 0) <= 0;
   });
 
+  // ✅ প্রোডাক্টে ভ্যারিয়েন্ট থাকলে (colors.length > 0) সেটা সিলেক্ট না করে
+  // সাবমিট করা যাবে না — নাহলে ডিফল্ট (প্রথম ভ্যারিয়েন্টের) দামে ভুল বিক্রি
+  // হয়ে যাওয়ার সম্ভাবনা থাকে
+  const hasMissingVariant = items.some((x) => {
+    if (!x.productId) return false;
+    const p = getProduct(x.productId);
+    const colors = Array.isArray(p?.colors) ? p.colors : [];
+    return colors.length > 0 && !x.color;
+  });
+
   const canSubmit =
     (isOffline || !deliveryLoading) &&
     !errors.name &&
     !errors.phone &&
     !errors.address &&
     hasValidItem &&
-    !hasOutOfStockItem;
+    !hasOutOfStockItem &&
+    !hasMissingVariant;
 
   // ✅ ঠিক কী কারণে বাটন disable আছে সেটা admin-কে স্পষ্টভাবে দেখানো হয়,
   // যাতে fill করে submit করেও error না খেয়ে আগে থেকেই বুঝতে পারে
   const missingReason = (() => {
     if (!isOffline && deliveryLoading) return "Delivery charge লোড হচ্ছে...";
     if (!hasValidItem) return "অন্তত ১টি প্রোডাক্ট যোগ করুন";
+    if (hasMissingVariant) return "⚠️ ভ্যারিয়েন্ট (Color) সিলেক্ট করুন";
     if (hasOutOfStockItem) return "⚠️ কিছু আইটেমে স্টক নেই";
     if (!isOffline && errors.name) return "Customer Name দিন";
     if (!isOffline && errors.phone) return "সঠিক Phone নম্বর দিন";
@@ -473,7 +487,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
         return {
           productId: String(p._id),
           name: p.name || "",
-          price: toNumber(p.price, 0),
+          price: toNumber(variant?.price ?? p.price, 0),
           qty: Math.max(1, toNumber(it.qty, 1)),
           image,
           color: it.color || null,
@@ -765,8 +779,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                               >
                                 {p
                                   ? outOfStock
-                                    ? `৳${toNumber(p.price, 0)} • Out of stock`
-                                    : `৳${toNumber(p.price, 0)} • Stock: ${stock}`
+                                    ? `৳${toNumber(variant?.price ?? p.price, 0)} • Out of stock`
+                                    : `৳${toNumber(variant?.price ?? p.price, 0)} • Stock: ${stock}`
                                   : "Click to choose product"}
                               </div>
                             </div>
@@ -774,9 +788,13 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
 
                           {/* BOTTOM */}
                           <div className="flex flex-col sm:grid sm:grid-cols-12 gap-2">
-                            {/* COLOR */}
+                            {/* VARIANT */}
                             <select
-                              className="w-full sm:col-span-7 h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+                              className={`w-full sm:col-span-7 h-12 rounded-2xl border px-4 text-sm font-semibold outline-none focus:ring-2 text-gray-900 dark:text-slate-100 ${
+                                colors.length > 0 && !it.color
+                                  ? "border-red-500 dark:border-red-500/60 bg-red-50 dark:bg-red-500/10 focus:ring-red-200 dark:focus:ring-red-500/30"
+                                  : "border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-blue-200 dark:focus:ring-blue-500/30"
+                              }`}
                               value={it.color || ""}
                               onChange={(e) =>
                                 changeColor(idx, e.target.value || null)
@@ -784,11 +802,12 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                               disabled={!p || !colors.length}
                             >
                               <option value="">
-                                {colors.length ? "Select Color" : "No colors"}
+                                {colors.length ? "Select Variant" : "No variants"}
                               </option>
                               {colors.map((c) => (
                                 <option key={c.name} value={c.name}>
-                                  {c.name} (stock: {toNumber(c.stock, 0)})
+                                  {c.name} — ৳{toNumber(c.price, 0)} (stock:{" "}
+                                  {toNumber(c.stock, 0)})
                                 </option>
                               ))}
                             </select>
