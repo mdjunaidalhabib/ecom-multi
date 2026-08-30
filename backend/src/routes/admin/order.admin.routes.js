@@ -2,7 +2,10 @@ import express from "express";
 import Order from "../../models/Order.js";
 import { moveToTrash } from "../../../utils/trash/trash.helpers.js";
 import { releasePromoUsage } from "../../services/promoService.js";
-import { updateInventoryForItems } from "../../services/inventoryService.js";
+import {
+  updateInventoryForItems,
+  updateInventoryForItem,
+} from "../../services/inventoryService.js";
 
 const router = express.Router();
 
@@ -124,7 +127,11 @@ router.post("/", async (req, res) => {
             )
           : null;
 
-      const price = Number(p.price || 0);
+      // ✅ variant সিলেক্ট থাকলে variant এর নিজস্ব price ব্যবহার হবে
+      // (customer checkout-এর buildPricedOrderItemsFromDB-এর মতোই), শুধু
+      // base product price না — নাহলে ভিন্ন দামের color variant অর্ডার করলেও
+      // ভুল দাম বসত
+      const price = Number(variant?.price ?? p.price ?? 0);
       const name = p.name || "Product";
       const image =
         variant?.images?.[0] ||
@@ -230,6 +237,28 @@ router.get("/", async (req, res) => {
     if (req.query.paymentStatus) filter.paymentStatus = req.query.paymentStatus;
     if (req.query.saleChannel) filter.saleChannel = req.query.saleChannel;
 
+    // ✅ SEARCH — সব পেজ মিলিয়ে (শুধু বর্তমান পেজের ২০টার মধ্যে না) খোঁজে,
+    // Admin panel এর সার্চ বক্সের একই নিয়ম মেনে:
+    //  - Order ID (orderNumber): exact match (নাহলে "4" দিলে 40/41/42... চলে আসত)
+    //  - নাম: partial/substring match
+    //  - ফোন: partial match, কমপক্ষে ৫ ডিজিট না দিলে ম্যাচ করবে না
+    const rawSearch = String(req.query.search || "").trim();
+    if (rawSearch) {
+      const escaped = rawSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const orConditions = [{ "billing.name": { $regex: escaped, $options: "i" } }];
+
+      const asNumber = Number(rawSearch);
+      if (Number.isFinite(asNumber)) {
+        orConditions.push({ orderNumber: asNumber });
+      }
+
+      if (rawSearch.length >= 5) {
+        orConditions.push({ "billing.phone": { $regex: escaped, $options: "i" } });
+      }
+
+      filter.$or = orConditions;
+    }
+
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const limit = Math.min(parseInt(req.query.limit) || 50, 5000); // cap max page size (dashboard needs full data for accurate totals)
     const skip = (page - 1) * limit;
@@ -249,6 +278,54 @@ router.get("/", async (req, res) => {
     console.error("❌ Failed to fetch orders:", err);
     res.status(500).json({
       error: "Failed to fetch orders",
+      details: err.message,
+    });
+  }
+});
+
+/**
+ * ================================
+ * ORDER COUNTS (for tab badges — accurate totals across ALL pages,
+ * not just the currently loaded page)
+ * ================================
+ * - total / bySaleChannel: always unfiltered (so the channel pills
+ *   themselves stay accurate regardless of which one is active)
+ * - filteredTotal / byStatus: scoped to ?saleChannel= if provided, so
+ *   the status tabs reflect counts within the active channel filter
+ */
+router.get("/counts", async (req, res) => {
+  try {
+    const saleChannel = req.query.saleChannel || undefined;
+    const channelFilter = saleChannel ? { saleChannel } : {};
+
+    const [statusAgg, channelAgg, total, filteredTotal] = await Promise.all([
+      Order.aggregate([
+        { $match: channelFilter },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
+      Order.aggregate([
+        { $group: { _id: "$saleChannel", count: { $sum: 1 } } },
+      ]),
+      Order.countDocuments({}),
+      Order.countDocuments(channelFilter),
+    ]);
+
+    const byStatus = {};
+    statusAgg.forEach((row) => {
+      if (row._id) byStatus[row._id] = row.count;
+    });
+
+    const bySaleChannel = { online: 0, offline: 0 };
+    channelAgg.forEach((row) => {
+      const key = row._id === "offline" ? "offline" : "online";
+      bySaleChannel[key] += row.count;
+    });
+
+    res.json({ total, bySaleChannel, filteredTotal, byStatus });
+  } catch (err) {
+    console.error("❌ Failed to fetch order counts:", err);
+    res.status(500).json({
+      error: "Failed to fetch order counts",
       details: err.message,
     });
   }
@@ -424,6 +501,18 @@ router.put("/:id", async (req, res) => {
     const current = await Order.findById(req.params.id);
     if (!current) return res.status(404).json({ error: "Order not found" });
 
+    // 🔒 Locked order guard — এখানেই আগে চেক করা দরকার (নিচের items/stock
+    // adjustment ব্লকের আগে), নাহলে delivered/cancelled অর্ডারে item qty
+    // পাঠালে পুরো request পরে reject হলেও ততক্ষণে stock ইতিমধ্যে বদলে যেত।
+    if (
+      ["delivered", "cancelled"].includes(current.status) &&
+      Object.keys(req.body).some((k) => k !== "status")
+    ) {
+      return res.status(400).json({
+        error: "Delivered or cancelled order cannot be edited",
+      });
+    }
+
     const updateData = {};
 
     if (req.body.status !== undefined) updateData.status = req.body.status;
@@ -443,15 +532,110 @@ router.put("/:id", async (req, res) => {
     if (req.body.cancelReason !== undefined)
       updateData.cancelReason = req.body.cancelReason;
 
-    // ✅ DISCOUNT UPDATE + TOTAL RECALC
-    if (req.body.discount !== undefined) {
-      let discount = Number(req.body.discount);
+    // ✅ ITEM QUANTITY EDIT — শুধু qty পরিবর্তনযোগ্য, item যোগ/বাদ বা
+    // product/variant পরিবর্তন এই route সাপোর্ট করে না (সেটার জন্য
+    // পুরনো order cancel করে নতুন order তৈরি করতে হবে)। qty বাড়লে stock
+    // থেকে বাড়তি টুকু কাটা হয়, কমলে সেই টুকু restock হয় — একই
+    // updateInventoryForItem যেটা create/cancel flow ব্যবহার করে।
+    if (Array.isArray(req.body.items)) {
+      if (req.body.items.length !== current.items.length) {
+        return res.status(400).json({
+          error: "Item সংখ্যা পরিবর্তন করা যাবে না — শুধু quantity এডিট করা যায়।",
+        });
+      }
 
+      const invChanges = [];
+      const newItems = [];
+
+      for (let idx = 0; idx < current.items.length; idx++) {
+        const curr = current.items[idx];
+        const incoming = req.body.items[idx] || {};
+
+        if (
+          String(incoming.productId) !== String(curr.productId) ||
+          String(incoming.color || "") !== String(curr.color || "")
+        ) {
+          return res.status(400).json({
+            error: "Item এর product/variant পরিবর্তন করা যাবে না — শুধু quantity এডিট করা যায়।",
+          });
+        }
+
+        const newQty = Math.floor(Number(incoming.qty));
+        if (!Number.isFinite(newQty) || newQty < 1) {
+          return res.status(400).json({ error: "Quantity কমপক্ষে ১ হতে হবে।" });
+        }
+
+        if (newQty !== curr.qty) {
+          invChanges.push({
+            productId: curr.productId,
+            color: curr.color,
+            delta: newQty - curr.qty,
+          });
+        }
+
+        newItems.push({ ...curr.toObject(), qty: newQty });
+      }
+
+      // ✅ একটার stock adjust ব্যর্থ হলে আগেরগুলো revert করে দেওয়া হয়, যাতে
+      // আংশিক-প্রয়োগ হওয়া অবস্থায় stock আটকে না থাকে
+      const applied = [];
+      for (const c of invChanges) {
+        try {
+          if (c.delta > 0) {
+            await updateInventoryForItem(
+              { productId: c.productId, qty: c.delta, color: c.color },
+              "decrease",
+            );
+          } else {
+            await updateInventoryForItem(
+              { productId: c.productId, qty: -c.delta, color: c.color },
+              "increase",
+            );
+          }
+          applied.push(c);
+        } catch (invErr) {
+          for (const done of applied) {
+            try {
+              await updateInventoryForItem(
+                { productId: done.productId, qty: Math.abs(done.delta), color: done.color },
+                done.delta > 0 ? "increase" : "decrease",
+              );
+            } catch (revertErr) {
+              console.error("❌ Inventory revert failed (admin order qty edit):", revertErr);
+            }
+          }
+          return res.status(400).json({
+            error: invErr?.message || "Quantity আপডেট করা যায়নি",
+          });
+        }
+      }
+
+      updateData.items = newItems;
+      updateData.subtotal = newItems.reduce(
+        (sum, it) => sum + Number(it.price || 0) * Number(it.qty || 0),
+        0,
+      );
+    }
+
+    // ✅ DELIVERY CHARGE + DISCOUNT UPDATE + TOTAL RECALC
+    if (
+      req.body.deliveryCharge !== undefined ||
+      req.body.discount !== undefined ||
+      updateData.subtotal !== undefined
+    ) {
+      let delivery = Number(current.deliveryCharge || 0);
+      if (req.body.deliveryCharge !== undefined) {
+        delivery = Number(req.body.deliveryCharge);
+        if (isNaN(delivery) || delivery < 0) delivery = 0;
+        updateData.deliveryCharge = delivery;
+      }
+
+      let discount = Number(
+        req.body.discount !== undefined ? req.body.discount : current.discount,
+      );
       if (isNaN(discount) || discount < 0) discount = 0;
 
-      const subtotal = Number(current.subtotal || 0);
-      const delivery = Number(current.deliveryCharge || 0);
-
+      const subtotal = Number(updateData.subtotal ?? current.subtotal ?? 0);
       const maxAllowedDiscount = subtotal + delivery;
       if (discount > maxAllowedDiscount) discount = maxAllowedDiscount;
 

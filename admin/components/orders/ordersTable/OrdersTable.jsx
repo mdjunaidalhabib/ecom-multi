@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Send, FileText, Edit2, Trash2 } from "lucide-react";
+import { Send, FileText, Edit2, Trash2, Search, Loader2 } from "lucide-react";
 
 import Badge from "../../Badge";
 import CopyButton from "../../CopyButton";
@@ -28,6 +28,12 @@ import downloadInvoicePdf from "../../../utils/invoiceDownload";
 
 export default function OrdersTable({
   orders,
+  tabStatus,
+  setTabStatus,
+  statusCount,
+  search,
+  setSearch,
+  searching = false,
   onEdit,
   onDelete = null,
   onStatusChange,
@@ -36,8 +42,6 @@ export default function OrdersTable({
   onBulkDelete,
   onBulkSendCourier,
 }) {
-  const [tabStatus, setTabStatus] = useState("");
-  const [q, setQ] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
   const { template: invoiceTemplate } = useInvoiceTemplate();
@@ -54,10 +58,12 @@ export default function OrdersTable({
     }
   };
 
+  // ✅ সার্চ এখন সার্ভার-সাইড (useOrders হুকে, সব পেজ মিলিয়ে) — `orders`
+  // prop-টাই already সার্চ-ফিল্টার করা ডেটা, তাই এখানে আবার client-side
+  // search filter করার দরকার নেই, শুধু tabStatus ফিল্টার হবে।
   const manager = useOrdersManager({
     orders,
     tabStatus,
-    search: q,
   });
 
   /* ===============================
@@ -110,53 +116,64 @@ export default function OrdersTable({
   };
 
   return (
-    <div className="hidden md:block space-y-3">
+    <div className="hidden lg:flex lg:flex-col h-full min-h-0 space-y-3">
       {/* ================= HEADER ================= */}
-      <div className="rounded-lg border dark:border-slate-700 shadow-sm p-3 space-y-3 sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95">
-        <input
-          className="border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded px-3 py-2 w-full"
-          placeholder="Search by OrderID / Name / Phone"
-          value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            manager.setSelected([]);
-          }}
-        />
+      <div className="shrink-0 rounded-lg border dark:border-slate-700 shadow-sm p-2 bg-white/95 dark:bg-slate-900/95">
+        <div className="flex items-center justify-between gap-2 px-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 shrink">
+            <StatusTabs
+              tabStatus={tabStatus}
+              statusCount={statusCount}
+              setTabStatus={(s) => {
+                setTabStatus(s);
+                manager.setSelected([]);
+              }}
+            />
+          </div>
 
-        <div className="flex flex-wrap items-center gap-2 px-1">
-          <StatusTabs
-            tabStatus={tabStatus}
-            setTabStatus={(s) => {
-              setTabStatus(s);
-              manager.setSelected([]);
-            }}
-          />
+          <div className="relative w-56 shrink-0">
+            {searching ? (
+              <Loader2
+                size={14}
+                className="animate-spin pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-blue-500"
+              />
+            ) : (
+              <Search
+                size={14}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
+              />
+            )}
+            <input
+              className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-full pl-8 pr-3 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              placeholder="Search by OrderID / Name / Phone"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                manager.setSelected([]);
+              }}
+            />
+          </div>
 
-          <div className="flex-1" />
-
-          <BulkActions
-            selected={manager.selected}
-            selectedOrders={manager.selectedOrders}
-            sameStatus={manager.sameStatus}
-            bulkStatus={manager.bulkStatus}
-            canBulkSendCourier={manager.canBulkSendCourier}
-            setSelected={manager.setSelected}
-            onStatusChange={onStatusChange}
-            onBulkStatusChange={onBulkStatusChange}
-            onSendCourier={onSendCourier}
-            onBulkSendCourier={onBulkSendCourier}
-            onBulkDelete={onBulkDelete}
-          />
-        </div>
-
-        <div className="text-xs text-gray-500 dark:text-slate-400 px-1">
-          Showing:{" "}
-          <span className="font-semibold text-gray-700 dark:text-slate-300">{manager.filteredOrders.length}</span>
+          <div className="shrink-0">
+            <BulkActions
+              selected={manager.selected}
+              selectedOrders={manager.selectedOrders}
+              sameStatus={manager.sameStatus}
+              bulkStatus={manager.bulkStatus}
+              canBulkSendCourier={manager.canBulkSendCourier}
+              setSelected={manager.setSelected}
+              onStatusChange={onStatusChange}
+              onBulkStatusChange={onBulkStatusChange}
+              onSendCourier={onSendCourier}
+              onBulkSendCourier={onBulkSendCourier}
+              onBulkDelete={onBulkDelete}
+            />
+          </div>
         </div>
       </div>
 
       {/* ================= TABLE ================= */}
-      <div className="overflow-x-auto bg-white dark:bg-slate-900 rounded-lg border dark:border-slate-700 shadow-sm">
+      <div className="flex-1 min-h-0 overflow-auto bg-white dark:bg-slate-900 rounded-lg border dark:border-slate-700 shadow-sm">
         {!manager.filteredOrders.length ? (
           <div className="p-6 text-center text-gray-500 dark:text-slate-400">No orders found.</div>
         ) : (
@@ -177,7 +194,7 @@ export default function OrdersTable({
                 <th className="p-3 text-left text-gray-700 dark:text-slate-300">Payment</th>
                 <th className="p-3 text-left text-gray-700 dark:text-slate-300">Status Info</th>
                 <th className="p-3 text-left text-gray-700 dark:text-slate-300">Control</th>
-                <th className="p-3 text-left text-gray-700 dark:text-slate-300">Actions</th>
+                <th className="p-3 text-left text-gray-700 dark:text-slate-300 sticky right-0 z-20 bg-gray-100 dark:bg-slate-800 shadow-[-6px_0_8px_-4px_rgba(0,0,0,0.15)]">Actions</th>
               </tr>
             </thead>
 
@@ -187,13 +204,15 @@ export default function OrdersTable({
                 const allowedNext = STATUS_FLOW[o.status] || [];
                 const isAdminCreated = o?.createdBy === "admin";
                 const paymentHold = !locked && needsPaymentVerification(o);
+                const isSelected = manager.selected.includes(o._id);
+                const rowBg = isSelected
+                  ? "bg-blue-50 dark:bg-blue-500/10"
+                  : "bg-white dark:bg-slate-900";
 
                 return (
                   <tr
                     key={o._id}
-                    className={`border-t dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/60 text-gray-900 dark:text-slate-100 ${
-                      manager.selected.includes(o._id) ? "bg-blue-50 dark:bg-blue-500/10" : ""
-                    }`}
+                    className={`border-t dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/60 text-gray-900 dark:text-slate-100 ${rowBg}`}
                   >
                     {/* CHECKBOX */}
                     <td className="p-3">
@@ -253,6 +272,11 @@ export default function OrdersTable({
                               <p className="text-xs font-semibold truncate">
                                 {it.name}
                               </p>
+                              {it.color && (
+                                <p className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 truncate">
+                                  Color: {it.color}
+                                </p>
+                              )}
                               <p className="text-[11px] text-gray-500 dark:text-slate-400">
                                 Qty: {it.qty} • ৳{it.price}
                               </p>
@@ -402,24 +426,28 @@ export default function OrdersTable({
 
                     {/* ACTIONS */}
 
-                    <td className="p-3 ">
-                      <div className="flex items-center gap-2">
+                    <td
+                      className={`p-3 sticky right-0 z-10 shadow-[-6px_0_8px_-4px_rgba(0,0,0,0.15)] ${rowBg}`}
+                    >
+                      <div className="flex items-center gap-1.5">
                         {/* Edit */}
                         <button
                           onClick={() => onEdit(o)}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm flex items-center gap-1 transition"
+                          title="Edit"
+                          aria-label="Edit"
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-lg transition"
                         >
-                          <Edit2 size={14} />
-                          Edit
+                          <Edit2 size={15} />
                         </button>
 
                         {/* Delete */}
                         <button
                           onClick={() => onDelete?.(o)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1 transition"
+                          title="Delete"
+                          aria-label="Delete"
+                          className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition"
                         >
-                          <Trash2 size={14} />
-                          Delete
+                          <Trash2 size={15} />
                         </button>
 
                         {/* Send */}
@@ -434,10 +462,11 @@ export default function OrdersTable({
                                 )
                               }
                               disabled={updatingId === o._id}
-                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1 transition disabled:opacity-50"
+                              title="Send to courier"
+                              aria-label="Send to courier"
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg transition disabled:opacity-50"
                             >
-                              <Send size={14} />
-                              Send
+                              <Send size={15} />
                             </button>
                           )}
 
@@ -446,10 +475,11 @@ export default function OrdersTable({
                           type="button"
                           onClick={() => handleDownloadInvoice(o)}
                           disabled={!invoiceTemplate || downloadingId === o._id}
-                          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-3 py-1 rounded text-sm flex items-center gap-1 transition"
+                          title="Download invoice"
+                          aria-label="Download invoice"
+                          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white p-2 rounded-lg transition"
                         >
-                          <FileText size={14} />
-                          {downloadingId === o._id ? "..." : "Invoice"}
+                          <FileText size={15} />
                         </button>
                       </div>
                     </td>

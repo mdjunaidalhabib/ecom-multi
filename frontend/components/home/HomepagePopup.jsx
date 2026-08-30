@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import cloudinaryLoader from "../../lib/cloudinaryLoader";
 
+// ✅ শুধু http(s):// বা relative path (/...) অনুমোদিত — javascript: এর মতো unsafe scheme href-এ বসতে দেওয়া হয় না
+const isSafeLink = (url) => /^(https?:\/\/|\/)/i.test(url || "");
+
 const HomepagePopup = () => {
   const [config, setConfig] = useState(null);
   const [visible, setVisible] = useState(false);
@@ -54,15 +57,35 @@ const HomepagePopup = () => {
         </button>
 
         <div className="relative aspect-square rounded-lg overflow-hidden shadow-2xl bg-white">
-          <Image
-            loader={cloudinaryLoader}
-            src={config.image}
-            alt="Promotion"
-            fill
-            sizes="(max-width: 480px) 100vw, (max-width: 1024px) 512px, 576px"
-            className="object-cover"
-            priority
-          />
+          {isSafeLink(config.link) ? (
+            <a
+              href={config.link}
+              target={config.openInNewTab === false ? "_self" : "_blank"}
+              rel="noopener noreferrer"
+              className="block w-full h-full"
+              aria-label="Promotion link"
+            >
+              <Image
+                loader={cloudinaryLoader}
+                src={config.image}
+                alt="Promotion"
+                fill
+                sizes="(max-width: 480px) 100vw, (max-width: 1024px) 512px, 576px"
+                className="object-cover"
+                priority
+              />
+            </a>
+          ) : (
+            <Image
+              loader={cloudinaryLoader}
+              src={config.image}
+              alt="Promotion"
+              fill
+              sizes="(max-width: 480px) 100vw, (max-width: 1024px) 512px, 576px"
+              className="object-cover"
+              priority
+            />
+          )}
         </div>
       </div>
     </div>

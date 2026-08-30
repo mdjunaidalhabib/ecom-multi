@@ -55,6 +55,16 @@ html {
   background-color: #475569;
 }
 
+/* Hide scrollbar visually but keep the element scrollable (e.g. the
+   Orders status-tabs row, which scrolls horizontally instead of wrapping) */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ✅ Rich text content — প্রোডাক্ট Description/Additional Info এর জন্য,
    admin এডিটর এবং frontend প্রিভিউ দুই জায়গাতেই consistent স্পেসিং দেয় */
 .rich-content {

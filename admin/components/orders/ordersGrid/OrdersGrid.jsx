@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { READY_STATUS, LOCKED_STATUSES } from "../shared/constants"; // ✅ add LOCKED_STATUSES
 
@@ -12,6 +12,10 @@ import downloadInvoicePdf from "../../../utils/invoiceDownload";
 
 export default function OrdersGrid({
   orders,
+  tabStatus,
+  setTabStatus,
+  statusCount,
+  allCount,
   onEdit,
   onDelete = null,
   onStatusChange,
@@ -20,7 +24,6 @@ export default function OrdersGrid({
   onBulkDelete,
   onBulkSendCourier,
 }) {
-  const [tabStatus, setTabStatus] = useState("");
   const [openId, setOpenId] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
@@ -108,38 +111,17 @@ export default function OrdersGrid({
     }
   };
 
-  /* ===============================
-     STATUS COUNT (SUMMARY)
-  =============================== */
-  const statusCount = useMemo(() => {
-    const base = {
-      pending: 0,
-      ready_to_delivery: 0,
-      send_to_courier: 0,
-      delivered: 0,
-      cancelled: 0,
-    };
-
-    (orders || []).forEach((o) => {
-      if (base[o.status] !== undefined) {
-        base[o.status]++;
-      }
-    });
-
-    return base;
-  }, [orders]);
-
   return (
-    <div className="md:hidden space-y-2">
+    <div className="lg:hidden space-y-2">
       {/* ================= STATUS SUMMARY ================= */}
       <StatusSummary
-        orders={orders || []}
         tabStatus={tabStatus}
         setTabStatus={(s) => {
           setTabStatus(s);
           manager.setSelected([]);
         }}
         statusCount={statusCount}
+        allCount={allCount}
       />
 
       {/* ================= SELECT ALL + BULK ================= */}

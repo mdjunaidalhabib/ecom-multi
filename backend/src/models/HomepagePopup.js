@@ -12,6 +12,8 @@ const HomepagePopupSchema = new mongoose.Schema({
 
   image: { type: String, default: "" },
   imagePublicId: { type: String, default: "" },
+  link: { type: String, default: "" },
+  openInNewTab: { type: Boolean, default: true },
   enabled: { type: Boolean, default: false },
   updatedAt: { type: Date, default: Date.now },
 });

@@ -196,7 +196,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
     let alive = true;
     setDeliveryLoading(true);
 
-    fetch(`${API}/deliveryCharge`)
+    fetch(`${API}/admin/deliveryCharge`)
       .then((res) => res.json())
       .then((data) => {
         if (!alive) return;
@@ -951,7 +951,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                     </div>
                   </div>
 
-                  {/* DELIVERY LOCKED */}
+                  {/* DELIVERY CHARGE */}
                   <div
                     className={`rounded-3xl border p-4 flex items-center justify-between gap-3 ${
                       isOffline
@@ -971,26 +971,38 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                       </div>
                       <div>
                         <div className="text-sm font-black text-gray-900 dark:text-slate-100">
-                          Delivery Charge {isOffline ? "" : "(DB)"}
+                          Delivery Charge {isOffline ? "" : "(DB default)"}
                         </div>
                         <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
                           {isOffline
                             ? "in-store sale • no delivery"
-                            : "locked • not editable"}
+                            : "auto-filled • editable"}
                         </div>
                       </div>
                     </div>
-                    <div
-                      className={`text-lg font-black ${
-                        isOffline ? "text-purple-700 dark:text-purple-400" : "text-blue-700 dark:text-blue-400"
-                      }`}
-                    >
-                      {isOffline
-                        ? "৳0"
-                        : deliveryLoading
-                          ? "..."
-                          : `৳${deliveryCharge}`}
-                    </div>
+                    {isOffline ? (
+                      <div className="text-lg font-black text-purple-700 dark:text-purple-400">
+                        ৳0
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-700 dark:text-blue-400 font-black text-sm">
+                          ৳
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          disabled={deliveryLoading}
+                          className="w-28 h-10 rounded-xl border border-blue-200 dark:border-blue-500/30 bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 pl-7 pr-3 text-right text-sm font-black outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          value={deliveryLoading ? "" : deliveryCharge}
+                          placeholder={deliveryLoading ? "..." : "0"}
+                          onWheel={(e) => e.target.blur()}
+                          onChange={(e) =>
+                            setDeliveryCharge(toNumber(e.target.value, 0))
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

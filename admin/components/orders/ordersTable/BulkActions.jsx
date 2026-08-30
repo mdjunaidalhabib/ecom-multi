@@ -42,7 +42,7 @@ export default function BulkActions({
       )}
 
       {/* BULK BAR (ALWAYS VISIBLE) */}
-      <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full px-3 py-1.5 shadow-sm mr-2">
+      <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full px-3 py-1.5 shadow-sm">
         {/* SELECTED COUNT */}
         <span className="text-xs font-semibold bg-blue-600 text-white px-2 py-0.5 rounded-full">
           {selected.length} Selected

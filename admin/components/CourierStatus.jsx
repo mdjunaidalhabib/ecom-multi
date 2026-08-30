@@ -163,7 +163,7 @@ export default function CourierStatus({
   }
 
   return (
-    <div className="mt-1 flex items-center gap-2">
+    <div className="mt-1 flex items-center flex-wrap gap-1">
       {loading ? (
         <div className="text-[12px] text-gray-400 dark:text-slate-500">Loading status...</div>
       ) : error ? (

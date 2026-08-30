@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 export default function useOrders(API) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
 
   /* ===============================
      📄 PAGINATION
@@ -16,6 +17,30 @@ export default function useOrders(API) {
      🌐 SALE CHANNEL FILTER (online/offline/"")
      =============================== */
   const [saleChannel, setSaleChannel] = useState("");
+
+  /* ===============================
+     🔍 SEARCH — সার্ভার-সাইড, সব পেজ মিলিয়ে খোঁজে (শুধু বর্তমান পেজের
+     ২০টার মধ্যে না)। `search` ইনপুটে সাথে সাথে বসে, `debouncedSearch`
+     ৪০০ms পর আপডেট হয়ে আসল fetch ট্রিগার করে (প্রতি কি-স্ট্রোকে না)।
+     =============================== */
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  /* ===============================
+     🔢 TAB COUNTS (accurate totals across ALL pages — not just the
+     20 orders currently loaded — for the sale-channel pills & status tabs)
+     =============================== */
+  const [counts, setCounts] = useState({
+    total: 0,
+    bySaleChannel: { online: 0, offline: 0 },
+    filteredTotal: 0,
+    byStatus: {},
+  });
 
   /* ===============================
      🔁 QUEUE
@@ -71,12 +96,20 @@ export default function useOrders(API) {
   /* ===============================
      Fetch orders
      =============================== */
-  const fetchOrders = async (targetPage = page) => {
+  // ✅ `silent` — সার্চে টাইপ করার সময় ব্যবহার হয়, যাতে পুরো পেজ (এবং তার
+  // ভেতরের সার্চ বক্সটাই) `loading` skeleton দিয়ে unmount/remount না হয়ে
+  // যায় — নাহলে প্রতি debounce-এ ইনপুট থেকে ফোকাস হারিয়ে যেত।
+  const fetchOrders = async (targetPage = page, { silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (silent) setSearching(true);
+      else setLoading(true);
+
       const channelParam = saleChannel ? `&saleChannel=${saleChannel}` : "";
+      const searchParam = debouncedSearch
+        ? `&search=${encodeURIComponent(debouncedSearch)}`
+        : "";
       const res = await fetch(
-        `${API}/admin/orders?page=${targetPage}&limit=50${channelParam}`
+        `${API}/admin/orders?page=${targetPage}&limit=20${channelParam}${searchParam}`
       );
       const data = await res.json();
       setOrders(Array.isArray(data.orders) ? data.orders : []);
@@ -86,7 +119,8 @@ export default function useOrders(API) {
     } catch {
       setToast({ message: "❌ Failed to load orders", type: "error" });
     } finally {
-      setLoading(false);
+      if (silent) setSearching(false);
+      else setLoading(false);
     }
   };
 
@@ -94,6 +128,37 @@ export default function useOrders(API) {
     fetchOrders(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
+
+  /* ===============================
+     Fetch tab counts (mount + whenever channel filter changes)
+     =============================== */
+  const fetchCounts = async () => {
+    try {
+      const channelParam = saleChannel ? `?saleChannel=${saleChannel}` : "";
+      const res = await fetch(`${API}/admin/orders/counts${channelParam}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("❌ /admin/orders/counts failed:", res.status, data);
+        return;
+      }
+
+      setCounts({
+        total: data.total || 0,
+        bySaleChannel: data.bySaleChannel || { online: 0, offline: 0 },
+        filteredTotal: data.filteredTotal || 0,
+        byStatus: data.byStatus || {},
+      });
+    } catch (err) {
+      // ✅ counts শুধু tab badge-এর জন্য — fail হলেও order list normally কাজ করবে
+      console.error("❌ fetchCounts error:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saleChannel]);
 
   // ✅ চ্যানেল ফিল্টার বদলালে ১ম পেজ থেকে আবার fetch হবে (প্রথমবার mount-এ skip)
   const isFirstChannelRun = useRef(true);
@@ -109,6 +174,21 @@ export default function useOrders(API) {
     fetchOrders(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saleChannel]);
+
+  // ✅ সার্চ টার্ম বদলালে (debounce এর পর) ১ম পেজ থেকে আবার fetch হবে
+  const isFirstSearchRun = useRef(true);
+  useEffect(() => {
+    if (isFirstSearchRun.current) {
+      isFirstSearchRun.current = false;
+      return;
+    }
+    if (page !== 1) {
+      setPage(1);
+      return;
+    }
+    fetchOrders(1, { silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
 
   /* ===============================
      Update status (single) – SILENT SUPPORT
@@ -128,6 +208,7 @@ export default function useOrders(API) {
         setOrders((prev) =>
           prev.map((o) => (o._id === updated._id ? updated : o))
         );
+        fetchCounts();
 
         if (!options.silent) {
           setToast({ message: "✔ Order updated", type: "success" });
@@ -173,6 +254,7 @@ export default function useOrders(API) {
                 : o
             )
           );
+          fetchCounts();
 
           setToast({
             message: `✔ ${data.updated.length} orders updated`,
@@ -222,6 +304,7 @@ const sendCourierDirect = (order) =>
         setOrders((prev) =>
           prev.map((o) => (o._id === data.order._id ? data.order : o))
         );
+        fetchCounts();
       }
 
       /* 3️⃣ SUCCESS TOAST */
@@ -299,6 +382,7 @@ const sendCourierDirect = (order) =>
 
         setToast({ message: "✅ Order created successfully!", type: "success" });
         fetchOrders();
+        fetchCounts();
         return data;
       } catch (err) {
         setAlertBox({
@@ -326,6 +410,7 @@ const sendCourierDirect = (order) =>
       if (!res.ok) throw new Error();
 
       setOrders((prev) => prev.filter((o) => o._id !== order._id));
+      fetchCounts();
       setToast({ message: "🗑 Order deleted", type: "success" });
     } catch {
       setToast({ message: "❌ Delete failed", type: "error" });
@@ -356,6 +441,7 @@ const sendCourierDirect = (order) =>
           if (!res.ok) throw new Error(data.error);
 
           setOrders((prev) => prev.filter((o) => !ids.includes(o._id)));
+          fetchCounts();
           setToast({
             message: `🗑 ${data.deletedCount} orders deleted`,
             type: "success",
@@ -388,6 +474,15 @@ const sendCourierDirect = (order) =>
     // channel filter
     saleChannel,
     setSaleChannel,
+
+    // search (server-side, all pages)
+    search,
+    setSearch,
+    searching,
+
+    // tab counts
+    counts,
+    fetchCounts,
 
     // status
     updateStatus,

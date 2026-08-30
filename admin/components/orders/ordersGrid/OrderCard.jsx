@@ -180,6 +180,11 @@ export default function OrderCard({
                       <p className="text-[10px] font-bold truncate leading-tight text-gray-900 dark:text-slate-100">
                         {it.name}
                       </p>
+                      {it.color && (
+                        <p className="text-[9px] font-semibold text-purple-600 dark:text-purple-400 truncate">
+                          Color: {it.color}
+                        </p>
+                      )}
                       <p className="text-[9px] text-gray-500 dark:text-slate-400">
                         Qty: {it.qty} • ৳{it.price}
                       </p>

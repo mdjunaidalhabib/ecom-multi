@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import { Pencil, Trash2 } from "lucide-react";
 import ImageUploader from "../../../../components/ImageUploader";
 
 const POPUP_IMAGE_RULE = {
@@ -21,6 +22,9 @@ export default function HomepagePopupAdmin() {
 
   const [preview, setPreview] = useState("");
   const [imageFile, setImageFile] = useState(null);
+  const [linkInput, setLinkInput] = useState("");
+  const [editingLink, setEditingLink] = useState(false);
+  const [openInNewTab, setOpenInNewTab] = useState(true);
 
   useEffect(() => {
     fetch("/api/admin/homepage-popup")
@@ -29,6 +33,9 @@ export default function HomepagePopupAdmin() {
         const cfg = data.data || data;
         setConfig(cfg);
         setPreview(cfg.image || "");
+        setLinkInput(cfg.link || "");
+        setOpenInNewTab(cfg.openInNewTab ?? true);
+        setEditingLink(!cfg.link); // link না থাকলে সরাসরি add mode-এ শুরু হবে
         setLoading(false);
       })
       .catch(() => {
@@ -37,13 +44,23 @@ export default function HomepagePopupAdmin() {
       });
   }, []);
 
-  const handleSave = async ({ file, removeImage, enabled } = {}) => {
+  const handleSave = async ({
+    file,
+    removeImage,
+    enabled,
+    link,
+    openInNewTab: newTabOption,
+    successMessage,
+  } = {}) => {
     setSaving(true);
     try {
       const formData = new FormData();
       if (file) formData.append("image", file);
       if (removeImage) formData.append("removeImage", "true");
       if (enabled !== undefined) formData.append("enabled", String(enabled));
+      if (link !== undefined) formData.append("link", link);
+      if (newTabOption !== undefined)
+        formData.append("openInNewTab", String(newTabOption));
 
       const res = await fetch("/api/admin/homepage-popup", {
         method: "POST",
@@ -55,8 +72,10 @@ export default function HomepagePopupAdmin() {
       const updated = json.data || json;
       setConfig(updated);
       setPreview(updated.image || "");
+      setLinkInput(updated.link || "");
+      setOpenInNewTab(updated.openInNewTab ?? true);
       setImageFile(null);
-      toast.success("Saved!");
+      toast.success(successMessage || "Saved!");
     } catch {
       toast.error("Save failed");
     } finally {
@@ -82,6 +101,38 @@ export default function HomepagePopupAdmin() {
     setPreview("");
     setImageFile(null);
     handleSave({ removeImage: true });
+  };
+
+  // ✅ popup link save
+  const handleSaveLink = async () => {
+    const trimmed = linkInput.trim();
+    await handleSave({
+      link: trimmed,
+      openInNewTab,
+      successMessage: trimmed ? "Link saved!" : "Link removed!",
+    });
+    setEditingLink(!trimmed); // link দেওয়া হলে read mode-এ চলে যাবে, খালি হলে add mode-এই থাকবে
+  };
+
+  // ✅ popup link remove
+  const handleRemoveLink = async () => {
+    setLinkInput("");
+    await handleSave({ link: "", successMessage: "Link removed!" });
+    setEditingLink(true);
+  };
+
+  // ✅ edit icon ক্লিকে read mode থেকে edit mode-এ যাওয়া
+  const handleEditLink = () => {
+    setLinkInput(config.link || "");
+    setOpenInNewTab(config.openInNewTab ?? true);
+    setEditingLink(true);
+  };
+
+  // ✅ edit mode থেকে cancel করে আগের read mode-এ ফিরে যাওয়া
+  const handleCancelLinkEdit = () => {
+    setLinkInput(config.link || "");
+    setOpenInNewTab(config.openInNewTab ?? true);
+    setEditingLink(false);
   };
 
   if (loading) return <p className="text-center py-10 text-gray-600 dark:text-slate-400">Loading...</p>;
@@ -149,6 +200,98 @@ export default function HomepagePopupAdmin() {
             label="Popup Image"
             hint="সাইট হোমপেজে প্রবেশ করার কিছুক্ষণ পর এই ছবিটি popup আকারে দেখাবে। (upload করলেই auto save হয়ে যাবে)"
           />
+        )}
+      </div>
+
+      {/* LINK */}
+      <div className="border dark:border-slate-700 p-4 rounded-lg space-y-3">
+        <h3 className="font-semibold text-gray-900 dark:text-slate-100">Popup Link (Optional)</h3>
+        <p className="text-sm text-gray-500 dark:text-slate-400">
+          Popup-এ ক্লিক করলে কাস্টমারকে এই লিংকে নিয়ে যাবে (product page বা যেকোনো URL)। ফাঁকা রাখলে popup শুধু বন্ধ হবে।
+        </p>
+        {!editingLink && config.link ? (
+          // ✅ READ MODE — link যোগ থাকলে শুধু দেখাবে + edit/remove আইকন
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <a
+                href={config.link}
+                target={config.openInNewTab === false ? "_self" : "_blank"}
+                rel="noopener noreferrer"
+                className="flex-1 min-w-0 truncate text-sm text-indigo-600 dark:text-indigo-400 underline underline-offset-2"
+                title={config.link}
+              >
+                {config.link}
+              </a>
+              <button
+                onClick={handleEditLink}
+                disabled={saving}
+                aria-label="Edit link"
+                title="Edit"
+                className="p-2 rounded border dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                onClick={handleRemoveLink}
+                disabled={saving}
+                aria-label="Remove link"
+                title="Remove"
+                className="p-2 rounded border border-red-200 dark:border-red-900 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors disabled:opacity-50"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              {config.openInNewTab === false
+                ? "Opens in: same tab"
+                : "Opens in: new tab"}
+            </p>
+          </div>
+        ) : (
+          // ✅ EDIT MODE — নতুন link দেওয়া বা existing link বদলানো
+          <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={linkInput}
+                onChange={(e) => setLinkInput(e.target.value)}
+                placeholder="https://yourshop.com/product/product-slug"
+                className="flex-1 border dark:border-slate-700 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveLink}
+                  disabled={
+                    saving ||
+                    (linkInput.trim() === (config.link || "") &&
+                      openInNewTab === (config.openInNewTab ?? true))
+                  }
+                  className="flex-1 sm:flex-none bg-indigo-600 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition-colors"
+                >
+                  Save Link
+                </button>
+                {config.link && (
+                  <button
+                    onClick={handleCancelLinkEdit}
+                    disabled={saving}
+                    className="px-4 py-2 rounded text-sm font-medium border dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300 cursor-pointer w-fit">
+              <input
+                type="checkbox"
+                checked={openInNewTab}
+                onChange={(e) => setOpenInNewTab(e.target.checked)}
+                className="rounded border-gray-300 dark:border-slate-600"
+              />
+              Open in new tab
+            </label>
+          </div>
         )}
       </div>
     </div>

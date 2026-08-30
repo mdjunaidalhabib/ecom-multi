@@ -92,13 +92,18 @@ router.post("/", popupUpload.single("image"), async (req, res) => {
   let convertedPath = null;
 
   try {
-    const { enabled, removeImage } = req.body;
+    const { enabled, removeImage, link, openInNewTab } = req.body;
 
     const existing = await HomepagePopup.findOne();
 
     const updateData = {
       image: existing?.image || "",
       imagePublicId: existing?.imagePublicId || "",
+      link: link !== undefined ? String(link).trim() : existing?.link ?? "",
+      openInNewTab:
+        openInNewTab !== undefined
+          ? openInNewTab === "true" || openInNewTab === true
+          : existing?.openInNewTab ?? true,
       enabled:
         enabled !== undefined ? enabled === "true" || enabled === true : existing?.enabled ?? false,
       updatedAt: new Date(),

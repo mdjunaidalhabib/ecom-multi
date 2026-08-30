@@ -31,6 +31,13 @@ export default function OrdersPage() {
     saleChannel,
     setSaleChannel,
 
+    search,
+    setSearch,
+    searching,
+
+    counts,
+    fetchCounts,
+
     deleting,
     handleDelete,
 
@@ -52,6 +59,17 @@ export default function OrdersPage() {
     setConfirm,
   } = useOrders(API);
 
+  // ✅ Status tab — lifted up (shared by OrdersGrid + OrdersTable) so the
+  // heading count and status-tab badges can all read the same value
+  const [tabStatus, setTabStatus] = useState("");
+
+  // ✅ বর্তমান পেজে (max ২০টা) যতগুলো অর্ডার আসলে দেখা যাচ্ছে তার হিসাব —
+  // counts.filteredTotal/byStatus সব পেজ মিলিয়ে গ্লোবাল টোটাল (ট্যাব badge-এর
+  // জন্য ঠিক আছে), কিন্তু হেডিং-এর "Showing" এ বর্তমান পেজের actual count দরকার
+  const showingCount = tabStatus
+    ? filtered.filter((o) => o.status === tabStatus).length
+    : filtered.length;
+
   // ✅ Edit modal state
   const [open, setOpen] = useState(false);
   const [currentId, setCurrentId] = useState(null);
@@ -65,7 +83,9 @@ export default function OrdersPage() {
     trackingId: "",
     cancelReason: "",
     discount: 0, // ✅ added
+    deliveryCharge: 0,
     billing: { name: "", phone: "", address: "" },
+    items: [],
   });
 
   /* =======================
@@ -95,7 +115,9 @@ export default function OrdersPage() {
       trackingId: order.trackingId || "",
       cancelReason: order.cancelReason || "",
       discount: Number(order.discount || 0), // ✅ important
+      deliveryCharge: Number(order.deliveryCharge || 0),
       billing: order.billing,
+      items: (order.items || []).map((it) => ({ ...it })),
     });
     setOpen(true);
   };
@@ -137,23 +159,31 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="space-y-4 px-2 sm:px-4">
+    <div className="flex flex-col h-full min-h-0 gap-2 px-2 sm:px-4">
       {/* TOP BAR */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-lg font-bold text-gray-900 dark:text-slate-100">Orders</h1>
+      <div className="flex items-center justify-between flex-wrap gap-2 shrink-0">
+        <div className="flex items-baseline gap-2">
+          <h1 className="text-base font-bold text-gray-900 dark:text-slate-100">Orders</h1>
+          <span className="text-xs text-gray-500 dark:text-slate-400">
+            Showing: <span className="font-semibold text-gray-700 dark:text-slate-300">{showingCount}</span>
+          </span>
+        </div>
 
         <div className="flex gap-2">
           {/* ✅ NEW ORDER BUTTON */}
           <button
             onClick={() => setCreateOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
+            className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-semibold"
           >
             + New Order
           </button>
 
           <button
-            onClick={fetchOrders}
-            className="bg-gray-700 text-white px-4 py-2 rounded text-sm"
+            onClick={() => {
+              fetchOrders();
+              fetchCounts();
+            }}
+            className="bg-gray-700 text-white px-3 py-1.5 rounded text-xs font-semibold"
           >
             Refresh
           </button>
@@ -161,22 +191,22 @@ export default function OrdersPage() {
       </div>
 
       {/* ✅ SALE CHANNEL FILTER */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 shrink-0">
         {[
-          { key: "", label: "All", active: "bg-indigo-600 border-indigo-600" },
-          { key: "online", label: "🌐 Online", active: "bg-blue-600 border-blue-600" },
-          { key: "offline", label: "🏬 Offline", active: "bg-purple-600 border-purple-600" },
+          { key: "", label: "All", count: counts.total, active: "bg-indigo-600 border-indigo-600" },
+          { key: "online", label: "🌐 Online", count: counts.bySaleChannel?.online ?? 0, active: "bg-blue-600 border-blue-600" },
+          { key: "offline", label: "🏬 Offline", count: counts.bySaleChannel?.offline ?? 0, active: "bg-purple-600 border-purple-600" },
         ].map((c) => (
           <button
             key={c.key}
             onClick={() => setSaleChannel(c.key)}
-            className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition ${
+            className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition ${
               saleChannel === c.key
                 ? `${c.active} text-white`
                 : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
             }`}
           >
-            {c.label}
+            {c.label} ({c.count})
           </button>
         ))}
       </div>
@@ -185,27 +215,42 @@ export default function OrdersPage() {
         <OrdersSkeleton />
       ) : (
         <>
-          <OrdersGrid
-            orders={filtered}
-            onEdit={openEdit}
-            onDelete={confirmDelete}
-            onStatusChange={updateStatus}
-            onSendCourier={sendCourierDirect}
-            onBulkStatusChange={updateManyStatus}
-            onBulkDelete={deleteMany}
-            onBulkSendCourier={sendCourierMany}
-          />
+          {/* ✅ এই wrapper-ই একমাত্র scroll করে — TopBar/Filter উপরে আর
+          Pagination নিচে সবসময় দেখা যাবে, আলাদা করে page scroll করে
+          পেজিনেশন পর্যন্ত পৌঁছাতে হবে না */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <OrdersGrid
+              orders={filtered}
+              tabStatus={tabStatus}
+              setTabStatus={setTabStatus}
+              statusCount={counts.byStatus}
+              allCount={counts.filteredTotal}
+              onEdit={openEdit}
+              onDelete={confirmDelete}
+              onStatusChange={updateStatus}
+              onSendCourier={sendCourierDirect}
+              onBulkStatusChange={updateManyStatus}
+              onBulkDelete={deleteMany}
+              onBulkSendCourier={sendCourierMany}
+            />
 
-          <OrdersTable
-            orders={filtered}
-            onEdit={openEdit}
-            onDelete={confirmDelete}
-            onStatusChange={updateStatus}
-            onSendCourier={sendCourierDirect}
-            onBulkStatusChange={updateManyStatus}
-            onBulkDelete={deleteMany}
-            onBulkSendCourier={sendCourierMany}
-          />
+            <OrdersTable
+              orders={filtered}
+              tabStatus={tabStatus}
+              setTabStatus={setTabStatus}
+              statusCount={counts.byStatus}
+              search={search}
+              setSearch={setSearch}
+              searching={searching}
+              onEdit={openEdit}
+              onDelete={confirmDelete}
+              onStatusChange={updateStatus}
+              onSendCourier={sendCourierDirect}
+              onBulkStatusChange={updateManyStatus}
+              onBulkDelete={deleteMany}
+              onBulkSendCourier={sendCourierMany}
+            />
+          </div>
 
           <Pagination
             page={page}

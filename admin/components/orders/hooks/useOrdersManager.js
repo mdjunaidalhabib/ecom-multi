@@ -22,13 +22,24 @@ export default function useOrdersManager({
     }
 
     if (search?.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (o) =>
-          o._id?.toLowerCase().includes(q) ||
-          o.billing?.name?.toLowerCase().includes(q) ||
-          o.billing?.phone?.toLowerCase().includes(q)
-      );
+      const q = search.trim().toLowerCase();
+
+      list = list.filter((o) => {
+        // ✅ Order ID (orderNumber বা fallback _id) — exact match, নাহলে
+        // "4" লিখলে 40/41/42... সব চলে আসত (substring match)
+        const idMatch =
+          String(o.orderNumber ?? "").toLowerCase() === q ||
+          o._id?.toLowerCase() === q;
+
+        const nameMatch = o.billing?.name?.toLowerCase().includes(q);
+
+        // ✅ ফোন নাম্বার — কমপক্ষে ৫ ডিজিট না দিলে ম্যাচ করাবে না
+        // (নাহলে অল্প ডিজিটেই অনেক ভুল অর্ডার চলে আসে)
+        const phoneMatch =
+          q.length >= 5 && o.billing?.phone?.toLowerCase().includes(q);
+
+        return idMatch || nameMatch || phoneMatch;
+      });
     }
 
     return list;

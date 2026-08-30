@@ -67,6 +67,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     totalOrders: 0,
     totalSales: 0,
+    totalProductSales: 0,
+    totalDeliveryCharge: 0,
   });
 
   // ✅ Online vs Offline breakdown
@@ -103,10 +105,23 @@ export default function DashboardPage() {
         if (data.length) {
           setOrders(data);
 
-          // ✅ Total Orders + Sales
+          // ✅ Total Orders + Sales (delivery charge সহ সম্পূর্ণ) + Product Sales (delivery বাদে)
           const totalOrders = data.length;
           const totalSales = data.reduce((sum, o) => sum + (o.total || 0), 0);
-          setStats({ totalOrders, totalSales });
+          const totalProductSales = data.reduce(
+            (sum, o) => sum + ((o.subtotal || 0) - (o.discount || 0)),
+            0
+          );
+          const totalDeliveryCharge = data.reduce(
+            (sum, o) => sum + (o.deliveryCharge || 0),
+            0
+          );
+          setStats({
+            totalOrders,
+            totalSales,
+            totalProductSales,
+            totalDeliveryCharge,
+          });
 
           // ✅ status count (fixed enum list)
           const statusMap = ORDER_STATUSES.reduce((acc, st) => {
@@ -134,7 +149,12 @@ export default function DashboardPage() {
           setChannelStats(channelMap);
         } else {
           setOrders([]);
-          setStats({ totalOrders: 0, totalSales: 0 });
+          setStats({
+            totalOrders: 0,
+            totalSales: 0,
+            totalProductSales: 0,
+            totalDeliveryCharge: 0,
+          });
           setStatusStats(
             ORDER_STATUSES.reduce((acc, st) => {
               acc[st] = 0;
@@ -250,7 +270,12 @@ export default function DashboardPage() {
     })).filter((d) => d.value > 0);
   }, [statusStats]);
 
-  const avgOrderValue = stats.totalOrders > 0 ? stats.totalSales / stats.totalOrders : 0;
+  // ✅ Avg Order Value = কাস্টমার গড়ে প্রকৃত কত পেমেন্ট করেছে (delivery charge সহ)
+  const avgOrderValue = useMemo(() => {
+    if (!orders.length) return 0;
+    const totalPaid = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+    return totalPaid / orders.length;
+  }, [orders]);
 
   // ✅ Professional Gradient Cards Config (premium colors)
 const cards = useMemo(() => {
@@ -272,6 +297,22 @@ const cards = useMemo(() => {
       dot: "bg-white/50",
       sub: "Total revenue",
       growth: monthlyComparison.salesGrowth,
+    },
+    {
+      key: "totalProductSales",
+      label: "📦 Product Sales",
+      value: `৳${stats.totalProductSales}`,
+      gradient: "from-orange-600 via-amber-600 to-yellow-500",
+      dot: "bg-white/50",
+      sub: "Excludes delivery charge",
+    },
+    {
+      key: "totalDeliveryCharge",
+      label: "🚚 Delivery Charge",
+      value: `৳${stats.totalDeliveryCharge}`,
+      gradient: "from-cyan-600 via-sky-600 to-blue-500",
+      dot: "bg-white/50",
+      sub: "Total delivery collected",
     },
     {
       key: "avgOrderValue",

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { getCurrentShopId } from "./shopContext.js";
 
 /**
@@ -74,7 +75,13 @@ export default function tenantPlugin(schema, options = {}) {
       (stage) => stage.$match && Object.prototype.hasOwnProperty.call(stage.$match, pathName),
     );
     if (!alreadyScoped) {
-      pipeline.unshift({ $match: { [pathName]: contextShopId } });
+      // ⚠️ aggregate() pipeline-এ Mongoose কোনো auto-casting করে না (find/
+      // countDocuments-এর মতো) — শপId ObjectId টাইপ ফিল্ড হওয়ায় plain string
+      // দিয়ে $match করলে MongoDB কোনো ডকুমেন্টই ম্যাচ করে না, তাই এখানে
+      // explicit ObjectId cast করা আবশ্যক।
+      pipeline.unshift({
+        $match: { [pathName]: new mongoose.Types.ObjectId(contextShopId) },
+      });
     }
   });
 }
