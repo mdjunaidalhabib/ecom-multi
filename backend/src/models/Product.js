@@ -12,6 +12,11 @@ const colorSchema = new mongoose.Schema(
     // ✅ Optional oldPrice (per color)
     oldPrice: { type: Number, default: null, min: 0 },
 
+    // ✅ Admin-only ক্রয় মূল্য (Cost/Purchase Price) — per variant. কাস্টমারকে
+    // কখনোই দেখানো হয় না; public.product.controller.js এর সব query তে
+    // .select("-colors.costPrice") দিয়ে বাদ দেওয়া আছে।
+    costPrice: { type: Number, default: null, min: 0 },
+
     images: { type: [String], default: [] },
 
     stock: { type: Number, default: 0, min: 0 },
@@ -90,6 +95,15 @@ const productSchema = new mongoose.Schema(
     freeDelivery: { type: Boolean, default: false },
     bestDiscount: { type: Boolean, default: false },
     cartvanBox: { type: Boolean, default: false },
+
+    // ✅ Review Video Link — অন্য প্লাটফর্মে (YouTube/Facebook/TikTok ইত্যাদি)
+    // থাকা এই প্রোডাক্টের রিভিউ ভিডিওর লিংক। সিঙ্গেল প্রোডাক্ট পেজে
+    // Facebook Group লিংকের উপরে দেখানো হয়। link খালি থাকলে পুরো সেকশন
+    // hide থাকবে (FacebookGroupLink এর মতোই আচরণ)।
+    reviewVideo: {
+      link: { type: String, default: "", trim: true },
+      text: { type: String, default: "", trim: true },
+    },
   },
   { timestamps: true },
 );

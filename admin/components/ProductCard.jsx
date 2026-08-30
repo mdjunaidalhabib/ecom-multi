@@ -39,12 +39,14 @@ export default function ProductCard({ product, onEdit, onDelete }) {
 
   // ✅ Admin-only ক্রয় মূল্য ও profit margin — public API তে costPrice কখনো
   // আসে না, তাই এখানে undefined হলে ব্লক render করা হয় না।
+  // variant থাকলে প্রথম variant এর costPrice/price ব্যবহার হয় (প্রতিটা
+  // variant এর ক্রয়মূল্য ভিন্ন হতে পারে বলে colors[0] কেই "প্রধান" ধরা হয়)।
+  const firstColor = totalVariants > 0 ? product.colors[0] : null;
+  const rawCostPrice = firstColor ? firstColor.costPrice : product?.costPrice;
   const hasCostPrice =
-    product?.costPrice !== undefined &&
-    product?.costPrice !== null &&
-    product?.costPrice !== "";
-  const costPrice = hasCostPrice ? Number(product.costPrice) : 0;
-  const sellPrice = Number(product?.price || 0);
+    rawCostPrice !== undefined && rawCostPrice !== null && rawCostPrice !== "";
+  const costPrice = hasCostPrice ? Number(rawCostPrice) : 0;
+  const sellPrice = Number((firstColor ? firstColor.price : product?.price) || 0);
   const profit = sellPrice - costPrice;
   const profitPct = costPrice > 0 ? Math.round((profit / costPrice) * 100) : null;
 
@@ -150,7 +152,7 @@ export default function ProductCard({ product, onEdit, onDelete }) {
         {hasCostPrice && (
           <div className="flex items-center justify-between gap-1 rounded-md border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-1">
             <span className="flex items-center gap-1 text-[9px] font-semibold text-amber-700 dark:text-amber-400">
-              🔒 ক্রয়: ৳{costPrice}
+              🔒 ক্রয়{totalVariants > 1 ? ` (${firstColor?.name || "Variant #1"})` : ""}: ৳{costPrice}
             </span>
             <span
               className={`text-[9px] font-bold ${

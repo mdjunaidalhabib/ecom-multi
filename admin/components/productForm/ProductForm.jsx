@@ -29,6 +29,7 @@ const EMPTY_DEFAULT_VARIANT = {
   name: "Default Variant",
   price: "",
   oldPrice: "",
+  costPrice: "",
   stock: 0,
   sold: 0,
   files: [],
@@ -75,7 +76,7 @@ export default function ProductForm({
     freeDelivery: false,
     bestDiscount: false,
     cartvanBox: false,
-    costPrice: "",
+    reviewVideo: { link: "", text: "" },
     variants: [EMPTY_DEFAULT_VARIANT],
     reviews: [],
   });
@@ -87,6 +88,7 @@ export default function ProductForm({
         name: v?.name || "",
         price: v?.price ?? "",
         oldPrice: v?.oldPrice ?? "",
+        costPrice: v?.costPrice ?? "",
         stock: Number(v?.stock ?? 0),
         sold: Number(v?.sold ?? 0),
         isBase: !!v?.isBase,
@@ -119,7 +121,10 @@ export default function ProductForm({
       freeDelivery: !!f?.freeDelivery,
       bestDiscount: !!f?.bestDiscount,
       cartvanBox: !!f?.cartvanBox,
-      costPrice: f?.costPrice ?? "",
+      reviewVideo: {
+        link: f?.reviewVideo?.link || "",
+        text: f?.reviewVideo?.text || "",
+      },
       variants: safeVariants,
       reviews: safeReviews,
     };
@@ -191,7 +196,7 @@ export default function ProductForm({
         freeDelivery: false,
         bestDiscount: false,
         cartvanBox: false,
-        costPrice: "",
+        reviewVideo: { link: "", text: "" },
         variants: [{ ...EMPTY_DEFAULT_VARIANT }],
         reviews: [],
       });
@@ -210,6 +215,7 @@ export default function ProductForm({
         ...v,
         price: v.price ?? product.price ?? "",
         oldPrice: v.oldPrice ?? product.oldPrice ?? "",
+        costPrice: v.costPrice ?? "",
         stock: v.stock ?? product.stock ?? 0,
         sold: v.sold ?? product.sold ?? 0,
         files: v.images || [],
@@ -222,6 +228,7 @@ export default function ProductForm({
         ...EMPTY_DEFAULT_VARIANT,
         price: product.price || "",
         oldPrice: product.oldPrice || "",
+        costPrice: product.costPrice ?? "",
         stock: product.stock || 0,
         sold: product.sold || 0,
         files: product.images || [],
@@ -240,7 +247,10 @@ export default function ProductForm({
         freeDelivery: product.freeDelivery ?? false,
         bestDiscount: product.bestDiscount ?? false,
         cartvanBox: product.cartvanBox ?? false,
-        costPrice: product.costPrice ?? "",
+        reviewVideo: {
+          link: product.reviewVideo?.link || "",
+          text: product.reviewVideo?.text || "",
+        },
         variants: mappedVariants,
         reviews: product.reviews || [],
       });
@@ -257,6 +267,7 @@ export default function ProductForm({
       ...EMPTY_DEFAULT_VARIANT,
       price: product.price || "",
       oldPrice: product.oldPrice || "",
+      costPrice: product.costPrice ?? "",
       stock: product.stock || 0,
       sold: product.sold || 0,
       files: product.images || [],
@@ -276,7 +287,10 @@ export default function ProductForm({
       freeDelivery: product.freeDelivery ?? false,
       bestDiscount: product.bestDiscount ?? false,
       cartvanBox: product.cartvanBox ?? false,
-      costPrice: product.costPrice ?? "",
+      reviewVideo: {
+        link: product.reviewVideo?.link || "",
+        text: product.reviewVideo?.text || "",
+      },
       variants: [base],
       reviews: product.reviews || [],
     });
@@ -415,12 +429,8 @@ export default function ProductForm({
       formData.append("freeDelivery", form.freeDelivery ? "true" : "false");
       formData.append("bestDiscount", form.bestDiscount ? "true" : "false");
       formData.append("cartvanBox", form.cartvanBox ? "true" : "false");
-      formData.append(
-        "costPrice",
-        form.costPrice !== "" && form.costPrice !== null && form.costPrice !== undefined
-          ? String(form.costPrice)
-          : "",
-      );
+      formData.append("reviewVideoLink", form.reviewVideo?.link || "");
+      formData.append("reviewVideoText", form.reviewVideo?.text || "");
       formData.append("rating", String(averageRating));
       formData.append("reviews", JSON.stringify(form.reviews || []));
 
@@ -429,6 +439,12 @@ export default function ProductForm({
 
         formData.append("price", String(base?.price || 0));
         formData.append("oldPrice", String(base?.oldPrice || 0));
+        formData.append(
+          "costPrice",
+          base?.costPrice !== "" && base?.costPrice !== null && base?.costPrice !== undefined
+            ? String(base.costPrice)
+            : "",
+        );
         formData.append("stock", String(base?.stock || 0));
         formData.append("sold", String(base?.sold || 0));
 

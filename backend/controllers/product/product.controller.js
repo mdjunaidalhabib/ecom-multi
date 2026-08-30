@@ -248,6 +248,8 @@ export const createProduct = async (req, res) => {
       freeDelivery,
       bestDiscount,
       cartvanBox,
+      reviewVideoLink,
+      reviewVideoText,
     } = req.body;
 
     let categoryIds = categories ? safeJSON(categories, []) : [];
@@ -339,6 +341,11 @@ export const createProduct = async (req, res) => {
           c.oldPrice && toNumber(c.oldPrice, 0) > 0
             ? toNumber(c.oldPrice, 0)
             : null,
+        // ✅ per-variant ক্রয় মূল্য — admin-only, খালি রাখলে null
+        costPrice:
+          c.costPrice !== undefined && c.costPrice !== null && c.costPrice !== ""
+            ? toNumber(c.costPrice, 0)
+            : null,
         stock: c.stock !== undefined ? toNumber(c.stock, 0) : 0,
         sold: c.sold !== undefined ? toNumber(c.sold, 0) : 0,
         images: Array.isArray(c.images) ? c.images : [],
@@ -401,14 +408,21 @@ export const createProduct = async (req, res) => {
       ? toNumber(parsedColors?.[0]?.sold, 0)
       : toNumber(sold, 0);
 
+    // ✅ costPrice এখন price/oldPrice/sold এর মতোই variant-aware: variant
+    // থাকলে প্রথম variant এর costPrice ব্যবহার হয় (আসল ক্রয়মূল্য প্রতিটা
+    // variant এ আলাদাভাবে সেভ থাকে colors[].costPrice এ), না থাকলে top-level
+    // ফর্ম থেকে আসা costPrice ব্যবহার হয়।
+    const mainCostPrice = hasVariants
+      ? parsedColors?.[0]?.costPrice ?? null
+      : costPrice !== undefined && costPrice !== null && costPrice !== ""
+        ? toNumber(costPrice, 0)
+        : null;
+
     const product = new Product({
       name,
       price: mainPrice,
       oldPrice: mainOldPrice,
-      costPrice:
-        costPrice !== undefined && costPrice !== null && costPrice !== ""
-          ? toNumber(costPrice, 0)
-          : null,
+      costPrice: mainCostPrice,
       stock: finalStock,
       sold: mainSold,
       isSoldOut: isSoldOut === "true" ? true : computedSoldOut,
@@ -425,6 +439,11 @@ export const createProduct = async (req, res) => {
       freeDelivery: freeDelivery === "true",
       bestDiscount: bestDiscount === "true",
       cartvanBox: cartvanBox === "true",
+      // ✅ Review Video Link — per-product, খালি থাকলে ফ্রন্টএন্ডে সেকশন hide
+      reviewVideo: {
+        link: reviewVideoLink ? String(reviewVideoLink).trim() : "",
+        text: reviewVideoText ? String(reviewVideoText).trim() : "",
+      },
     });
 
     await product.save();
@@ -469,6 +488,8 @@ export const updateProduct = async (req, res) => {
       freeDelivery,
       bestDiscount,
       cartvanBox,
+      reviewVideoLink,
+      reviewVideoText,
     } = req.body;
 
     const newOrder = toNumber(order, 0);
@@ -501,6 +522,11 @@ export const updateProduct = async (req, res) => {
         oldPrice:
           c.oldPrice && toNumber(c.oldPrice, 0) > 0
             ? toNumber(c.oldPrice, 0)
+            : null,
+        // ✅ per-variant ক্রয় মূল্য — admin-only, খালি রাখলে null
+        costPrice:
+          c.costPrice !== undefined && c.costPrice !== null && c.costPrice !== ""
+            ? toNumber(c.costPrice, 0)
             : null,
         stock: c.stock !== undefined ? toNumber(c.stock, 0) : 0,
         sold: c.sold !== undefined ? toNumber(c.sold, 0) : 0,
@@ -558,6 +584,8 @@ export const updateProduct = async (req, res) => {
           ? toNumber(product.colors?.[0]?.oldPrice, 0)
           : null;
       product.sold = toNumber(product.colors?.[0]?.sold, product.sold);
+      // ✅ variant mode এ top-level costPrice প্রথম variant থেকে সিঙ্ক থাকবে
+      product.costPrice = product.colors?.[0]?.costPrice ?? null;
     } else {
       // ✅ colors field খালি/empty array আকারে পাঠানো হয়েছে
       // (explicit signal যে variant mode থেকে normal mode এ switch করা হচ্ছে)
@@ -609,7 +637,12 @@ export const updateProduct = async (req, res) => {
         oldPrice && toNumber(oldPrice, 0) > 0 ? toNumber(oldPrice, 0) : null;
     }
 
-    if (costPrice !== undefined) {
+    // ✅ শুধুমাত্র non-variant (normal) মোডে top-level costPrice সরাসরি সেট
+    // হবে — variant mode এ এটা আগেই colors[0].costPrice থেকে সিঙ্ক করা
+    // হয়ে গেছে (উপরে দেখুন), এখানে আবার ওভাররাইট করা যাবে না।
+    const hasVariantsAfterUpdate =
+      Array.isArray(product.colors) && product.colors.length > 0;
+    if (!hasVariantsAfterUpdate && costPrice !== undefined) {
       product.costPrice =
         costPrice !== null && costPrice !== "" ? toNumber(costPrice, 0) : null;
     }
@@ -643,6 +676,20 @@ export const updateProduct = async (req, res) => {
     if (bestDiscount !== undefined)
       product.bestDiscount = bestDiscount === "true";
     if (cartvanBox !== undefined) product.cartvanBox = cartvanBox === "true";
+
+    // ✅ Review Video Link — খালি স্ট্রিং পাঠালে লিংক মুছে সেকশন hide হয়ে যাবে
+    if (reviewVideoLink !== undefined || reviewVideoText !== undefined) {
+      product.reviewVideo = {
+        link:
+          reviewVideoLink !== undefined
+            ? String(reviewVideoLink).trim()
+            : product.reviewVideo?.link || "",
+        text:
+          reviewVideoText !== undefined
+            ? String(reviewVideoText).trim()
+            : product.reviewVideo?.text || "",
+      };
+    }
 
     if (req.body.reviews) product.reviews = safeJSON(req.body.reviews, []);
 

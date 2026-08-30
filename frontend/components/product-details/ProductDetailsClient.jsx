@@ -13,6 +13,7 @@ import PurchaseActions from "./PurchaseActions";
 import ProductTabs from "./ProductTabs";
 import RelatedProducts from "./RelatedProducts";
 import FacebookGroupLink from "./FacebookGroupLink";
+import ReviewVideoLink from "./ReviewVideoLink";
 import useShopPath from "../../hooks/useShopPath";
 
 export default function ProductDetailsClient({
@@ -193,6 +194,7 @@ return (
     </section>
 
     <ProductTabs product={product} tab={tab} setTab={setTab} />
+    <ReviewVideoLink product={product} />
     <FacebookGroupLink />
     <RelatedProducts related={related} />
   </main>

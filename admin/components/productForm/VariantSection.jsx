@@ -384,7 +384,7 @@ export default function VariantSection({
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               <div className="md:col-span-1">
                 <label className="text-xs font-bold text-gray-600 dark:text-slate-400 uppercase tracking-wide">
                   Variant Name {v.isBase ? "" : "*"}
@@ -437,6 +437,23 @@ export default function VariantSection({
                   onChange={(e) => update(i, "oldPrice", e.target.value)}
                   className={`${baseInput} ${okClass}`}
                   placeholder="0.00"
+                />
+              </div>
+
+              {/* ✅ Admin-only ক্রয় মূল্য — প্রতিটা variant এর জন্য আলাদা,
+                  কাস্টমারকে কখনো দেখানো হয় না (backend public API থেকে
+                  colors.costPrice সবসময় বাদ দেওয়া থাকে)। */}
+              <div>
+                <label className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1">
+                  🔒 Cost Price
+                </label>
+                <input
+                  type="number"
+                  value={v.costPrice ?? ""}
+                  onChange={(e) => update(i, "costPrice", e.target.value)}
+                  className={`${baseInput} border-amber-300 dark:border-amber-500/40 bg-amber-50/60 dark:bg-amber-500/10 focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-500/30`}
+                  placeholder="0.00"
+                  min="0"
                 />
               </div>
 
@@ -580,6 +597,7 @@ export default function VariantSection({
                 name: "",
                 price: "",
                 oldPrice: "",
+                costPrice: "",
                 stock: 0,
                 sold: 0,
                 files: [],

@@ -178,31 +178,9 @@ export default function BasicInfoCategory({
         )}
       </div>
 
-      {/* ✅ Admin-only ক্রয় মূল্য — এই ফিল্ড কখনোই কাস্টমারকে দেখানো হয় না,
-          ব্যাকএন্ডে public API থেকে explicit ভাবে বাদ দেওয়া আছে। শুধু admin
-          নিজের profit margin হিসাব করার জন্য এখানে দেখতে পাবে। */}
-      <div className="rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-500/40 bg-amber-50/60 dark:bg-amber-500/10 p-4">
-        <div className="flex items-center gap-1.5 mb-2">
-          <span className="text-amber-600 dark:text-amber-400">🔒</span>
-          <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
-            শুধুমাত্র Admin — কাস্টমার দেখতে পাবে না
-          </span>
-        </div>
-        <label className="font-semibold text-gray-700 dark:text-slate-300 text-sm">
-          ক্রয় মূল্য (Cost Price)
-        </label>
-        <input
-          type="number"
-          value={form.costPrice ?? ""}
-          onChange={(e) => handleChange("costPrice", e.target.value)}
-          className={`${inputBase} ${ok} max-w-xs`}
-          placeholder="যেমন: 450"
-          min="0"
-        />
-        <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-1.5">
-          এই দামে আপনি প্রোডাক্টটি কিনেছেন/সংগ্রহ করেছেন — শুধু admin panel এ profit হিসাব করতে দেখা যাবে।
-        </p>
-      </div>
+      {/* ✅ ক্রয় মূল্য (Cost Price) এখন এখান থেকে সরিয়ে নিচের Variant
+          section এ (প্রতিটা variant/Default Variant কার্ডে) নেওয়া হয়েছে —
+          কারণ variant অনুযায়ী ক্রয়মূল্য ভিন্ন হতে পারে। */}
 
       <div>
         <label className="font-semibold text-gray-700 dark:text-slate-300 text-sm">
@@ -233,6 +211,58 @@ export default function BasicInfoCategory({
             minHeight={260}
           />
         </div>
+      </div>
+
+      {/* ✅ Review Video Link — অন্য প্লাটফর্মে (YouTube/Facebook/TikTok
+          ইত্যাদি) থাকা এই প্রোডাক্টের রিভিউ ভিডিওর লিংক। সিঙ্গেল প্রোডাক্ট
+          পেজে Facebook Group লিংকের উপরে দেখানো হয়। লিংক খালি রাখলে ঐ
+          সেকশনটাই কাস্টমারের কাছে hide থাকবে। */}
+      <div className="rounded-xl border-2 border-dashed border-rose-300 dark:border-rose-500/40 bg-rose-50/60 dark:bg-rose-500/10 p-4 space-y-3">
+        <div className="flex items-center gap-1.5">
+          <span className="text-rose-600 dark:text-rose-400">🎬</span>
+          <span className="text-xs font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wide">
+            রিভিউ ভিডিও লিংক (ঐচ্ছিক)
+          </span>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label className="font-semibold text-gray-700 dark:text-slate-300 text-sm">
+              ভিডিও লিংক
+            </label>
+            <input
+              type="url"
+              value={form.reviewVideo?.link ?? ""}
+              onChange={(e) =>
+                setForm((p) => ({
+                  ...p,
+                  reviewVideo: { ...p.reviewVideo, link: e.target.value },
+                }))
+              }
+              className={`${inputBase} ${ok}`}
+              placeholder="https://youtube.com/watch?v=..."
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-gray-700 dark:text-slate-300 text-sm">
+              বাটন/লিংক টেক্সট
+            </label>
+            <input
+              value={form.reviewVideo?.text ?? ""}
+              onChange={(e) =>
+                setForm((p) => ({
+                  ...p,
+                  reviewVideo: { ...p.reviewVideo, text: e.target.value },
+                }))
+              }
+              className={`${inputBase} ${ok}`}
+              placeholder="যেমন: ইউটিউবে রিভিউ ভিডিও দেখুন"
+            />
+          </div>
+        </div>
+        <p className="text-[11px] text-rose-700/80 dark:text-rose-400/80">
+          লিংক খালি রাখলে সিঙ্গেল প্রোডাক্ট পেজে এই সেকশনটা দেখা যাবে না।
+        </p>
       </div>
     </section>
   );
