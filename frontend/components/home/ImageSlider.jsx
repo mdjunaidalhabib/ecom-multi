@@ -20,6 +20,12 @@ export default function ImageSlider({
   showArrows = false,
   arrowsOnHover = true,
   swipeThresholdPx = 60,
+
+  // ✅ যখন true, বাইরের <section>/max-width/padding wrapper বাদ দিয়ে সরাসরি
+  // স্লাইডার বক্সটাই রেন্ডার করে — parent layout (যেমন classic HomeLayout-এর
+  // sidebar+slider গ্রিড) নিজে width/padding নিয়ন্ত্রণ করতে চাইলে ব্যবহার হয়,
+  // যাতে max-width/padding দুইবার প্রয়োগ না হয়।
+  bare = false,
 }) {
   const API_BASE = "/api";
   const { base } = useShopPath();
@@ -140,8 +146,15 @@ export default function ImageSlider({
       onMouseLeave={() => setIsHovered(false)}
       aria-label="Image slider"
     >
-      {/* ✅ Desktop max width 1080px */}
-      <div className="mx-auto w-full max-w-full  md:max-w-[1024px] xl:max-w-[1536px] md:px-8 md:mt-2">
+      {/* ✅ Desktop max width 1080px — বাদ (plain w-full) হয় `bare` মোডে, যখন
+          parent (classic HomeLayout) নিজেই max-width/padding নিয়ন্ত্রণ করছে */}
+      <div
+        className={
+          bare
+            ? "w-full"
+            : "mx-auto w-full max-w-full  md:max-w-[1024px] xl:max-w-[1536px] md:px-8 md:mt-2"
+        }
+      >
         {error && (
           <p className="text-center text-sm text-red-500 mb-2">{error}</p>
         )}

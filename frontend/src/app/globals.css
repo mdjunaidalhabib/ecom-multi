@@ -27,6 +27,26 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--theme-font-heading, inherit);
 }
 
+/* ✅ Thin scrollbar — homepage category sidebar-এর মতো ছোট scrollable
+   বক্সে ব্রাউজারের default (মোটা) scrollbar-এর বদলে সরু/professional দেখায় */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #f9a8d4 transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #f9a8d4;
+  border-radius: 9999px;
+}
+.thin-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: #ec4899;
+}
+
 /* ✅ Rich text content — প্রোডাক্ট Description/Additional Info এর জন্য,
    admin এ যা লেখা হয় ঠিক সেভাবেই (bold/color/list/heading) এখানে দেখাবে,
    এবং প্যারাগ্রাফের মাঝে সবসময় সমান/নিয়ন্ত্রিত স্পেসিং থাকবে */

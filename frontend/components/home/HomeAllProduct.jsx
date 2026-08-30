@@ -346,7 +346,7 @@ export default function CategoryTabsSection({
           ✅ মাউস দিয়ে drag করেও scroll করা যাবে */}
       <div
         ref={categoryNavRef}
-        className="mb-6 px-2 overflow-x-auto cursor-grab select-none [&::-webkit-scrollbar]:hidden"
+        className="mb-6 px-2 overflow-x-auto cursor-grab select-none [&::-webkit-scrollbar]:hidden lg:hidden"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         onMouseDown={categoryNavDrag.onMouseDown}
         onMouseMove={categoryNavDrag.onMouseMove}
@@ -418,8 +418,9 @@ export default function CategoryTabsSection({
           </div>
         </div>
 
-        {/* Desktop: 1 Row */}
-        <div className="hidden md:flex gap-2 w-max">
+        {/* Desktop: 1 Row — lg+ এ hidden, কারণ ওখানে slider-এর পাশে
+            CategorySidebar দেখায়, এটা রিডান্ডেন্ট হয়ে যায় */}
+        <div className="hidden md:flex lg:hidden gap-2 w-max">
           {[...topRow, ...bottomRow].map((cat) => (
             <button
               key={cat._id}

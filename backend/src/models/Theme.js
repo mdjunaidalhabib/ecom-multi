@@ -72,7 +72,7 @@ export default Theme;
 const SEED_THEMES = [
   {
     key: "classic",
-    name: "Classic",
+    name: "OpenCart",
     baseLayout: "classic",
     isSystem: true,
     colors: {
