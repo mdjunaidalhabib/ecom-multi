@@ -27,7 +27,7 @@ export default function AdminOrderMailSendPage() {
       data.emails = data.emails || [];
       setSettings(data);
     } catch (err) {
-      showToast("❌ Failed to load settings", "error");
+      showToast(`❌ ${err?.message || "Failed to load settings"}`, "error");
       console.error(err);
     } finally {
       setLoading(false);
@@ -98,7 +98,7 @@ export default function AdminOrderMailSendPage() {
       }
     } catch (err) {
       console.error(err);
-      showToast("❌ Update failed", "error");
+      showToast(`❌ ${err?.message || "Update failed"}`, "error");
     }
   };
 

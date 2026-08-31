@@ -136,6 +136,11 @@ export const navItems = [
 export const settingsChildren = [
   {
     icon: <LayoutDashboard size={16} />,
+    label: "Browser Title & Favicon",
+    href: "/admin/branding",
+  },
+  {
+    icon: <LayoutDashboard size={16} />,
     label: "Navbar",
     href: "/admin/navbar",
     feature: "fullStorefront",

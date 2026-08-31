@@ -35,10 +35,10 @@ const paymentMethodSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+paymentMethodSchema.plugin(tenantPlugin);
+
 const PaymentMethod =
   mongoose.models.PaymentMethod ||
   mongoose.model("PaymentMethod", paymentMethodSchema);
-
-paymentMethodSchema.plugin(tenantPlugin);
 
 export default PaymentMethod;

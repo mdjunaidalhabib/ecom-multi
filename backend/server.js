@@ -39,10 +39,45 @@ if (missingEnv.length) {
 // এখন প্রতি ৫ মিনিটে expired entry গুলো (যাদের resetAt সময় পার হয়ে গেছে)
 // clean up করা হয়, তাই Map-এর সাইজ সবসময় "গত windowMs সময়ে সক্রিয় IP"
 // সংখ্যার কাছাকাছি বাউন্ডেড থাকে।
+//
+// 🔥 FIX (admin panel মাঝপথে "আটকে" যাওয়া — মেনু/ডাটা হারিয়ে যায়, রিফ্রেশ/
+// হার্ড রিফ্রেশ/লগআউট কোনোটাই কাজ করে না):
+// আগে এই limiter পুরো অ্যাপের প্রতিটা request-কে (login, logout, session
+// check, dashboard-এর প্রতিটা ছোট API কল — সব) একই ভাগে ফেলত এবং শুধু IP
+// দিয়ে count করত (windowMs=15min, limit=300)। Admin dashboard নিজে থেকেই
+// অনেক request পাঠায় (AdminSessionGuard প্রতি ১০ সেকেন্ডে "/admin/me" পোল
+// করে, Header প্রতিটা পেজে "/admin/verify" + "/admin/my-features" কল করে,
+// এর উপর সব লিস্ট/উইজেট আলাদা API) — তার উপর একই অফিস/দোকানের একাধিক
+// staff একই IP (NAT/router) থেকে অ্যাক্সেস করলে ১৫ মিনিটের মধ্যেই সেই
+// একটামাত্র shared bucket ৩০০ ছাড়িয়ে যায়। এরপর সেই IP-এর প্রতিটা request
+// (নতুন পেজ লোড, রিফ্রেশ, এমনকি /admin/logout পর্যন্ত) 429 পেতে থাকে,
+// যতক্ষণ না ১৫ মিনিটের window শেষ হয় — ঠিক এই উপসর্গটাই রিপোর্ট করা
+// হয়েছিল (মেনু/ডাটা হারানো, রিফ্রেশ/হার্ড রিফ্রেশ/লগআউট কিছুই কাজ না করা)।
+//
+// সমাধান:
+//   ১) সেশন-ক্রিটিক্যাল রুট (login/logout/verify/me) কে rate limit থেকে
+//      সম্পূর্ণ বাদ দেওয়া হলো — এই রুটগুলো যেন কখনোই ব্লক না হয়, ব্যবহারকারী
+//      যেন সবসময় লগআউট করতে পারে বা সেশন-চেক কাজ করে।
+//   ২) লগইন করা admin/staff-দের জন্য key এখন IP-এর বদলে তাদের admin_token
+//      কুকি (per-session) দিয়ে করা হচ্ছে — তাই একই অফিসের একাধিক
+//      admin/staff একে অপরের quota শেয়ার করবে না। লগইন-বিহীন (public
+//      storefront) ট্রাফিকের জন্য এখনও IP-ভিত্তিক limit প্রযোজ্য।
+//   ৩) admin panel-এর স্বাভাবিক ব্যবহারে (অনেকগুলো ছোট API কল + পোলিং)
+//      যথেষ্ট headroom দিতে limit ৩০০ থেকে বাড়িয়ে ১২০০/১৫মিনিট করা হলো।
 const rateLimitStore = new Map();
 const RATE_LIMIT_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-const rateLimit = ({ windowMs = 15 * 60 * 1000, limit = 300 } = {}) => {
+// এই path গুলোতে rate limit কখনো প্রযোজ্য হবে না — সেশন সবসময় pull/kill
+// করা যাওয়া উচিত, ভুল করে "silently locked out" অবস্থা যেন তৈরি না হয়।
+const RATE_LIMIT_EXEMPT_PATHS = new Set([
+  "/admin/login",
+  "/admin/super-login",
+  "/admin/logout",
+  "/admin/verify",
+  "/admin/me",
+]);
+
+const rateLimit = ({ windowMs = 15 * 60 * 1000, limit = 1200 } = {}) => {
   const cleanupTimer = setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of rateLimitStore.entries()) {
@@ -52,7 +87,22 @@ const rateLimit = ({ windowMs = 15 * 60 * 1000, limit = 300 } = {}) => {
   cleanupTimer.unref?.(); // process বন্ধ হতে বাধা দেবে না
 
   return (req, res, next) => {
-    const key = req.ip || req.headers["x-forwarded-for"] || "unknown";
+    // সেশন-ক্রিটিক্যাল রুট — কোনো অবস্থাতেই ব্লক না করে সরাসরি পাস করাও।
+    if (RATE_LIMIT_EXEMPT_PATHS.has(req.path)) {
+      return next();
+    }
+
+    // লগইন করা থাকলে per-admin-session key (cookie), নাহলে per-IP fallback —
+    // যাতে একই IP/office-এর ভিন্ন ভিন্ন admin/staff একে অপরের quota শেয়ার না
+    // করে ("x-forwarded-for" এ প্রক্সি চেইনে একাধিক IP কমা দিয়ে আসতে পারে,
+    // তাই প্রথমটা নেওয়া হচ্ছে)।
+    const forwardedIp = (req.headers["x-forwarded-for"] || "")
+      .split(",")[0]
+      ?.trim();
+    const ip = req.ip || forwardedIp || "unknown";
+    const sessionToken = req.cookies?.admin_token;
+    const key = sessionToken ? `session:${sessionToken}` : `ip:${ip}`;
+
     const now = Date.now();
     const current = rateLimitStore.get(key) || { count: 0, resetAt: now + windowMs };
 

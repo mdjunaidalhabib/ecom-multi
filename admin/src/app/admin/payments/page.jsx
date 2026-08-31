@@ -109,7 +109,7 @@ function PendingVerificationTab({ showToast }) {
         paymentStatus === "paid" ? "success" : "error",
       );
     } catch (err) {
-      showToast("❌ আপডেট ব্যর্থ হয়েছে!", "error");
+      showToast(`❌ ${err?.message || "আপডেট ব্যর্থ হয়েছে!"}`, "error");
     } finally {
       setBusyId(null);
       setConfirmAction(null);
@@ -286,8 +286,8 @@ function VerifiedPaymentsTab({ showToast }) {
           : "♻️ Payments history-তে ফিরিয়ে আনা হয়েছে!",
         "success",
       );
-    } catch {
-      showToast("❌ আপডেট ব্যর্থ হয়েছে!", "error");
+    } catch (err) {
+      showToast(`❌ ${err?.message || "আপডেট ব্যর্থ হয়েছে!"}`, "error");
     } finally {
       setBusyId(null);
       setConfirmTarget(null);
@@ -529,7 +529,7 @@ function PaymentMethodsTab({ showToast }) {
       }
       resetForm();
     } catch (err) {
-      showToast("❌ সেভ করা যায়নি!", "error");
+      showToast(`❌ ${err?.message || "সেভ করা যায়নি!"}`, "error");
     } finally {
       setSaving(false);
     }
@@ -542,8 +542,8 @@ function PaymentMethodsTab({ showToast }) {
         body: JSON.stringify({ active: !m.active }),
       });
       setMethods((prev) => prev.map((x) => (x._id === m._id ? updated : x)));
-    } catch {
-      showToast("❌ Status পরিবর্তন করা যায়নি!", "error");
+    } catch (err) {
+      showToast(`❌ ${err?.message || "Status পরিবর্তন করা যায়নি!"}`, "error");
     }
   }
 
@@ -552,8 +552,8 @@ function PaymentMethodsTab({ showToast }) {
       await apiFetch(`/admin/payments/methods/${id}`, { method: "DELETE" });
       setMethods((prev) => prev.filter((m) => m._id !== id));
       showToast("🗑️ Payment method Trash-এ পাঠানো হয়েছে!", "success");
-    } catch {
-      showToast("❌ মুছতে ব্যর্থ হয়েছে!", "error");
+    } catch (err) {
+      showToast(`❌ ${err?.message || "মুছতে ব্যর্থ হয়েছে!"}`, "error");
     } finally {
       setDeleteTarget(null);
     }

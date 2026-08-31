@@ -102,7 +102,7 @@ export default function Navbar() {
   return (
     <>
       {/* ───────────── Top Navbar ───────────── */}
-      <nav className="bg-[var(--theme-primary)]/10 text-gray-800 shadow-md sticky top-0 z-50">
+      <nav className="bg-pink-200 text-gray-800 shadow-md sticky top-0 z-50">
         <div className="container mx-auto w-full flex justify-between items-center py-3 px-4 md:px-8">
           {/* 📱 Hamburger */}
           <button
@@ -113,7 +113,7 @@ export default function Navbar() {
               variants={topBar}
               animate={menuOpen ? "open" : "closed"}
               transition={{ duration: 0.3 }}
-              className="block h-1 w-6 bg-[var(--theme-primary)] rounded"
+              className="block h-1 w-6 bg-[var(--theme-primary)] rounded" 
             />
             <motion.span
               variants={middleBar}

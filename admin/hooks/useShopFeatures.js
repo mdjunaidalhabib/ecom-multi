@@ -1,6 +1,32 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+// 🔥 FIX: useShopFeatures() আর useMyPlanInfo() দুটোই আলাদাভাবে ঠিক একই
+// "/api/admin/my-features" এন্ডপয়েন্টে কল করত (Header একসাথে দুটো হুকই
+// ব্যবহার করে, তাই প্রতিটা পেজ-লোডে ডুপ্লিকেট রিকোয়েস্ট যেত)। এখন একটা
+// ছোট module-level cache/in-flight promise দিয়ে দুটো হুক একই রেসপন্স শেয়ার
+// করে — অহেতুক ব্যাকএন্ড কল ও rate-limit কোটা খরচ কমাতে (দেখুন
+// backend/server.js এর rateLimit কমেন্ট)।
+let myFeaturesCache = null; // { data } | null
+let myFeaturesInFlight = null; // Promise | null
+
+function fetchMyFeaturesOnce() {
+  if (myFeaturesCache) return Promise.resolve(myFeaturesCache.data);
+  if (myFeaturesInFlight) return myFeaturesInFlight;
+
+  myFeaturesInFlight = axios
+    .get("/api/admin/my-features", { withCredentials: true })
+    .then((res) => {
+      myFeaturesCache = { data: res.data || null };
+      return myFeaturesCache.data;
+    })
+    .finally(() => {
+      myFeaturesInFlight = null;
+    });
+
+  return myFeaturesInFlight;
+}
+
 // ✅ লগইন করা admin-এর শপের প্ল্যানে কোন কোন ফিচার (analytics, promo...) চালু
 // আছে সেটা ফেচ করে। মেনু আইটেম গেট করতে Sidebar/Header এ ব্যবহার হয়।
 // লোড হওয়ার আগে null থাকে, যাতে caller গেটেড আইটেম আগেভাগে না দেখিয়ে
@@ -9,9 +35,8 @@ export function useShopFeatures() {
   const [features, setFeatures] = useState(null);
 
   useEffect(() => {
-    axios
-      .get("/api/admin/my-features", { withCredentials: true })
-      .then((res) => setFeatures(res.data?.features || {}))
+    fetchMyFeaturesOnce()
+      .then((data) => setFeatures(data?.features || {}))
       .catch(() => setFeatures({}));
   }, []);
 
@@ -24,9 +49,8 @@ export function useMyPlanInfo() {
   const [info, setInfo] = useState(null);
 
   useEffect(() => {
-    axios
-      .get("/api/admin/my-features", { withCredentials: true })
-      .then((res) => setInfo(res.data || null))
+    fetchMyFeaturesOnce()
+      .then((data) => setInfo(data || null))
       .catch(() => setInfo(null));
   }, []);
 

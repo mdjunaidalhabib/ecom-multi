@@ -16,7 +16,7 @@ const ReviewVideoLink = ({ product }) => {
   return (
     <div className="flex items-center gap-1 md:gap-2">
       {/* Icon */}
-      <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-rose-600 hover:bg-rose-700 transition flex items-center justify-center">
+      <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-rose-600 hover:bg-rose-700 transition flex items-center justify-center">
         <FaPlay className="text-white text-[10px] ml-[1px]" />
       </div>
 

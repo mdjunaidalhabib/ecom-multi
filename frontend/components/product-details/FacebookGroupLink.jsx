@@ -19,9 +19,9 @@ const FacebookGroupLink = () => {
   if (!config || !config.enabled || !config.link) return null;
 
   return (
-    <div className="flex items-center gap-1 md:gap-2 ">
+    <div className="flex items-center gap-1 md:gap-2 mt-1 md:mt-2">
       {/* Icon */}
-      <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-[#1877F2] hover:bg-[#166FE5] transition flex items-center justify-center">
+      <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-[#1877F2] hover:bg-[#166FE5] transition flex items-center justify-center">
         <FaFacebookF className="text-white text-sm" />
       </div>
 

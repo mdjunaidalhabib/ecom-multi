@@ -151,4 +151,25 @@ export const invoiceBgUpload = multer({
   },
 });
 
+/* ================== ✅ BRANDING FAVICON UPLOAD ==================
+   INPUT : jpeg/png/webp allowed (client ImageUploader আগেই WEBP এ convert
+   করে পাঠায়) — ছোট আইকন বলে limit ছোট রাখা হলো
+   OUTPUT: controller 64×64 WEBP এ resize করে (favicon.admin.routes.js এবং
+   platformBranding.superadmin.routes.js দুটোতেই ব্যবহার হয়)
+================================================== */
+export const faviconUpload = multer({
+  storage,
+  limits: { fileSize: 1 * 1024 * 1024 }, // ✅ input can be larger (client already compresses)
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/webp", "image/jpeg", "image/png"];
+    if (!allowed.includes(file.mimetype)) {
+      return cb(
+        new Error("Only jpeg/png/webp allowed (Auto convert to 64×64 WEBP)"),
+        false
+      );
+    }
+    cb(null, true);
+  },
+});
+
 export default upload;

@@ -24,6 +24,15 @@ const platformSettingsSchema = new mongoose.Schema(
       text: { type: String, trim: true, maxlength: 300, default: "" },
       updatedAt: { type: Date, default: null },
     },
+
+    // ✅ Platform-wide ডিফল্ট ব্রাউজার ট্যাব শিরোনাম + ফেভিকন — যেসব শপ
+    // নিজের admin panel থেকে নিজস্ব title/favicon সেট করেনি (দেখুন
+    // models/SiteBranding.js), তাদের storefront-এ এটাই দেখানো হয়।
+    branding: {
+      title: { type: String, trim: true, maxlength: 60, default: "Hikmah IT" },
+      favicon: { type: String, default: "" }, // R2 URL
+      faviconPublicId: { type: String, default: "" }, // R2 object key
+    },
   },
   { timestamps: true },
 );

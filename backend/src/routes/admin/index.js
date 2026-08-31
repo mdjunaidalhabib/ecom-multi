@@ -39,6 +39,8 @@ import mailReportAdminRoutes from "./mailReport.admin.routes.js";
 import landingPageAdminRoutes from "./landingPage.admin.routes.js";
 import invoiceTemplateAdminRoutes from "./invoiceTemplate.admin.routes.js";
 import invoiceTemplateDefaultRoutes from "./invoiceTemplateDefault.superadmin.routes.js";
+import platformBrandingRoutes from "./platformBranding.superadmin.routes.js";
+import siteBrandingAdminRoutes from "./siteBranding.admin.routes.js";
 
 import { protect, requirePermission } from "../../middlewares/adminAuthMiddleware.js";
 import { requireShopContext } from "../../tenancy/adminShopContext.js";
@@ -73,6 +75,11 @@ router.use("/announcement", announcementAdminRoutes);
 // এডিট করে), নিজস্ব protect+superAdminOnly আছে routes ফাইলে।
 router.use("/invoice-template-default", invoiceTemplateDefaultRoutes);
 
+// ✅ প্ল্যাটফর্ম-ওয়াইড ডিফল্ট ব্রাউজার ট্যাব টাইটেল + ফেভিকন — /announcement,
+// /invoice-template-default এর মতোই কোনো "active shop" ছাড়াই কাজ করে,
+// নিজস্ব protect+superAdminOnly(শুধু POST-এ) আছে routes ফাইলেই।
+router.use("/platform-branding", platformBrandingRoutes);
+
 // ✅ এখান থেকে নিচের সব admin route এর জন্য valid admin session +
 // active shop context বাধ্যতামূলক (আগে অনেক রুটে কোনো auth check-ই ছিল না —
 // এটা সেটাও ফিক্স করে দিচ্ছে)
@@ -84,6 +91,9 @@ router.use("/users", requirePermission("users"), usersAdminRoutes);
 router.use("/staff", staffAdminRoutes);
 router.use("/navbar", requirePermission("settings"), navbarAdminRoutes);
 router.use("/footer", requirePermission("settings"), footerAdminRoutes);
+// ✅ এই শপের নিজস্ব ব্রাউজার ট্যাব টাইটেল + ফেভিকন override (খালি রাখলে
+// /platform-branding এ super-admin এর সেট করা ডিফল্ট storefront-এ দেখানো হয়)
+router.use("/site-branding", requirePermission("settings"), siteBrandingAdminRoutes);
 router.use("/sliders", requirePermission("sliders"), slidersAdminRoutes);
 // ⚠️ "/" এ mount করা — সব রিকোয়েস্টের prefix হিসেবে ম্যাচ করে, তাই এখানে
 // blanket permission gate বসানো হয়নি (এটা পরের সব route কেও ভুলভাবে

@@ -61,59 +61,70 @@ export async function apiFetch(path, options = {}) {
 
     // 🔒 Shop suspended mid-session — same cleanup as 401, plus a notice for
     // the login page (backend/src/utils/adminShopAccess.js buildSuspendedShopResponse).
-    if (res.status === 403) {
-      const body = await res.json().catch(() => ({}));
-
-      if (body?.errorType === "SHOP_SUSPENDED") {
-        try {
-          await fetch(`${baseUrl}/admin/logout`, {
-            method: "POST",
-            credentials: "include",
-            cache: "no-store",
-          });
-        } catch {
-          // ignore
-        }
-
-        if (typeof window !== "undefined") {
-          document.cookie =
-            "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          document.cookie =
-            "active_shop_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-          try {
-            localStorage.clear();
-            sessionStorage.setItem(
-              NOTICE_STORAGE_KEY,
-              JSON.stringify({
-                errorType: body.errorType,
-                message: body.message,
-                contactMessage: body.contactMessage,
-                suspension: body.suspension,
-              }),
-            );
-          } catch {}
-
-          window.location.replace("/login?shopAccess=blocked");
-        }
-
-        throw new Error("Shop suspended");
-      }
+    // ✅ Non-2xx body is parsed ONCE here (a Response body can only be read
+    // once) and reused below for both the SHOP_SUSPENDED check and the
+    // generic error-message extraction — previously a second res.text()
+    // call after this res.json() always failed on the already-consumed
+    // stream and silently swallowed the real backend message.
+    let errorBody = null;
+    if (!res.ok && res.status !== 401) {
+      errorBody = await res.json().catch(() => null);
     }
 
-    // ❌ Other API errors
-    if (!res.ok) {
-      let errorText = "";
-
+    if (res.status === 403 && errorBody?.errorType === "SHOP_SUSPENDED") {
+      const body = errorBody;
       try {
-        errorText = await res.text();
+        await fetch(`${baseUrl}/admin/logout`, {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+        });
       } catch {
-        errorText = "Unknown error";
+        // ignore
       }
 
-      throw new Error(
-        `API error: ${res.status} ${res.statusText} → ${errorText}`,
-      );
+      if (typeof window !== "undefined") {
+        document.cookie =
+          "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie =
+          "active_shop_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+        try {
+          localStorage.clear();
+          sessionStorage.setItem(
+            NOTICE_STORAGE_KEY,
+            JSON.stringify({
+              errorType: body.errorType,
+              message: body.message,
+              contactMessage: body.contactMessage,
+              suspension: body.suspension,
+            }),
+          );
+        } catch {}
+
+        window.location.replace("/login?shopAccess=blocked");
+      }
+
+      throw new Error("Shop suspended");
+    }
+
+    // ❌ Other API errors — backend routes use either `message` or `error`
+    // as the field name (both are common across this codebase), so check
+    // both. Falls back to statusText if the body wasn't JSON at all (e.g.
+    // a proxy/network-level error page).
+    if (!res.ok) {
+      const message =
+        errorBody?.message ||
+        errorBody?.error ||
+        res.statusText ||
+        "Unknown error";
+
+      const apiError = new Error(message);
+      // ✅ so callers (e.g. showToast(err.message)) show the actual
+      // backend reason instead of a generic string
+      apiError.status = res.status;
+      apiError.data = errorBody;
+      throw apiError;
     }
 
     // ✅ Success

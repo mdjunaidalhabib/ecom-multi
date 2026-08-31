@@ -1,11 +1,14 @@
 import "./globals.css";
 import PWARegister from "../../components/pwa/pwa-register";
 
-// ✅ Metadata (UPDATED)
+// ✅ Metadata (UPDATED) — এটা শুধু আল্টিমেট ফলব্যাক (কোনো কারণে
+// shop/[shopSlug]/layout.js এর generateMetadata() না চললে)। আসল
+// per-shop title/favicon সেখানেই ঠিক হয় (super-admin এর platform ডিফল্ট,
+// বা শপের নিজের override) — দেখুন controllers/shop/public.shop.controller.js
 export const metadata = {
-  title: "Cartvan | Trusted Best Online Shopping Platform in Bangladesh",
+  title: "Hikmah IT",
   description:
-    "cartvan is a reliable e-commerce platform in Bangladesh offering quality products at competitive prices.",
+    "Hikmah IT is a reliable e-commerce platform in Bangladesh offering quality products at competitive prices.",
 
   manifest: "/manifest.json",
   icons: {

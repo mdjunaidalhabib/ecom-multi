@@ -185,7 +185,7 @@ export default function EditOrderModal({
       }
     } catch (err) {
       console.error(err);
-      showToast("❌ Something went wrong while saving!", "error", 2000);
+      showToast(`❌ ${err?.message || "Something went wrong while saving!"}`, "error", 2000);
     } finally {
       setLoading(false);
     }

@@ -277,6 +277,18 @@ export default function DashboardPage() {
     return totalPaid / orders.length;
   }, [orders]);
 
+  // ✅ Total Quantity Sold = প্রতিটা অর্ডারের প্রতিটা আইটেমের qty যোগ করে মোট বিক্রিত পণ্যের সংখ্যা
+  // (একটা অর্ডারে একাধিক আইটেম, বা একটা আইটেমের একাধিক qty থাকতে পারে — তাই শুধু order count দিয়ে বোঝা যায় না)
+  const totalQuantitySold = useMemo(() => {
+    return orders.reduce((sum, o) => {
+      const orderQty = (o.items || []).reduce(
+        (s, it) => s + (it.qty || 0),
+        0
+      );
+      return sum + orderQty;
+    }, 0);
+  }, [orders]);
+
   // ✅ Professional Gradient Cards Config (premium colors)
 const cards = useMemo(() => {
   return [
@@ -287,7 +299,6 @@ const cards = useMemo(() => {
       gradient: "from-indigo-600 via-blue-600 to-cyan-500",
       dot: "bg-white/50",
       sub: "All orders",
-      growth: monthlyComparison.ordersGrowth,
     },
     {
       key: "totalSales",
@@ -296,7 +307,6 @@ const cards = useMemo(() => {
       gradient: "from-emerald-600 via-emerald-600 to-emerald-500",
       dot: "bg-white/50",
       sub: "Total revenue",
-      growth: monthlyComparison.salesGrowth,
     },
     {
       key: "totalProductSales",
@@ -321,6 +331,14 @@ const cards = useMemo(() => {
       gradient: "from-fuchsia-600 via-fuchsia-600 to-pink-500",
       dot: "bg-white/50",
       sub: "Per order average",
+    },
+    {
+      key: "totalQuantitySold",
+      label: "📦 Total Quantity Sold",
+      value: totalQuantitySold,
+      gradient: "from-lime-600 via-green-600 to-emerald-500",
+      dot: "bg-white/50",
+      sub: "Total items across all orders",
     },
     {
       key: "onlineOrders",
@@ -379,7 +397,7 @@ const cards = useMemo(() => {
       sub: "Stopped orders",
     },
   ];
-}, [stats, statusStats, channelStats, monthlyComparison, avgOrderValue]);
+}, [stats, statusStats, channelStats, monthlyComparison, avgOrderValue, totalQuantitySold]);
 
   return (
     <div className="space-y-6 p-3 sm:p-6">

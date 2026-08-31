@@ -2,6 +2,8 @@ import Plan from "../../src/models/Plan.js";
 import Theme from "../../src/models/Theme.js";
 import { shopHasFeature } from "../../src/services/planFeatureService.js";
 import LandingPage from "../../src/models/LandingPage.js";
+import SiteBranding from "../../src/models/SiteBranding.js";
+import { getPlatformSettings } from "../../src/models/PlatformSettings.js";
 
 const FALLBACK_THEME = {
   baseLayout: "classic",
@@ -40,6 +42,17 @@ export const getShopInfo = async (req, res) => {
       : FALLBACK_THEME;
     const fullStorefront = await shopHasFeature(shop, "fullStorefront");
 
+    // ✅ ব্রাউজার ট্যাব শিরোনাম + ফেভিকন — শপ নিজে সেট করে থাকলে সেটা,
+    // নাহলে super-admin এর platform-wide ডিফল্ট (দেখুন models/SiteBranding.js
+    // ও routes/admin/siteBranding.admin.routes.js / platformBranding.superadmin.routes.js)
+    const [siteBranding, platformSettings] = await Promise.all([
+      SiteBranding.findOne({ shopId: shop._id }),
+      getPlatformSettings(),
+    ]);
+    const effectiveTitle =
+      siteBranding?.browserTitle || platformSettings.branding?.title || "Hikmah IT";
+    const effectiveFavicon = siteBranding?.favicon || platformSettings.branding?.favicon || "";
+
     let primaryLandingPageSlug = null;
     if (!fullStorefront) {
       const primaryPage = await LandingPage.findOne({
@@ -59,6 +72,8 @@ export const getShopInfo = async (req, res) => {
       branding: {
         logo: shop.branding?.logo || "",
         themeColor: shop.branding?.themeColor || "#0ea5e9",
+        title: effectiveTitle,
+        favicon: effectiveFavicon,
       },
       effectiveTheme: effectiveThemeKey,
       theme: themeConfig,

@@ -2,7 +2,13 @@
 
 import { useEffect, useRef } from "react";
 
-const SESSION_CHECK_INTERVAL_MS = 10_000;
+// 🔥 FIX: আগে ১০ সেকেন্ড অন্তর পোল করা হতো — এই একটামাত্র watchdog-ই ঘণ্টায়
+// ৩৬০+ রিকোয়েস্ট পাঠাত (একেক admin/staff-এর জন্য আলাদা), যা Header-এর
+// নিজস্ব verify কল ও dashboard-এর অন্যান্য API-এর সাথে মিলে ব্যাকএন্ডের
+// global rate limit দ্রুত শেষ করে ফেলত (দেখুন backend/server.js এর
+// rateLimit কমেন্ট)। ৪৫ সেকেন্ডেও সাসপেন্ড/লগআউট যথেষ্ট দ্রুত ধরা পড়ে,
+// কিন্তু রিকোয়েস্ট-চাপ অনেক কমে যায়।
+const SESSION_CHECK_INTERVAL_MS = 45_000;
 const NOTICE_STORAGE_KEY = "shop_access_notice";
 
 function clearClientSession(suspensionNotice = null) {

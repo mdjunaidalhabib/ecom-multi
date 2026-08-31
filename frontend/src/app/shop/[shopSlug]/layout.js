@@ -29,6 +29,25 @@ async function getShop() {
   }
 }
 
+// ✅ প্রতিটা শপের নিজস্ব ব্রাউজার ট্যাব শিরোনাম + ফেভিকন (backend already
+// resolves shop override → platform-wide super-admin ডিফল্ট → "Hikmah IT",
+// দেখুন controllers/shop/public.shop.controller.js) — getShopInfo() Next-এর
+// per-request fetch cache-এ dedupe হয়, তাই এটা আলাদা কোনো extra backend
+// call করে না (ShopLayout নিজেও এটাই কল করে)।
+export async function generateMetadata() {
+  const { shop } = await getShop();
+
+  const title = shop?.branding?.title || "Hikmah IT";
+  const favicon = shop?.branding?.favicon;
+
+  return {
+    title,
+    icons: favicon
+      ? { icon: favicon, shortcut: favicon, apple: favicon }
+      : { icon: "/favicon.ico", shortcut: "/favicon.ico", apple: "/favicon.ico" },
+  };
+}
+
 export default async function ShopLayout({ children, params }) {
   const { shopSlug } = await params;
   const { shop, suspended } = await getShop();
