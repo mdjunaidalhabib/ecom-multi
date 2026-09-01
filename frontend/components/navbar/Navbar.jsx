@@ -284,7 +284,7 @@ export default function Navbar() {
       </AnimatePresence>
 
       {/* ───────────── 📱 Bottom Navigation ───────────── */}
-      <div className="fixed bottom-0 left-0 right-0 md:hidden z-50 bg-[var(--theme-primary)]/10 border-t border-[var(--theme-primary)]/25">
+      <div className="bg-pink-200 fixed bottom-0 left-0 right-0 md:hidden z-50 border-t border-[var(--theme-primary)]/25">
         <div className="relative flex justify-between items-center px-4 py-2">
           <Link
             href={base || "/"}
