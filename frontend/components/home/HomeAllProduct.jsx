@@ -368,7 +368,7 @@ export default function CategoryTabsSection({
                 }}
                 className="inline-flex items-center gap-1.5 px-2 py-1.5 bg-white border border-gray-200 rounded-lg shadow-sm whitespace-nowrap"
               >
-                <div className="relative w-6 h-6 overflow-hidden rounded-md border bg-white flex-shrink-0">
+                <div className="relative w-8 h-8 overflow-hidden rounded-md border bg-white flex-shrink-0">
                   <Image
                     loader={cloudinaryLoader}
                     src={cat.image || "/no-image.png"}
@@ -380,7 +380,7 @@ export default function CategoryTabsSection({
                   />
                 </div>
 
-                <span className="text-[11px] font-medium text-gray-700">
+                <span className="text-[12px] font-medium text-gray-700">
                   {cat.name}
                 </span>
               </button>
@@ -398,7 +398,7 @@ export default function CategoryTabsSection({
                 }}
                 className="inline-flex items-center gap-1.5 px-2 py-1.5 bg-white border border-gray-200 rounded-lg shadow-sm whitespace-nowrap"
               >
-                <div className="relative w-6 h-6 overflow-hidden rounded-md border bg-white flex-shrink-0">
+                <div className="relative w-8 h-8 overflow-hidden rounded-md border bg-white flex-shrink-0">
                   <Image
                     loader={cloudinaryLoader}
                     src={cat.image || "/no-image.png"}
@@ -410,7 +410,7 @@ export default function CategoryTabsSection({
                   />
                 </div>
 
-                <span className="text-[11px] font-medium text-gray-700">
+                <span className="text-[12px] font-medium text-gray-700">
                   {cat.name}
                 </span>
               </button>
