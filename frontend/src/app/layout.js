@@ -3,8 +3,9 @@ import PWARegister from "../../components/pwa/pwa-register";
 
 // ✅ Metadata (UPDATED) — এটা শুধু আল্টিমেট ফলব্যাক (কোনো কারণে
 // shop/[shopSlug]/layout.js এর generateMetadata() না চললে)। আসল
-// per-shop title/favicon সেখানেই ঠিক হয় (super-admin এর platform ডিফল্ট,
-// বা শপের নিজের override) — দেখুন controllers/shop/public.shop.controller.js
+// per-shop title/favicon সেখানেই ঠিক হয় (হার্ডকোডেড platform ডিফল্ট "Hikmah
+// IT", বা শপের নিজের Navbar এ সেট করা brand name/logo) — দেখুন
+// controllers/shop/public.shop.controller.js
 export const metadata = {
   title: "Hikmah IT",
   description:

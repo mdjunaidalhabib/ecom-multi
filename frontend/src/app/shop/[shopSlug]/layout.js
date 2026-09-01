@@ -30,10 +30,11 @@ async function getShop() {
 }
 
 // ✅ প্রতিটা শপের নিজস্ব ব্রাউজার ট্যাব শিরোনাম + ফেভিকন (backend already
-// resolves shop override → platform-wide super-admin ডিফল্ট → "Hikmah IT",
-// দেখুন controllers/shop/public.shop.controller.js) — getShopInfo() Next-এর
-// per-request fetch cache-এ dedupe হয়, তাই এটা আলাদা কোনো extra backend
-// call করে না (ShopLayout নিজেও এটাই কল করে)।
+// resolves shop এর Navbar এ admin-সেট brand name/logo → হার্ডকোডেড platform
+// ডিফল্ট "Hikmah IT", দেখুন controllers/shop/public.shop.controller.js ও
+// constants/branding.constants.js) — getShopInfo() Next-এর per-request
+// fetch cache-এ dedupe হয়, তাই এটা আলাদা কোনো extra backend call করে না
+// (ShopLayout নিজেও এটাই কল করে)।
 export async function generateMetadata() {
   const { shop } = await getShop();
 

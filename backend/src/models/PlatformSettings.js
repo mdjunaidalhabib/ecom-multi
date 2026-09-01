@@ -25,14 +25,14 @@ const platformSettingsSchema = new mongoose.Schema(
       updatedAt: { type: Date, default: null },
     },
 
-    // ✅ Platform-wide ডিফল্ট ব্রাউজার ট্যাব শিরোনাম + ফেভিকন — যেসব শপ
-    // নিজের admin panel থেকে নিজস্ব title/favicon সেট করেনি (দেখুন
-    // models/SiteBranding.js), তাদের storefront-এ এটাই দেখানো হয়।
-    branding: {
-      title: { type: String, trim: true, maxlength: 60, default: "Hikmah IT" },
-      favicon: { type: String, default: "" }, // R2 URL
-      faviconPublicId: { type: String, default: "" }, // R2 object key
-    },
+    // ⚠️ আগে এখানে super-admin এডিটযোগ্য প্ল্যাটফর্ম-ওয়াইড ডিফল্ট ব্রাউজার
+    // ট্যাব টাইটেল/ফেভিকন (branding.title/favicon) ছিল, SiteBranding
+    // (শপ-লেভেল override) এর পাশাপাশি — দুই জায়গা থেকে সেট করা যেত এই
+    // সিস্টেমটা ইচ্ছাকৃতভাবে বাদ দেওয়া হয়েছে। এখন ডিফল্ট নাম/ফেভিকন কোডে
+    // হার্ডকোড করা (দেখুন constants/branding.constants.js) এবং প্রতি শপের
+    // effective title/favicon সরাসরি সেই শপের নিজের Navbar (brand
+    // name/logo, admin নিজে navbar পেজ থেকে সেট করে) থেকে resolve হয় —
+    // দেখুন controllers/shop/public.shop.controller.js (getShopInfo)।
   },
   { timestamps: true },
 );

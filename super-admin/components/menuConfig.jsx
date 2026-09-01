@@ -1,4 +1,4 @@
-import { CircleGauge, Store, Trash2, User, Layers, Inbox, FileText, Palette, Globe } from "lucide-react";
+import { CircleGauge, Store, Trash2, User, Layers, Inbox, FileText, Palette } from "lucide-react";
 
 // ✅ Superadmin-এর কাজ শুধু শপ তৈরি/ম্যানেজ করা — কোনো শপের
 // Products/Orders/Users/Settings ইত্যাদি shop-scoped ডেটাতে তার এক্সেস
@@ -34,11 +34,6 @@ export const superAdminNavItems = [
     icon: <FileText size={18} />,
     label: "Invoice Template",
     href: "/invoice-template",
-  },
-  {
-    icon: <Globe size={18} />,
-    label: "Browser Title & Favicon",
-    href: "/branding",
   },
   {
     icon: <Trash2 size={18} />,
