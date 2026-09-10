@@ -25,14 +25,22 @@ export default function PlatformFooter() {
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400">প্ল্যাটফর্ম</p>
             <ul className="mt-4 space-y-2.5 text-sm text-gray-600">
               <li><Link href="/#features" className="transition-colors hover:text-gray-900">সার্ভিস</Link></li>
+              <li><Link href="/#why-us" className="transition-colors hover:text-gray-900">কেন ECMS</Link></li>
               <li><Link href="/#plans" className="transition-colors hover:text-gray-900">প্ল্যান</Link></li>
               <li><Link href="/#how-it-works" className="transition-colors hover:text-gray-900">কিভাবে কাজ করে</Link></li>
+              <li><Link href="/#faq" className="transition-colors hover:text-gray-900">সাধারণ জিজ্ঞাসা</Link></li>
             </ul>
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">কোম্পানি</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">যোগাযোগ</p>
             <ul className="mt-4 space-y-2.5 text-sm text-gray-600">
+              <li><Link href="/#contact" className="transition-colors hover:text-gray-900">যোগাযোগ করুন</Link></li>
+              <li>
+                <a href="mailto:hikmahitcenter@gmail.com" className="transition-colors hover:text-gray-900">
+                  hikmahitcenter@gmail.com
+                </a>
+              </li>
               <li>
                 <a
                   href="https://hikmahit.com"

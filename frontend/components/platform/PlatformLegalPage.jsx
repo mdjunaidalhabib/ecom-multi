@@ -1,6 +1,20 @@
+"use client";
+
+import { motion } from "framer-motion";
 import { Scale, ShieldCheck } from "lucide-react";
 import PlatformHeader from "./PlatformHeader";
 import PlatformFooter from "./PlatformFooter";
+
+// হালকা entrance fade — শুধু mount-এ একবার চলে (scroll-triggered viewport
+// observer নেই), তাই পেজ লোড হয়ে হুট করে না এসে আলতো করে ভেসে ওঠে।
+const fadeUp = {
+  hidden: { opacity: 0, y: 14 },
+  visible: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, delay: Math.min(i * 0.05, 0.4), ease: "easeOut" },
+  }),
+};
 
 const CONTACT = {
   email: "hikmahitcenter@gmail.com",
@@ -200,7 +214,13 @@ const TERMS_SECTIONS = [
 
 function SectionBlock({ index, title, body }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:p-7">
+    <motion.div
+      custom={index}
+      initial="hidden"
+      animate="visible"
+      variants={fadeUp}
+      className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:p-7"
+    >
       <div className="flex items-start gap-3.5">
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 text-[11px] font-black text-white shadow-md shadow-orange-200">
           {index}
@@ -227,7 +247,7 @@ function SectionBlock({ index, title, body }) {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -264,7 +284,12 @@ export default function PlatformLegalPage({ type, adminUrl }) {
       <PlatformHeader adminUrl={adminUrl} />
 
       {/* Hero */}
-      <section className="relative mx-auto max-w-3xl px-5 pb-6 pt-14 text-center sm:pt-16">
+      <motion.section
+        initial="hidden"
+        animate="visible"
+        variants={fadeUp}
+        className="relative mx-auto max-w-3xl px-5 pb-6 pt-14 text-center sm:pt-16"
+      >
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 shadow-lg shadow-orange-200">
           <Icon size={24} className="text-white" />
         </div>
@@ -278,7 +303,7 @@ export default function PlatformLegalPage({ type, adminUrl }) {
         <p className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white/70 px-3.5 py-1.5 text-xs font-medium text-gray-500">
           সর্বশেষ হালনাগাদ: {LAST_UPDATED}
         </p>
-      </section>
+      </motion.section>
 
       {/* Sections */}
       <section className="relative mx-auto max-w-3xl px-5 pb-10 pt-6 sm:pb-14">
@@ -287,7 +312,13 @@ export default function PlatformLegalPage({ type, adminUrl }) {
             <SectionBlock key={section.title} index={i + 1} title={section.title} body={section.body} />
           ))}
 
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-7">
+          <motion.div
+            custom={sections.length + 1}
+            initial="hidden"
+            animate="visible"
+            variants={fadeUp}
+            className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-7"
+          >
             <div className="flex items-start gap-3.5">
               <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 text-[11px] font-black text-white shadow-md shadow-orange-200">
                 {sections.length + 1}
@@ -312,7 +343,7 @@ export default function PlatformLegalPage({ type, adminUrl }) {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 

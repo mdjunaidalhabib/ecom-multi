@@ -6,12 +6,17 @@ import {
   ArrowRight,
   BarChart3,
   Check,
+  ChevronDown,
   ClipboardList,
   Crown,
   Globe2,
+  Layers,
+  LifeBuoy,
+  Mail,
   Megaphone,
   Package,
   Palette,
+  Phone,
   ShieldCheck,
   ShoppingBag,
   ShoppingCart,
@@ -20,6 +25,7 @@ import {
   Tag,
   Truck,
   Wallet,
+  Zap,
 } from "lucide-react";
 import AdminCTA from "./AdminCTA";
 import PlatformHeader from "./PlatformHeader";
@@ -117,6 +123,77 @@ const ACCENTS = {
     text: "text-rose-600",
     chip: "bg-rose-50 text-rose-700 border-rose-100",
   },
+};
+
+const WHY_US = [
+  {
+    icon: Zap,
+    title: "কয়েক মিনিটেই শপ লাইভ",
+    desc: "কোনো কোডিং ছাড়াই ব্র্যান্ড নাম, লোগো ও থিম সেট করে সাথে সাথে স্টোরফ্রন্ট চালু করুন।",
+    accent: "orange",
+  },
+  {
+    icon: Wallet,
+    title: "বাংলাদেশ-কেন্দ্রিক পেমেন্ট",
+    desc: "bKash, Nagad ও Cash on Delivery প্রথম থেকেই ইন্টিগ্রেটেড — আলাদা সেটআপের ঝামেলা নেই।",
+    accent: "teal",
+  },
+  {
+    icon: Smartphone,
+    title: "মোবাইল-রেডি স্টোরফ্রন্ট",
+    desc: "প্রতিটি শপ PWA হিসেবে ইনস্টলযোগ্য, তাই গ্রাহক অ্যাপের মতো অভিজ্ঞতা পায় মোবাইলেই।",
+    accent: "emerald",
+  },
+  {
+    icon: Layers,
+    title: "ব্যবসার সাথে বাড়ে এমন প্ল্যান",
+    desc: "নতুন শুরু থেকে মাল্টি-শপ রিসেলিং পর্যন্ত — প্রয়োজন অনুযায়ী প্ল্যান আপগ্রেড করুন।",
+    accent: "amber",
+  },
+  {
+    icon: ShieldCheck,
+    title: "নিরাপদ ও নির্ভরযোগ্য",
+    desc: "এনক্রিপশন ও সিকিউর সার্ভারে ডেটা সংরক্ষিত থাকে, নিয়মিত মনিটরিং হয় প্ল্যাটফর্মের।",
+    accent: "rose",
+  },
+  {
+    icon: LifeBuoy,
+    title: "বাংলায় ডেডিকেটেড সাপোর্ট",
+    desc: "WhatsApp ও ইমেইলের মাধ্যমে সরাসরি Hikmah IT টিমের সহায়তা পাবেন।",
+    accent: "orange",
+  },
+];
+
+const FAQS = [
+  {
+    q: "ECMS দিয়ে শপ তৈরি করতে কি কোনো কোডিং জ্ঞান লাগবে?",
+    a: "না, লাগবে না। অ্যাডমিন প্যানেল থেকেই ব্র্যান্ড নাম, লোগো, থিম, প্রোডাক্ট ও ডোমেইন সেট করে সম্পূর্ণ শপ পরিচালনা করা যায়।",
+  },
+  {
+    q: "শপ তৈরি করে লাইভ করতে কত সময় লাগে?",
+    a: "সাধারণত কয়েক মিনিটের মধ্যেই ব্র্যান্ডিং ও প্রাথমিক প্রোডাক্ট সেট করে শপ লাইভ করা যায়। প্রোডাক্ট সংখ্যা বেশি হলে ক্যাটালগ সাজাতে একটু বেশি সময় লাগতে পারে।",
+  },
+  {
+    q: "কোন কোন পেমেন্ট মেথড সাপোর্ট করে?",
+    a: "bKash, Nagad ও Cash on Delivery (COD) প্রথম থেকেই ইন্টিগ্রেটেড। প্ল্যান অনুযায়ী অতিরিক্ত পেমেন্ট গেটওয়েও যোগ করা যায়।",
+  },
+  {
+    q: "আমি কি নিজের কাস্টম ডোমেইনে শপ চালাতে পারবো?",
+    a: "হ্যাঁ। Business ও তার উপরের প্ল্যানে নিজের কাস্টম ডোমেইন যুক্ত করে শপ চালানো যায়।",
+  },
+  {
+    q: "পরবর্তীতে প্ল্যান পরিবর্তন বা আপগ্রেড করা যাবে?",
+    a: "হ্যাঁ, ব্যবসার চাহিদা অনুযায়ী যেকোনো সময় প্ল্যান আপগ্রেড করা যায় — নতুন করে শপ সেটআপ করার প্রয়োজন হয় না।",
+  },
+  {
+    q: "সমস্যা হলে সাপোর্ট কীভাবে পাবো?",
+    a: "WhatsApp বা ইমেইলে সরাসরি যোগাযোগ করলে Hikmah IT-এর টিম সহায়তা দেয়। নিচের 'যোগাযোগ' সেকশনে বিস্তারিত পাবেন।",
+  },
+];
+
+const CONTACT = {
+  email: "hikmahitcenter@gmail.com",
+  phone: "০১৬২৪-১১৪৪০৫",
 };
 
 const SERVICES = [
@@ -426,6 +503,42 @@ function whatsappPlanLink(whatsappNumber, planName) {
   return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
 }
 
+function whatsappContactLink(whatsappNumber) {
+  if (!whatsappNumber) return "#";
+  const text = "আমি ECMS সম্পর্কে জানতে চাই।";
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
+}
+
+function FAQItem({ index, q, a, isOpen, onToggle }) {
+  return (
+    <div
+      className={`overflow-hidden rounded-2xl border transition-colors ${
+        isOpen ? "border-orange-200 bg-orange-50/40" : "border-gray-100 bg-white"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(index)}
+        aria-expanded={isOpen}
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+      >
+        <span className="font-semibold text-gray-900">{q}</span>
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-gray-400 transition-transform duration-300 ${isOpen ? "rotate-180 text-orange-500" : ""}`}
+        />
+      </button>
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden px-5 pb-4 text-sm leading-relaxed text-gray-500">{a}</div>
+      </div>
+    </div>
+  );
+}
+
 function WhatsAppIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -435,6 +548,8 @@ function WhatsAppIcon(props) {
 }
 
 export default function PlatformLanding({ adminUrl, whatsappNumber }) {
+  const [openFaq, setOpenFaq] = useState(0);
+
   return (
     <div
       className="relative min-h-screen overflow-x-clip bg-gradient-to-br from-teal-50 via-amber-50 to-orange-100 text-gray-900"
@@ -564,6 +679,52 @@ export default function PlatformLanding({ adminUrl, whatsappNumber }) {
         </div>
       </section>
 
+      {/* Why us */}
+      <section id="why-us" className="border-t border-gray-100 bg-white py-20 sm:py-24">
+        <div className="mx-auto max-w-6xl px-5">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={fadeUp}
+            className="mx-auto max-w-xl text-center"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">কেন ECMS</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+              কেন ব্যবসার জন্য ECMS বেছে নেবেন
+            </h2>
+            <p className="mt-3 text-sm text-gray-500">
+              অন্য প্ল্যাটফর্মের বদলে ECMS-এ শপ চালানোর পেছনে যে কারণগুলো সবচেয়ে বেশি গুরুত্বপূর্ণ।
+            </p>
+          </motion.div>
+
+          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {WHY_US.map(({ icon: Icon, title, desc, accent }, i) => {
+              const a = ACCENTS[accent];
+              return (
+                <motion.div
+                  key={title}
+                  custom={i}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.3 }}
+                  variants={fadeUp}
+                  className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+                >
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${a.icon}`}>
+                    <Icon size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{title}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{desc}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* Plans */}
       <section id="plans" className="border-t border-gray-100 py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-5">
@@ -655,6 +816,125 @@ export default function PlatformLanding({ adminUrl, whatsappNumber }) {
 
           <div className="mt-14">
             <StepsPanel />
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="border-t border-gray-100 py-20 sm:py-24">
+        <div className="mx-auto max-w-3xl px-5">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={fadeUp}
+            className="mx-auto max-w-xl text-center"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">সাধারণ জিজ্ঞাসা</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+              যা সবচেয়ে বেশি জানতে চাওয়া হয়
+            </h2>
+            <p className="mt-3 text-sm text-gray-500">
+              ECMS নিয়ে সাধারণ প্রশ্নের উত্তর। আরও কিছু জানতে চাইলে নিচে যোগাযোগ করুন।
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={fadeUp}
+            className="mt-10 space-y-3"
+          >
+            {FAQS.map((faq, i) => (
+              <FAQItem
+                key={faq.q}
+                index={i}
+                q={faq.q}
+                a={faq.a}
+                isOpen={openFaq === i}
+                onToggle={(idx) => setOpenFaq((cur) => (cur === idx ? null : idx))}
+              />
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section id="contact" className="border-t border-gray-100 bg-gradient-to-b from-teal-50/60 via-white to-orange-50/40 py-20 sm:py-24">
+        <div className="mx-auto max-w-5xl px-5">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={fadeUp}
+            className="mx-auto max-w-xl text-center"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">যোগাযোগ</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+              আমাদের সাথে যোগাযোগ করুন
+            </h2>
+            <p className="mt-3 text-sm text-gray-500">
+              শপ শুরু করা নিয়ে প্রশ্ন থাকলে বা ডেমো দেখতে চাইলে সরাসরি যোগাযোগ করুন — দ্রুত উত্তর পাবেন।
+            </p>
+          </motion.div>
+
+          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <motion.a
+              href={whatsappContactLink(whatsappNumber)}
+              target={whatsappNumber ? "_blank" : undefined}
+              rel={whatsappNumber ? "noopener noreferrer" : undefined}
+              custom={0}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-gray-200/70"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#25D366] text-white shadow-md shadow-emerald-200">
+                <WhatsAppIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">WhatsApp</h3>
+                <p className="mt-1 text-sm text-gray-500">দ্রুততম উত্তরের জন্য মেসেজ করুন</p>
+              </div>
+            </motion.a>
+
+            <motion.a
+              href={`mailto:${CONTACT.email}`}
+              custom={1}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-gray-200/70"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-md shadow-orange-200">
+                <Mail size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">ইমেইল</h3>
+                <p className="mt-1 break-all text-sm text-gray-500">{CONTACT.email}</p>
+              </div>
+            </motion.a>
+
+            <motion.a
+              href={`tel:${CONTACT.phone.replace(/[^0-9]/g, "")}`}
+              custom={2}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-gray-200/70"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-200">
+                <Phone size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">ফোন</h3>
+                <p className="mt-1 text-sm text-gray-500">{CONTACT.phone}</p>
+              </div>
+            </motion.a>
           </div>
         </div>
       </section>
