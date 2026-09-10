@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 /**
  * ✅ useAdminMe
- * `admin_token` cookie httpOnly (client-side জাভাস্ক্রিপ্ট থেকে পড়া যায় না),
+ * `super_admin_token` cookie httpOnly (client-side জাভাস্ক্রিপ্ট থেকে পড়া যায় না),
  * তাই সার্ভার থেকে সত্যিকারের /admin/me কল করা হয় (cookie নিজে থেকেই
  * fetch-এর সাথে যায়, credentials: same-origin দরকার নেই কারণ এটা একই
  * origin-এর /api/... proxy)

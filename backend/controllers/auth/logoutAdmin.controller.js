@@ -10,25 +10,20 @@ export const logoutAdmin = async (req, res) => {
       path: "/",
     };
 
-    // 1) host-only cookie clear
-    res.clearCookie("admin_token", baseOptions);
-    res.cookie("admin_token", "", {
-      ...baseOptions,
-      expires: new Date(0),
-      maxAge: 0,
-    });
+    // ✅ admin (shop) আর super-admin app আলাদা cookie name ব্যবহার করে
+    // ("admin_token" vs "super_admin_token") — logout route দুটো app-ই
+    // শেয়ার করে বলে কোন portal থেকে কল হয়েছে তা না জেনেই দুটোই clear
+    // করে দেওয়া হচ্ছে, যাতে কখনো stale session অন্য app-এ থেকে না যায়।
+    const cookieNames = ["admin_token", "super_admin_token"];
 
-    // 2) old domain cookie clear, if mobile still has previous cookie
-    res.clearCookie("admin_token", {
-      ...baseOptions,
-      domain: ".openupbd.com",
-    });
-    res.cookie("admin_token", "", {
-      ...baseOptions,
-      domain: ".openupbd.com",
-      expires: new Date(0),
-      maxAge: 0,
-    });
+    for (const name of cookieNames) {
+      res.clearCookie(name, baseOptions);
+      res.cookie(name, "", {
+        ...baseOptions,
+        expires: new Date(0),
+        maxAge: 0,
+      });
+    }
 
     return res.status(200).json({
       success: true,

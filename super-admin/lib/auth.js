@@ -18,7 +18,7 @@ export async function getAdmin() {
         sessionStorage.clear();
 
         document.cookie =
-          "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          "super_admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       }
 
       return null;
@@ -35,7 +35,7 @@ export async function getAdmin() {
       sessionStorage.clear();
 
       document.cookie =
-        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        "super_admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     }
 
     return null;
@@ -56,7 +56,7 @@ export async function logoutAdmin() {
     // ✅ সব auth/cache remove
     if (typeof window !== "undefined") {
       document.cookie =
-        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        "super_admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
       localStorage.clear();
       sessionStorage.clear();

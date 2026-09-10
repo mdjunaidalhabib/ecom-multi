@@ -23,9 +23,8 @@ function getSession(token) {
   return payload.exp > now ? payload : null;
 }
 
-function redirectWithClearedCookie(url) {
-  const response = NextResponse.redirect(url);
-  response.cookies.set("admin_token", "", {
+function clearCookie(response, name) {
+  response.cookies.set(name, "", {
     path: "/",
     expires: new Date(0),
     sameSite: "lax",
@@ -33,8 +32,28 @@ function redirectWithClearedCookie(url) {
   return response;
 }
 
+function redirectWithClearedCookie(url) {
+  return clearCookie(NextResponse.redirect(url), "super_admin_token");
+}
+
+// Before this app got its own cookie name, a superadmin session lived under
+// "admin_token" (shared with the shop-admin app). Only a superadmin-role JWT
+// under that old name is a leftover worth wiping — a shop admin/staff logged
+// in on the same browser also carries a valid "admin_token", and that one
+// must be left alone or browsing this app would silently log them out.
+function clearLegacyCookie(response, req) {
+  const legacyToken = req.cookies.get("admin_token")?.value;
+  const legacySession = getSession(legacyToken);
+
+  if (legacySession?.role === "superadmin") {
+    clearCookie(response, "admin_token");
+  }
+
+  return response;
+}
+
 export function proxy(req) {
-  const token = req.cookies.get("admin_token")?.value || "";
+  const token = req.cookies.get("super_admin_token")?.value || "";
   const session = getSession(token);
   const { pathname, origin } = req.nextUrl;
 
@@ -43,19 +62,19 @@ export function proxy(req) {
   // Logged-in super admins should not remain on the login page.
   if (isLogin) {
     if (session?.role === "superadmin") {
-      return NextResponse.redirect(`${origin}/dashboard`);
+      return clearLegacyCookie(NextResponse.redirect(`${origin}/dashboard`), req);
     }
-    return NextResponse.next();
+    return clearLegacyCookie(NextResponse.next(), req);
   }
 
   // Everything else in this app is the super admin panel — only a
   // superadmin session may pass. Any other (or missing) session gets
   // bounced to login, clearing a stale/wrong-role cookie on the way out.
   if (!session || session.role !== "superadmin") {
-    return redirectWithClearedCookie(`${origin}/login`);
+    return clearLegacyCookie(redirectWithClearedCookie(`${origin}/login`), req);
   }
 
-  return NextResponse.next();
+  return clearLegacyCookie(NextResponse.next(), req);
 }
 
 // (panel) is a route group — it's stripped from the actual URL, so

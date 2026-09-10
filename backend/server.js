@@ -100,7 +100,7 @@ const rateLimit = ({ windowMs = 15 * 60 * 1000, limit = 1200 } = {}) => {
       .split(",")[0]
       ?.trim();
     const ip = req.ip || forwardedIp || "unknown";
-    const sessionToken = req.cookies?.admin_token;
+    const sessionToken = req.cookies?.admin_token || req.cookies?.super_admin_token;
     const key = sessionToken ? `session:${sessionToken}` : `ip:${ip}`;
 
     const now = Date.now();

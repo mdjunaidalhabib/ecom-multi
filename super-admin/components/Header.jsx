@@ -54,7 +54,7 @@ export default function Header() {
       console.error("Logout request failed:", err);
     } finally {
       document.cookie =
-        "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        "super_admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       localStorage.clear();
       sessionStorage.clear();
       window.location.replace("/login");

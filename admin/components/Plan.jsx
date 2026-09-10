@@ -14,6 +14,9 @@ import {
   CalendarClock,
   AlertTriangle,
   Palette,
+  Code2,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { formatDateTime, formatDate } from "../lib/utils";
@@ -69,6 +72,32 @@ const STATUS_META = {
   approved: ["অনুমোদিত", "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20", CheckCircle2],
   rejected: ["বাতিল", "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20", XCircle],
 };
+
+// ✅ প্ল্যাটফর্ম ডেভেলপার (Hikmah IT)-এর যোগাযোগ তথ্য — কাস্টম ফিচার/প্ল্যানের
+// বাইরের বিশেষ কাজের জন্য শপ owner যাতে সরাসরি ডেভেলপারের সাথে যোগাযোগ
+// করতে পারে (দেখুন frontend/components/platform/PlatformLegalPage.jsx এর
+// একই ইমেইল/ফোন)
+const DEV_WHATSAPP_NUMBER = "8801624114405";
+const DEV_CONTACT = {
+  phoneLabel: "০১৬২৪-১১৪৪০৫",
+  phoneHref: "tel:+8801624114405",
+  email: "hikmahitcenter@gmail.com",
+  website: "https://hikmahit.com",
+};
+
+function devWhatsappLink() {
+  const text =
+    "আসসালামু আলাইকুম, আমি ECMS অ্যাডমিন প্যানেল থেকে যোগাযোগ করছি — কাস্টম ফিচার/সাপোর্ট নিয়ে জানতে চাই।";
+  return `https://wa.me/${DEV_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
+function WhatsAppIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.81L2 22l5.44-1.43a9.87 9.87 0 0 0 4.6 1.17h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.06c-.24.68-1.4 1.3-1.93 1.38-.49.08-1.11.11-1.79-.11-.41-.13-.94-.3-1.62-.6-2.85-1.23-4.71-4.1-4.85-4.29-.14-.19-1.16-1.54-1.16-2.94s.73-2.08.99-2.36c.26-.28.56-.35.75-.35h.54c.17 0 .4-.02.62.48.24.55.81 1.9.88 2.04.07.14.12.31.02.5-.09.19-.14.31-.28.48-.14.17-.29.37-.42.5-.14.14-.28.29-.12.57.16.28.72 1.19 1.55 1.93 1.06.95 1.96 1.24 2.24 1.38.28.14.44.12.61-.07.16-.19.7-.81.89-1.09.19-.28.38-.23.63-.14.26.09 1.63.77 1.91.91.28.14.47.21.54.33.07.12.07.68-.17 1.36Z" />
+    </svg>
+  );
+}
 
 export default function Plan() {
   const [planInfo, setPlanInfo] = useState(null);
@@ -196,6 +225,66 @@ export default function Plan() {
             বর্তমান প্ল্যান, ফিচার লিমিট দেখুন এবং প্রয়োজনে আপগ্রেড/ডাউনগ্রেড অনুরোধ পাঠান।
           </p>
         </div>
+
+        {/* Developer contact — এই প্ল্যাটফর্মটি Hikmah IT ডিজাইন ও ডেভেলপ
+            করেছে, তাই কাস্টম ফিচার/ডিজাইন বা টেকনিক্যাল সাপোর্ট লাগলে শপ
+            owner যাতে সহজেই সরাসরি ডেভেলপারের সাথে যোগাযোগ করতে পারে */}
+        <section className="mb-6 overflow-hidden rounded-2xl border border-pink-100 dark:border-pink-500/20 bg-gradient-to-br from-pink-50 via-white to-white dark:from-pink-500/10 dark:via-slate-900 dark:to-slate-900 shadow-sm">
+          <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="flex items-start gap-3.5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-pink-100 dark:bg-pink-500/15 text-pink-600 dark:text-pink-400">
+                <Code2 size={20} />
+              </span>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-pink-500 dark:text-pink-400">
+                  Powered by Hikmah IT
+                </p>
+                <h2 className="mt-0.5 font-black text-gray-900 dark:text-slate-100">
+                  কাস্টম ফিচার বা ডেভেলপার সাপোর্ট প্রয়োজন?
+                </h2>
+                <p className="mt-1 max-w-xl text-sm leading-relaxed text-gray-600 dark:text-slate-400">
+                  এই ই-কমার্স প্ল্যাটফর্মটি ডিজাইন ও ডেভেলপ করেছে{" "}
+                  <a
+                    href={DEV_CONTACT.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-gray-900 dark:text-slate-100 hover:text-pink-600 dark:hover:text-pink-400"
+                  >
+                    Hikmah IT
+                  </a>{" "}
+                  — নতুন ফিচার, কাস্টম ডিজাইন, ইন্টিগ্রেশন বা প্ল্যানের বাইরে
+                  বিশেষ কোনো প্রয়োজনে সরাসরি আমাদের সাথে যোগাযোগ করুন।
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <a
+                href={devWhatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm shadow-emerald-200 transition hover:bg-emerald-700"
+              >
+                <WhatsAppIcon className="h-4 w-4" />
+                হোয়াটসঅ্যাপ
+              </a>
+              <a
+                href={DEV_CONTACT.phoneHref}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-gray-700 dark:text-slate-300 shadow-sm transition hover:border-pink-300 dark:hover:border-pink-500/40"
+              >
+                <Phone size={14} />
+                {DEV_CONTACT.phoneLabel}
+              </a>
+              <a
+                href={`mailto:${DEV_CONTACT.email}`}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-gray-700 dark:text-slate-300 shadow-sm transition hover:border-pink-300 dark:hover:border-pink-500/40"
+              >
+                <Mail size={14} />
+                ইমেইল
+              </a>
+            </div>
+          </div>
+        </section>
 
         {announcement && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-pink-200 dark:border-pink-500/30 bg-pink-50 dark:bg-pink-500/10 p-4">

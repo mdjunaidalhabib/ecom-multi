@@ -6,6 +6,8 @@ import { UserProvider } from "../../../../context/UserContext";
 import FloatingActionButton from "../../../../components/home/FloatingActionButton";
 import StorefrontChrome from "../../../../components/StorefrontChrome";
 import ShopSuspensionGuard from "../../../../components/ShopSuspensionGuard";
+import PlatformLanding from "../../../../components/platform/PlatformLanding";
+import PlatformLegalPage from "../../../../components/platform/PlatformLegalPage";
 import { getShopInfo } from "../../../../lib/serverApi";
 import { getTheme } from "../../../../lib/themeRegistry";
 import { buildThemeVars } from "../../../../lib/themeVars";
@@ -35,8 +37,37 @@ async function getShop() {
 // constants/branding.constants.js) — getShopInfo() Next-এর per-request
 // fetch cache-এ dedupe হয়, তাই এটা আলাদা কোনো extra backend call করে না
 // (ShopLayout নিজেও এটাই কল করে)।
-export async function generateMetadata() {
+export async function generateMetadata({ params }) {
+  // ✅ /privacy-policy ও /terms-of-service (middleware.js-এ path/query থেকে
+  // x-legal-view হেডারে ফরওয়ার্ড করা হয়) সবসময় প্ল্যাটফর্মের (ECMS) নিজস্ব
+  // legal পেজ — এই চেকটা শপ resolve করার আগেই করা হয়, কারণ কোনো ডোমেইনে
+  // (যেমন লোকাল dev-এ "localhost") বাস্তবে একটা শপ bound থাকলেও এই দুটো
+  // path সবসময় ECMS-এর নিজের কনটেন্ট দেখাবে, শপের নিজস্ব ব্র্যান্ডিং/টাইটেল
+  // দিয়ে override হবে না।
+  const incomingHeaders = await headers();
+  const legalView = incomingHeaders.get("x-legal-view");
+  if (legalView === "privacy-policy" || legalView === "terms-of-service") {
+    const title = legalView === "privacy-policy" ? "প্রাইভেসি পলিসি" : "ব্যবহারের শর্তাবলী";
+    return {
+      title: `${title} | ECMS — Hikmah IT`,
+      icons: { icon: "/favicon.ico", shortcut: "/favicon.ico", apple: "/favicon.ico" },
+    };
+  }
+
+  const { shopSlug } = await params;
   const { shop } = await getShop();
+
+  // ✅ কোনো শপের সাথে যুক্ত নয় এমন ডোমেইনে (যেমন প্ল্যাটফর্মের নিজের রুট
+  // ডোমেইন) ভিজিটর ঢুকলে নিচে PlatformLanding রেন্ডার হয় — সেই কেসে শপের
+  // ডিফল্ট ফলব্যাক টাইটেলের বদলে প্ল্যাটফর্মের নিজস্ব marketing title/description দরকার।
+  if (!shop && shopSlug === DOMAIN_MODE_MARKER) {
+    return {
+      title: "ECMS — সহজ ও শক্তিশালী ই-কমার্স প্ল্যাটফর্ম | Hikmah IT",
+      description:
+        "ECMS হলো Hikmah IT এর একটি ই-কমার্স সার্ভিস — সহজেই নিজের অনলাইন শপ তৈরি করে প্রোডাক্ট, অর্ডার ও পেমেন্ট নিয়ন্ত্রণ করুন।",
+      icons: { icon: "/favicon.ico", shortcut: "/favicon.ico", apple: "/favicon.ico" },
+    };
+  }
 
   const title = shop?.branding?.title || "Hikmah IT";
   const favicon = shop?.branding?.favicon;
@@ -50,6 +81,19 @@ export async function generateMetadata() {
 }
 
 export default async function ShopLayout({ children, params }) {
+  // ✅ generateMetadata-এর মতো এখানেও legal view চেক শপ resolve করার আগে —
+  // দেখুন উপরের generateMetadata-এর কমেন্ট, একই কারণ প্রযোজ্য।
+  const incomingHeaders = await headers();
+  const legalView = incomingHeaders.get("x-legal-view");
+  if (legalView === "privacy-policy" || legalView === "terms-of-service") {
+    return (
+      <PlatformLegalPage
+        type={legalView === "privacy-policy" ? "privacy" : "terms"}
+        adminUrl={process.env.SHOP_ADMIN_URL}
+      />
+    );
+  }
+
   const { shopSlug } = await params;
   const { shop, suspended } = await getShop();
 
@@ -73,6 +117,19 @@ export default async function ShopLayout({ children, params }) {
   }
 
   if (!shop) {
+    // ✅ কোনো ডোমেইন (path-based /shop/<slug> নয়, বরং সরাসরি কাস্টম বা
+    // প্ল্যাটফর্মের নিজের ডোমেইন) কোনো শপের সাথে যুক্ত না থাকলে সাধারণ
+    // "শপ খুঁজে পাওয়া যায়নি" 404 না দেখিয়ে প্ল্যাটফর্মের নিজস্ব marketing
+    // ল্যান্ডিং পেজ দেখানো হয় — /shop/<ভুল-slug> এর জন্য নিচের real 404-ই থাকে।
+    if (shopSlug === DOMAIN_MODE_MARKER) {
+      return (
+        <PlatformLanding
+          adminUrl={process.env.SHOP_ADMIN_URL}
+          whatsappNumber={process.env.SALES_WHATSAPP_NUMBER}
+        />
+      );
+    }
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-center p-4">
         <h1 className="text-9xl font-bold text-gray-800">404</h1>
@@ -98,7 +155,6 @@ export default async function ShopLayout({ children, params }) {
   // ডোমেইনে রিডাইরেক্ট করে দেবে, স্লাগ-ভিত্তিক লোকাল টেস্টিং ভেঙে যাবে।
   const isDev = process.env.NODE_ENV !== "production";
   if (!isDev && shopSlug !== DOMAIN_MODE_MARKER && shop.domain && shop.domainStatus === "verified") {
-    const incomingHeaders = await headers();
     const originalPath = incomingHeaders.get("x-original-path") || `/shop/${shopSlug}`;
     const restPath = originalPath.slice(`/shop/${shopSlug}`.length) || "/";
     permanentRedirect(`https://${shop.domain}${restPath}`);

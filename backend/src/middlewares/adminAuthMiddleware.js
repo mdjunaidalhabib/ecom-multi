@@ -9,7 +9,10 @@ import { METHOD_TO_ACTION } from "../constants/staffPermissions.js";
 // Protect API route
 export const protect = async (req, res, next) => {
   try {
-    const token = req.cookies?.admin_token;
+    // ✅ shop-admin app "admin_token" আর super-admin app "super_admin_token"
+    // cookie পাঠায় — এই middleware দুই portal-এরই API serve করে বলে দুটোই
+    // চেক করা হচ্ছে (role/permission যাচাই নিচে JWT payload থেকেই হয়)।
+    const token = req.cookies?.admin_token || req.cookies?.super_admin_token;
 
     if (!token) {
       return res.status(401).json({ message: "No token" });
@@ -30,7 +33,9 @@ export const protect = async (req, res, next) => {
     }
 
     if (admin.status !== "active") {
+      // role এখানে যেকোনো portal-এর হতে পারে, তাই দুটো cookie-ই clear করা হচ্ছে
       res.clearCookie("admin_token", { path: "/" });
+      res.clearCookie("super_admin_token", { path: "/" });
       return res.status(403).json({ message: "Admin account is not active" });
     }
 

@@ -61,11 +61,12 @@ export function proxy(req) {
 
     if (!session) return NextResponse.next();
 
-    // A superadmin cookie can still be present here on shared-`localhost`
-    // dev setups (cookies aren't port-scoped), so send it to its own app
-    // instead of looping it into the shop-admin dashboard.
+    // A superadmin JWT under the "admin_token" name is only ever a leftover
+    // from before super-admin got its own cookie name — this app no longer
+    // issues that combination. Bounce to the super-admin app and wipe the
+    // stale cookie on the way out so it doesn't keep triggering this branch.
     if (session.role === "superadmin") {
-      return NextResponse.redirect(`${SUPER_ADMIN_URL}/dashboard`);
+      return redirectWithClearedCookie(`${SUPER_ADMIN_URL}/dashboard`);
     }
 
     return NextResponse.redirect(`${origin}/admin/dashboard`);
@@ -78,7 +79,7 @@ export function proxy(req) {
     }
 
     if (session.role === "superadmin") {
-      return NextResponse.redirect(`${SUPER_ADMIN_URL}/dashboard`);
+      return redirectWithClearedCookie(`${SUPER_ADMIN_URL}/dashboard`);
     }
   }
 

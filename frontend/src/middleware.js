@@ -33,6 +33,24 @@ export function middleware(req) {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-shop-domain", hostname);
 
+  // Fallback platform legal pages, shown in place of PlatformLanding on any
+  // *other* domain (a shop's own domain, or one bound to no shop at all) that
+  // hits a bare "/privacy-policy" or "/terms-of-service" — see
+  // frontend/src/app/shop/[shopSlug]/layout.js. On PLATFORM_DOMAIN itself
+  // these paths are real routes (frontend/src/app/privacy-policy/page.js,
+  // .../terms-of-service/page.js) and never reach that fallback — see the
+  // PLATFORM_DOMAIN check below. Forwarded as a header since the layout only
+  // sees params.shopSlug, not the rest of the request. These bare top-level
+  // paths never collide with a real shop's own /shop/<slug>/privacy-policy
+  // page because that path always carries the "/shop/" prefix, which this
+  // regex deliberately excludes. The old "?view=" query form is kept working
+  // too, for any links already shared.
+  const legalPathMatch = pathname.match(/^\/(privacy-policy|terms-of-service)\/?$/);
+  const legalView = legalPathMatch?.[1] || req.nextUrl.searchParams.get("view");
+  if (legalView === "privacy-policy" || legalView === "terms-of-service") {
+    requestHeaders.set("x-legal-view", legalView);
+  }
+
   const pathSlugMatch = pathname.match(/^\/shop\/([^/]+)/);
 
   if (pathSlugMatch && pathSlugMatch[1] !== DOMAIN_MODE_MARKER) {
@@ -94,6 +112,16 @@ export function middleware(req) {
     const url = req.nextUrl.clone();
     url.pathname = pathname.slice(`/shop/${DOMAIN_MODE_MARKER}`.length) || "/";
     return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+  }
+
+  // Platform's own domain (PLATFORM_DOMAIN) never has a shop bound to it —
+  // its marketing pages (landing, privacy policy, terms of service) now live
+  // as real routes (frontend/src/app/page.js, .../privacy-policy/page.js,
+  // .../terms-of-service/page.js) instead of going through the
+  // /shop/[shopSlug] tree's "no shop found" fallback. Leave the URL alone so
+  // Next's own file-based router resolves it directly.
+  if (hostname === process.env.PLATFORM_DOMAIN) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   // Plain custom-domain access — internally route through the same

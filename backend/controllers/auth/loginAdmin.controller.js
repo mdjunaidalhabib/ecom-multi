@@ -52,7 +52,11 @@ async function trackLogin(admin, req) {
   }
 }
 
-async function loginByPortal(req, res, { allowedRoles, wrongPortalMessage, errorType }) {
+async function loginByPortal(
+  req,
+  res,
+  { allowedRoles, wrongPortalMessage, errorType, cookieName }
+) {
   try {
     const { email, password } = req.body || {};
 
@@ -96,7 +100,7 @@ async function loginByPortal(req, res, { allowedRoles, wrongPortalMessage, error
     }
 
     if (admin.status !== "active") {
-      res.clearCookie("admin_token", { path: "/" });
+      res.clearCookie(cookieName, { path: "/" });
       return res.status(403).json({
         success: false,
         message: "এই Admin অ্যাকাউন্টটি বর্তমানে সক্রিয় নয়।",
@@ -111,7 +115,7 @@ async function loginByPortal(req, res, { allowedRoles, wrongPortalMessage, error
       const shopAccess = await getAdminShopAccess(admin);
 
       if (shopAccess.usableShopIds.length === 0) {
-        res.clearCookie("admin_token", { path: "/" });
+        res.clearCookie(cookieName, { path: "/" });
 
         if (shopAccess.primarySuspendedShop) {
           return res
@@ -129,7 +133,7 @@ async function loginByPortal(req, res, { allowedRoles, wrongPortalMessage, error
 
     const token = generateToken(admin);
 
-    res.cookie("admin_token", token, {
+    res.cookie(cookieName, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -168,13 +172,20 @@ export const loginAdmin = (req, res) =>
     wrongPortalMessage:
       "Super Admin অ্যাকাউন্ট দিয়ে এখানে লগইন করা যাবে না। Super Admin Login ব্যবহার করুন।",
     errorType: "SUPER_ADMIN_PORTAL_REQUIRED",
+    cookieName: "admin_token",
   });
 
 // Super admin portal login: /super-admin/login
+// ✅ আলাদা cookie name ("super_admin_token") — admin আর super-admin app
+// দুটোই localhost-এ আলাদা পোর্টে চলে কিন্তু একই domain শেয়ার করে বলে
+// cookie port-scoped হয় না। একই নামের cookie হলে super-admin panel-এ
+// লগইন করা থাকলে সেই session admin panel-এও "leak" করত এবং সেখানকার
+// proxy জোর করে ব্যবহারকারীকে super-admin app-এ ফেরত পাঠিয়ে দিত।
 export const loginSuperAdmin = (req, res) =>
   loginByPortal(req, res, {
     allowedRoles: ["superadmin"],
     wrongPortalMessage:
       "এই লগইনটি শুধু Super Admin-এর জন্য। Shop Admin Login ব্যবহার করুন।",
     errorType: "ADMIN_PORTAL_REQUIRED",
+    cookieName: "super_admin_token",
   });

@@ -36,6 +36,28 @@ function copyRequestHeaders(req) {
   return headers;
 }
 
+// ✅ localhost-এ admin panel আর super-admin panel একই domain শেয়ার করে বলে
+// ব্রাউজার দুটো portal-এরই cookie (admin_token, super_admin_token) একসাথে
+// পাঠায়। backend/src/middlewares/adminAuthMiddleware.js এর protect
+// `admin_token`-কে অগ্রাধিকার দেয়, তাই সেটা না সরালে shop admin আর
+// super-admin একই ব্রাউজারে লগইন থাকলে এই app-এর /admin/me কল ভুল করে
+// shop admin-এর session রিটার্ন করবে।
+function stripForeignAdminCookie(headers) {
+  const cookieHeader = headers.get("cookie");
+  if (!cookieHeader) return;
+
+  const kept = cookieHeader
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => part && !part.startsWith("admin_token="));
+
+  if (kept.length) {
+    headers.set("cookie", kept.join("; "));
+  } else {
+    headers.delete("cookie");
+  }
+}
+
 function rewriteLocationHeader(location, req) {
   if (!location) return location;
 
@@ -62,8 +84,10 @@ async function proxy(req, context) {
   try {
     const headers = copyRequestHeaders(req);
 
-    if (path === "admin/login") {
+    if (path === "admin/super-login") {
       headers.delete("cookie");
+    } else {
+      stripForeignAdminCookie(headers);
     }
 
     const init = {
