@@ -60,6 +60,79 @@ function resolveTrustedOrigin(hostname, shop) {
   return "";
 }
 
+/**
+ * 🔹 getPlatformUrls — CLIENT_URLS env থেকে platform-এর নিজস্ব origin list।
+ */
+function getPlatformUrls() {
+  return (process.env.CLIENT_URLS || "")
+    .split(",")
+    .map((u) => u.trim())
+    .filter(Boolean);
+}
+
+/**
+ * 🔹 resolveClientOrigin
+ * state-এ carry করা origin আবার resolveTrustedOrigin দিয়ে re-validate করে
+ * (state query param হওয়ায় client-side থেকে tamper করা সম্ভব, তাই আগে থেকে
+ * trust করা যায় না) — resolved শপের registered domain বা platform-এর নিজস্ব
+ * domain হলেই সেটা ব্যবহার হবে, নাহলে platform-এর প্রথম entry-তে fallback।
+ */
+function resolveClientOrigin(stateClientUrl, shop) {
+  let stateHostname = "";
+  try {
+    stateHostname = stateClientUrl ? new URL(stateClientUrl).hostname : "";
+  } catch {
+    // malformed — নিচে fallback হবে
+  }
+  return resolveTrustedOrigin(stateHostname, shop) || getPlatformUrls()[0] || "";
+}
+
+/**
+ * 🔹 sanitizeRedirectPath
+ * Safety net: কেউ যদি ভুলবশত/পুরনো link থেকে পুরো URL (origin সহ) পাঠায়,
+ * সেখান থেকে শুধু path+search বের করে নেওয়া হচ্ছে। নাহলে cartvan.com এবং
+ * www.cartvan.com এর মধ্যে redirect হলে localStorage token হারিয়ে যায়।
+ */
+function sanitizeRedirectPath(redirect) {
+  let path = redirect || "/";
+  if (/^https?:\/\//i.test(path)) {
+    try {
+      const parsed = new URL(path);
+      path = parsed.pathname + parsed.search;
+    } catch {
+      path = "/";
+    }
+  }
+  // protocol-relative (//evil.com) ও open-redirect, তাই সেটাও ছেঁটে ফেলা হচ্ছে
+  if (!path.startsWith("/") || path.startsWith("//")) path = "/";
+
+  // ✅ আগের কোনো বাতিল হওয়া লগইনের ?login=... ছেঁটে ফেলা হচ্ছে। navbar-এর
+  // Login বাটন redirect হিসেবে window.location.search সহ পুরো path পাঠায়,
+  // তাই এটা না মুছলে বারবার cancel করলে ?login=cancelled&login=cancelled…
+  // জমতে থাকতো।
+  const [pathname, search = ""] = path.split("?");
+  if (!search) return pathname;
+  const params = new URLSearchParams(search);
+  params.delete("login");
+  const rest = params.toString();
+  return rest ? `${pathname}?${rest}` : pathname;
+}
+
+/**
+ * 🔹 buildAbortRedirect
+ * ⚠️ ইউজার Google-এর consent স্ক্রিনে "Cancel" চাপলে (বা passport যেকোনো
+ * কারণে fail করলে) তাকে যেখান থেকে লগইন শুরু করেছিল ঠিক সেই পেজেই ফেরত
+ * পাঠানো হয়। আগে এখানে relative "/login" ব্যবহার হতো — ব্রাউজার সেটা
+ * backend-এর নিজের ডোমেইনে (ecomapi.…/login) resolve করতো, আর সেই রুটে
+ * কোনো শপ resolve না হওয়ায় ইউজার raw JSON error দেখতো।
+ */
+function buildAbortRedirect({ shop, stateClientUrl, redirect, reason }) {
+  const origin = resolveClientOrigin(stateClientUrl, shop);
+  const path = sanitizeRedirectPath(redirect);
+  const sep = path.includes("?") ? "&" : "?";
+  return `${origin}${path}${sep}login=${encodeURIComponent(reason)}`;
+}
+
 // 🔹 JWT Middleware
 function authenticateJWT(req, res, next) {
   const authHeader = req.headers["authorization"];
@@ -132,7 +205,19 @@ router.get(
       // malformed/missing state — নিচে shop না পেলে এমনিতেই 400 দেবে
     }
 
+    // ⚠️ ইউজার Google-এর consent স্ক্রিনে "Cancel" চাপলে Google এখানেই
+    // ?error=access_denied নিয়ে ফেরত পাঠায় (state অক্ষত থাকে)। এটা কোনো
+    // সার্ভার-এরর না, নিছক ইউজারের সিদ্ধান্ত — তাই JSON error না দেখিয়ে
+    // যেখান থেকে লগইন শুরু হয়েছিল ঠিক সেই পেজে ফেরত পাঠানো হচ্ছে।
+    const oauthError = req.query.error ? String(req.query.error) : "";
+
     if (!shopId) {
+      // state হারিয়ে গেলে শপ জানা যায় না — cancel হলে অন্তত platform-এর
+      // হোমপেজে ফেরত, নাহলে আগের মতোই 400।
+      if (oauthError) {
+        const fallback = getPlatformUrls()[0];
+        if (fallback) return res.redirect(fallback);
+      }
       return res
         .status(400)
         .json({ error: "শপ শনাক্ত করা যায়নি (missing shop info in state)" });
@@ -140,7 +225,22 @@ router.get(
 
     const shop = await Shop.findById(shopId);
     if (!shop || shop.status === "suspended") {
+      if (oauthError) {
+        const fallback = getPlatformUrls()[0];
+        if (fallback) return res.redirect(fallback);
+      }
       return res.status(404).json({ error: "শপ খুঁজে পাওয়া যায়নি" });
+    }
+
+    if (oauthError) {
+      return res.redirect(
+        buildAbortRedirect({
+          shop,
+          stateClientUrl,
+          redirect,
+          reason: oauthError === "access_denied" ? "cancelled" : "failed",
+        })
+      );
     }
 
     req._loginRedirect = redirect;
@@ -149,52 +249,39 @@ router.get(
     req._loginClientUrl = stateClientUrl;
 
     return runWithShopId(shop._id, () => {
-      passport.authenticate("google", {
-        session: false,
-        failureRedirect: "/login",
+      // ⚠️ এখানে failureRedirect: "/login" ব্যবহার করা যাবে না — ওটা relative
+      // path, ব্রাউজার সেটা backend-এর নিজের ডোমেইনে (ecomapi.…/login)
+      // resolve করে, যেখানে কোনো শপ resolve হয় না বলে ইউজার
+      // {"message":"এই ডোমেইনে কোনো শপ খুঁজে পাওয়া যায়নি"} raw JSON দেখতো।
+      // তাই custom callback দিয়ে সবসময় trusted client origin-এ ফেরত পাঠানো হয়।
+      passport.authenticate("google", { session: false }, (err, data) => {
+        if (err || !data) {
+          if (err) console.error("❌ Google callback failed:", err);
+          return res.redirect(
+            buildAbortRedirect({
+              shop,
+              stateClientUrl,
+              redirect,
+              reason: "failed",
+            })
+          );
+        }
+        req.user = data;
+        return next();
       })(req, res, next);
     });
   },
   (req, res) => {
-    const { token, user } = req.user;
+    const { token } = req.user;
 
-    const platformUrls = (process.env.CLIENT_URLS || "")
-      .split(",")
-      .map((u) => u.trim())
-      .filter(Boolean);
-    if (!platformUrls.length) {
+    if (!getPlatformUrls().length) {
       return res.status(500).json({
         error: "CLIENT_URLS is not set in environment variables",
       });
     }
 
-    // ✅ state-এ carry করা origin আবার resolveTrustedOrigin দিয়ে re-validate
-    // করা হচ্ছে (state query param হওয়ায় client-side থেকে tamper করা সম্ভব,
-    // তাই আগে থেকে trust করা যায় না) — resolved শপের registered domain বা
-    // platform-এর নিজস্ব domain হলেই সেখানে ফেরত পাঠানো হবে, নাহলে (tamper/
-    // missing) platform-এর প্রথম entry-তে fallback।
-    let stateHostname = "";
-    try {
-      stateHostname = req._loginClientUrl ? new URL(req._loginClientUrl).hostname : "";
-    } catch {
-      // malformed — নিচে fallback হবে
-    }
-    const trustedOrigin = resolveTrustedOrigin(stateHostname, req._loginShop);
-    const clientUrl = trustedOrigin || platformUrls[0];
-
-    let redirect = req._loginRedirect || "/";
-
-    // ✅ Safety net: কেউ যদি ভুলবশত/পুরনো link থেকে পুরো URL (origin সহ) পাঠায়,
-    // সেখান থেকে শুধু path+search বের করে নেওয়া হচ্ছে। নাহলে cartvan.com এবং
-    // www.cartvan.com এর মধ্যে redirect হলে localStorage token হারিয়ে যায়।
-    if (/^https?:\/\//i.test(redirect)) {
-      try {
-        const parsed = new URL(redirect);
-        redirect = parsed.pathname + parsed.search;
-      } catch {
-        redirect = "/";
-      }
-    }
+    const clientUrl = resolveClientOrigin(req._loginClientUrl, req._loginShop);
+    const redirect = sanitizeRedirectPath(req._loginRedirect);
 
     // সবসময় /auth/callback এ পাঠানো হবে
     res.redirect(

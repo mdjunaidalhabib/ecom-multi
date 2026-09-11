@@ -6,12 +6,18 @@ import { UserProvider } from "../../../../context/UserContext";
 import FloatingActionButton from "../../../../components/home/FloatingActionButton";
 import StorefrontChrome from "../../../../components/StorefrontChrome";
 import ShopSuspensionGuard from "../../../../components/ShopSuspensionGuard";
+import LoginNotice from "../../../../components/LoginNotice";
 import PlatformLanding from "../../../../components/platform/PlatformLanding";
 import PlatformLegalPage from "../../../../components/platform/PlatformLegalPage";
 import { getShopInfo } from "../../../../lib/serverApi";
 import { getTheme } from "../../../../lib/themeRegistry";
 import { buildThemeVars } from "../../../../lib/themeVars";
-import { DOMAIN_MODE_MARKER } from "../../../../lib/shopMode";
+import { DOMAIN_MODE_MARKER, shopBasePath } from "../../../../lib/shopMode";
+import { toShortName } from "../../../../lib/manifest";
+
+// প্ল্যাটফর্মের নিজস্ব ব্র্যান্ড রঙ (src/app/layout.js এর viewport ফলব্যাকের
+// সাথে মিলিয়ে রাখা) — কোনো শপ resolve না হলে, বা ECMS-এর নিজের legal পেজে।
+const PLATFORM_THEME_COLOR = "#f472b6";
 
 // Both custom-domain visitors (rewritten to /shop/__domain__/... by
 // frontend/src/middleware.js) and real path-based visitors (/shop/<slug>/...)
@@ -52,6 +58,7 @@ export async function generateMetadata({ params }) {
     const title = legalView === "privacy-policy" ? "প্রাইভেসি পলিসি" : "ব্যবহারের শর্তাবলী";
     return {
       title: `${title} | ECMS — Hikmah IT`,
+      manifest: "/manifest.json",
       icons: { icon: "/favicon.ico", shortcut: "/favicon.ico", apple: "/favicon.ico" },
     };
   }
@@ -67,19 +74,67 @@ export async function generateMetadata({ params }) {
       title: "ECMS — সহজ ও শক্তিশালী ই-কমার্স প্ল্যাটফর্ম | Hikmah IT",
       description:
         "ECMS হলো Hikmah IT এর একটি ই-কমার্স সার্ভিস — সহজেই নিজের অনলাইন শপ তৈরি করে প্রোডাক্ট, অর্ডার ও পেমেন্ট নিয়ন্ত্রণ করুন।",
+      manifest: "/manifest.json",
       icons: { icon: "/favicon.ico", shortcut: "/favicon.ico", apple: "/favicon.ico" },
     };
   }
 
   const title = shop?.branding?.title || "Hikmah IT";
   const favicon = shop?.branding?.favicon;
+  // ✅ iOS হোম স্ক্রিনের আইকন ~180×180 এ আঁকে — 64×64 favicon দিলে সেখানে
+  // ঝাপসা দেখাতো। logo আপলোডের সময় বানানো 192 PNG ভ্যারিয়েন্টটাই এখানে
+  // সবচেয়ে ভালো (backend/src/services/brandIconService.js), সেটা না থাকলে
+  // আগের মতোই favicon-এ ফলব্যাক।
+  const appleIcon = shop?.branding?.pwaIcon192 || favicon;
 
   return {
     title,
-    icons: favicon
-      ? { icon: favicon, shortcut: favicon, apple: favicon }
-      : { icon: "/favicon.ico", shortcut: "/favicon.ico", apple: "/favicon.ico" },
+    // ✅ মোবাইলে "Add to Home Screen"/install করলে এতদিন সব শপেই একটাই
+    // স্ট্যাটিক manifest (হার্ডকোডেড "Hikmah IT") যেত। এখন প্রতিটা শপ নিজের
+    // ডায়নামিক manifest পায় — path-based শপের ক্ষেত্রে সেটা "/shop/<slug>/"
+    // এর নিচে, যাতে এক প্ল্যাটফর্ম ডোমেইনের দুই শপ ব্রাউজারের কাছে আলাদা
+    // অ্যাপ হয়। দেখুন lib/manifest.js ও manifest.json/route.js।
+    manifest: `${shopBasePath(shopSlug)}/manifest.json`,
+    applicationName: title,
+    // ✅ iOS Safari "Add to Home Screen"-এ আইকনের নিচের লেখাটা manifest এর
+    // name/short_name থেকে নেয় না, এই meta ট্যাগ থেকে নেয় — এটা না দিলে
+    // iPhone-এ শপের নামের বদলে পেজের <title> (বা পুরনো ক্যাশড নাম) বসে যেতো।
+    appleWebApp: {
+      capable: true,
+      title: toShortName(title),
+      statusBarStyle: "default",
+    },
+    icons: {
+      icon: favicon || "/favicon.ico",
+      shortcut: favicon || "/favicon.ico",
+      apple: appleIcon || "/favicon.ico",
+    },
   };
+}
+
+// ✅ Android-এ address bar ও task-switcher এই রঙে আঁকা হয় — src/app/layout.js
+// এর হার্ডকোডেড প্ল্যাটফর্ম গোলাপি সব শপেই দেখাতো। শপের storefront theme যে
+// primary রঙ ব্যবহার করে (lib/themeVars.js) সেটাই এখানে দেওয়া হয়, যাতে
+// ইনস্টল করা PWA-র splash screen ও ব্রাউজার chrome শপের ব্র্যান্ডের সাথে মেলে।
+// getShopInfo() Next-এর per-request fetch cache-এ dedupe হয়, তাই এটা বাড়তি
+// কোনো backend call করে না।
+export async function generateViewport() {
+  // generateMetadata-এর মতোই legal view আগে চেক — ওই পেজগুলো শপের ডোমেইনে
+  // খুললেও ECMS-এর নিজস্ব কনটেন্ট দেখায়, তাই শপের ব্র্যান্ড রঙ নয়,
+  // প্ল্যাটফর্মের রঙই থাকা উচিত।
+  const incomingHeaders = await headers();
+  const legalView = incomingHeaders.get("x-legal-view");
+  if (legalView === "privacy-policy" || legalView === "terms-of-service") {
+    return { themeColor: PLATFORM_THEME_COLOR };
+  }
+
+  const { shop } = await getShop();
+  const themeColor =
+    shop?.theme?.colors?.primary ||
+    shop?.branding?.themeColor ||
+    PLATFORM_THEME_COLOR;
+
+  return { themeColor };
 }
 
 export default async function ShopLayout({ children, params }) {
@@ -177,6 +232,7 @@ export default async function ShopLayout({ children, params }) {
     <UserProvider shopSlug={userShopSlug}>
       <CartProvider>
         <ShopSuspensionGuard shopSlug={userShopSlug} />
+        <LoginNotice />
         <StorefrontChrome
           navbar={<Navbar />}
           footer={<Footer />}

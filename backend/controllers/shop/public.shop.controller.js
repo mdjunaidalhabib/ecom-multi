@@ -60,6 +60,12 @@ export const getShopInfo = async (req, res) => {
     // এখন ছোট, sharp দিয়ে বানানো 64×64 PNG favicon variant রিটার্ন হয়
     // (দেখুন navbar.admin.routes.js এর POST handler)।
     const effectiveFavicon = navbar?.brand?.favicon || "";
+    // ✅ PWA ("Add to Home Screen") install আইকন — logo আপলোডের সময় বানানো
+    // square 192/512 PNG ভ্যারিয়েন্ট (routes/admin/navbar.admin.routes.js)।
+    // যে শপ এখনো logo আপলোড করেনি সেখানে খালি স্ট্রিং যায়, তখন frontend
+    // প্ল্যাটফর্মের নিজের স্ট্যাটিক আইকনে ফলব্যাক করে — দেখুন frontend/lib/manifest.js।
+    const pwaIcon192 = navbar?.brand?.pwaIcon192 || "";
+    const pwaIcon512 = navbar?.brand?.pwaIcon512 || "";
 
     let primaryLandingPageSlug = null;
     if (!fullStorefront) {
@@ -82,6 +88,8 @@ export const getShopInfo = async (req, res) => {
         themeColor: shop.branding?.themeColor || "#0ea5e9",
         title: effectiveTitle,
         favicon: effectiveFavicon,
+        pwaIcon192,
+        pwaIcon512,
       },
       effectiveTheme: effectiveThemeKey,
       theme: themeConfig,

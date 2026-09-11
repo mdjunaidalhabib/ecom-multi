@@ -20,6 +20,15 @@ const NavbarSchema = new mongoose.Schema({
     logoPublicId: { type: String, default: "" }, // ✅ R2 object key
     favicon: { type: String, default: "" }, // ✅ ছোট 64×64 PNG, browser tab icon এর জন্য
     faviconPublicId: { type: String, default: "" }, // ✅ R2 object key
+    // ✅ PWA ("Add to Home Screen") আইকন — favicon (64×64) install prompt এর
+    // জন্য অনেক ছোট (Chrome কমপক্ষে 144px চায়), আর আসল logo সাধারণত চওড়া/WEBP
+    // হওয়ায় square আইকন হিসেবে কাজ করে না। তাই logo আপলোডের সময়ই safe-zone
+    // padding সহ square 192/512 PNG ভ্যারিয়েন্ট বানিয়ে রাখা হয় — দেখুন
+    // routes/admin/navbar.admin.routes.js ও frontend/lib/manifest.js।
+    pwaIcon192: { type: String, default: "" },
+    pwaIcon192PublicId: { type: String, default: "" },
+    pwaIcon512: { type: String, default: "" },
+    pwaIcon512PublicId: { type: String, default: "" },
   },
   updatedAt: { type: Date, default: Date.now },
 });

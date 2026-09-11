@@ -12,6 +12,12 @@ export const metadata = {
   description:
     "Hikmah IT is a reliable e-commerce platform in Bangladesh offering quality products at competitive prices.",
 
+  // ✅ "/manifest.json" এখন আর স্ট্যাটিক public/ ফাইল নয় — প্রতিটা শপের
+  // নিজের নাম/আইকন নিয়ে ডায়নামিকভাবে সার্ভ হয় (custom domain হলে
+  // src/app/manifest.json/route.js, path-based হলে
+  // src/app/shop/[shopSlug]/manifest.json/route.js)। শপ পেজে
+  // shop/[shopSlug]/layout.js এর generateMetadata() এটাকে শপ-স্কোপড URL
+  // দিয়ে override করে; এখানকার মানটা শুধু প্ল্যাটফর্মের নিজের পেজগুলোর জন্য।
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
@@ -20,7 +26,9 @@ export const metadata = {
   },
 };
 
-// ✅ Correct viewport সেটআপ
+// ✅ Correct viewport সেটআপ — শপ স্টোরফ্রন্টে এই হার্ডকোডেড প্ল্যাটফর্ম রঙটা
+// shop/[shopSlug]/layout.js এর generateViewport() দিয়ে শপের নিজস্ব theme
+// primary রঙ দিয়ে override হয়; এটা শুধু প্ল্যাটফর্মের নিজের পেজগুলোর ফলব্যাক।
 export const viewport = {
   themeColor: "#f472b6",
 };
