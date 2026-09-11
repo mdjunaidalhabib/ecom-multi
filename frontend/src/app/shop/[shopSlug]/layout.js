@@ -38,12 +38,14 @@ async function getShop() {
 // fetch cache-এ dedupe হয়, তাই এটা আলাদা কোনো extra backend call করে না
 // (ShopLayout নিজেও এটাই কল করে)।
 export async function generateMetadata({ params }) {
-  // ✅ /privacy-policy ও /terms-of-service (middleware.js-এ path/query থেকে
-  // x-legal-view হেডারে ফরওয়ার্ড করা হয়) সবসময় প্ল্যাটফর্মের (ECMS) নিজস্ব
-  // legal পেজ — এই চেকটা শপ resolve করার আগেই করা হয়, কারণ কোনো ডোমেইনে
-  // (যেমন লোকাল dev-এ "localhost") বাস্তবে একটা শপ bound থাকলেও এই দুটো
-  // path সবসময় ECMS-এর নিজের কনটেন্ট দেখাবে, শপের নিজস্ব ব্র্যান্ডিং/টাইটেল
-  // দিয়ে override হবে না।
+  // ✅ বেয়ার "/privacy-policy" ও "/terms-of-service" এখন middleware.js-এ
+  // rewrite ছাড়াই সরাসরি নিজেদের static top-level page.js-এ যায় (তাই এই
+  // ব্লকে আর পড়ে না) — শুধু পুরনো "?view=privacy-policy"/"?view=terms-of-service"
+  // কোয়েরি-ফর্ম (যেকোনো path-এ, path/query থেকে middleware.js-এ x-legal-view
+  // হেডারে ফরওয়ার্ড করা হয়) এখনো এখানেই resolve হয়, শপ resolve করার আগে —
+  // কারণ কোনো ডোমেইনে (যেমন লোকাল dev-এ "localhost") বাস্তবে একটা শপ bound
+  // থাকলেও এই ভিউ সবসময় ECMS-এর নিজের কনটেন্ট দেখাবে, শপের নিজস্ব
+  // ব্র্যান্ডিং/টাইটেল দিয়ে override হবে না।
   const incomingHeaders = await headers();
   const legalView = incomingHeaders.get("x-legal-view");
   if (legalView === "privacy-policy" || legalView === "terms-of-service") {
@@ -82,7 +84,8 @@ export async function generateMetadata({ params }) {
 
 export default async function ShopLayout({ children, params }) {
   // ✅ generateMetadata-এর মতো এখানেও legal view চেক শপ resolve করার আগে —
-  // দেখুন উপরের generateMetadata-এর কমেন্ট, একই কারণ প্রযোজ্য।
+  // দেখুন উপরের generateMetadata-এর কমেন্ট, একই কারণ প্রযোজ্য। এই ব্লক এখন
+  // শুধু পুরনো "?view=" কোয়েরি-ফর্মের জন্যই পৌঁছায়, বেয়ার path আর এখানে আসে না।
   const incomingHeaders = await headers();
   const legalView = incomingHeaders.get("x-legal-view");
   if (legalView === "privacy-policy" || legalView === "terms-of-service") {

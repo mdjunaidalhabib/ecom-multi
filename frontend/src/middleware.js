@@ -33,22 +33,39 @@ export function middleware(req) {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-shop-domain", hostname);
 
-  // Fallback platform legal pages, shown in place of PlatformLanding on any
-  // *other* domain (a shop's own domain, or one bound to no shop at all) that
-  // hits a bare "/privacy-policy" or "/terms-of-service" — see
-  // frontend/src/app/shop/[shopSlug]/layout.js. On PLATFORM_DOMAIN itself
-  // these paths are real routes (frontend/src/app/privacy-policy/page.js,
-  // .../terms-of-service/page.js) and never reach that fallback — see the
-  // PLATFORM_DOMAIN check below. Forwarded as a header since the layout only
-  // sees params.shopSlug, not the rest of the request. These bare top-level
-  // paths never collide with a real shop's own /shop/<slug>/privacy-policy
-  // page because that path always carries the "/shop/" prefix, which this
-  // regex deliberately excludes. The old "?view=" query form is kept working
-  // too, for any links already shared.
+  // Platform legal pages ("/privacy-policy", "/terms-of-service") always show
+  // the platform's own (ECMS) content, on every domain — never a shop's own
+  // branding. A bare hit on either path is handled below by skipping the
+  // rewrite entirely (Next's file router resolves it directly). The older
+  // "?view=privacy-policy"/"?view=terms-of-service" query form can still show
+  // up on arbitrary paths (including real /shop/<slug>/... ones) for any
+  // already-shared links, so that case is still forwarded as a header for
+  // frontend/src/app/shop/[shopSlug]/layout.js to resolve, since it only sees
+  // params.shopSlug, not the rest of the request. These bare top-level paths
+  // never collide with a real shop's own /shop/<slug>/privacy-policy page
+  // because that path always carries the "/shop/" prefix, which the regex
+  // below deliberately excludes.
   const legalPathMatch = pathname.match(/^\/(privacy-policy|terms-of-service)\/?$/);
   const legalView = legalPathMatch?.[1] || req.nextUrl.searchParams.get("view");
   if (legalView === "privacy-policy" || legalView === "terms-of-service") {
     requestHeaders.set("x-legal-view", legalView);
+  }
+
+  // A bare "/privacy-policy" or "/terms-of-service" hit — on ANY domain —
+  // already matches the platform's own static top-level route
+  // (frontend/src/app/privacy-policy/page.js, .../terms-of-service/page.js)
+  // by pathname, so no rewrite is needed at all; Next's file router resolves
+  // it directly, same as it already does for PLATFORM_DOMAIN below. Routing
+  // it through the /shop/[shopSlug] tree instead (via the generic rewrite
+  // further down, relying on x-legal-view + headers() in that layout) forced
+  // the whole route to render dynamically, which combined with next/link's
+  // client-side soft navigation left the page blank after a click on a shop's
+  // custom domain until a hard refresh — going straight to the static route
+  // sidesteps that. The "?view=" legacy query form is untouched here (still
+  // resolved deeper, via the header) since it can appear on arbitrary paths,
+  // including real /shop/<slug>/... ones.
+  if (legalPathMatch) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   const pathSlugMatch = pathname.match(/^\/shop\/([^/]+)/);
