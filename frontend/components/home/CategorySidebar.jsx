@@ -9,7 +9,7 @@ import useShopPath from "../../hooks/useShopPath";
 // ✅ Desktop-only "All Categories" list beside the homepage slider (hidden
 // below lg — mobile still uses HomeAllProduct's own horizontal category
 // nav, unchanged). Clicking a category goes to the same /categories/[id]
-// page the "See All" links elsewhere on the home page already use.
+// page the "See All" links elsewhere on the home page already use. 
 export default function CategorySidebar({ categories = [] }) {
   const { base } = useShopPath();
 
