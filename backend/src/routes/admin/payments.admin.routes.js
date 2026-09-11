@@ -251,10 +251,10 @@ router.patch("/:orderId/verify", async (req, res) => {
 
     // ✅ Payment accept (paid) হলে — order যেহেতু এতক্ষণ payment verification
     // এর জন্য "pending" এ hold হয়ে ছিল, এখন সেটা automatically পরের
-    // step ("ready_to_delivery") এ চলে যাবে, admin কে আলাদা করে status
+    // step ("confirmed") এ চলে যাবে, admin কে আলাদা করে status
     // আপডেট করতে হবে না।
     if (paymentStatus === "paid" && order.status === "pending") {
-      order.status = "ready_to_delivery";
+      order.status = "confirmed";
     }
 
     await order.save();

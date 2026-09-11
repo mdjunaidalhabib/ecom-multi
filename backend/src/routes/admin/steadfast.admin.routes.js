@@ -142,7 +142,7 @@ router.post("/send-order", async (req, res) => {
       });
     }
 
-    order.status = "send_to_courier";
+    order.status = "shipped";
 
     order.courier = {
       provider: "steadfast",
@@ -209,7 +209,7 @@ router.post("/sync-courier-final", async (req, res) => {
       });
     }
 
-    if (order.status !== "send_to_courier" && order.status !== finalStatus) {
+    if (order.status !== "shipped" && order.status !== finalStatus) {
       return res.status(400).json({
         ok: false,
         requestId,

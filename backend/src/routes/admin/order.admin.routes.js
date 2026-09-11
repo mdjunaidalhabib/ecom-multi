@@ -15,9 +15,9 @@ const router = express.Router();
  * ================================
  */
 const STATUS_FLOW = {
-  pending: ["ready_to_delivery", "cancelled"],
-  ready_to_delivery: ["send_to_courier", "cancelled"],
-  send_to_courier: ["delivered"],
+  pending: ["confirmed", "cancelled"],
+  confirmed: ["shipped", "cancelled"],
+  shipped: ["delivered", "cancelled"],
   delivered: [],
   cancelled: [],
 };

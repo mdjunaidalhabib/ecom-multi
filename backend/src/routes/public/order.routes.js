@@ -470,19 +470,13 @@ router.put("/:id", async (req, res) => {
         console.error("❌ Restock Error:", restockErr);
       }
     } else if (status) {
-      const allowed = [
-        "pending",
-        "ready_to_delivery",
-        "send_to_courier",
-        "delivered",
-        "cancelled",
-      ];
-
-      if (!allowed.includes(String(status))) {
-        return res.status(400).json({ error: "Invalid status" });
-      }
-
-      order.status = status;
+      // ✅ Customer এর জন্য শুধু cancel-ই allowed (উপরে হ্যান্ডেল করা হয়েছে)।
+      // অন্য যেকোনো status (confirmed/shipped/delivered) শুধু admin panel
+      // থেকেই সেট করা যাবে — এখানে flow validation ছাড়া arbitrary status
+      // সেট করতে দেওয়া একটা security hole ছিল, তাই বন্ধ করা হলো।
+      return res.status(403).json({
+        error: "এই status পরিবর্তন শুধু Admin Panel থেকেই করা যাবে।",
+      });
     }
 
     await order.save();
