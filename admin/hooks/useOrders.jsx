@@ -342,7 +342,7 @@ const sendCourierDirect = (order) =>
       onConfirm: async () => {
         try {
           for (const o of orders) {
-            if (o.status !== "ready_to_delivery") continue;
+            if (o.status !== "confirmed") continue;
             await sendCourierDirect(o);
           }
 

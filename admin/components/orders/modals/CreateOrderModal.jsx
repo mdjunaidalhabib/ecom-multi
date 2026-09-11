@@ -921,10 +921,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                         onChange={(e) => setStatus(e.target.value)}
                       >
                         <option value="pending">Pending</option>
-                        <option value="ready_to_delivery">
-                          Ready To Delivery
-                        </option>
-                        <option value="send_to_courier">Send To Courier</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="shipped">Shipped</option>
                         <option value="delivered">Delivered</option>
                         <option value="cancelled">Cancelled</option>
                       </select>

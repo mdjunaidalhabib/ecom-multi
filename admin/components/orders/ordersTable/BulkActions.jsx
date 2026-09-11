@@ -81,7 +81,7 @@ export default function BulkActions({
 
               try {
                 // 🚚 SEND TO COURIER (SPECIAL CASE)
-                if (nextStatus === "send_to_courier") {
+                if (nextStatus === "shipped") {
                   if (selected.length === 1) {
                     await onSendCourier(selectedOrders[0]);
                   } else {

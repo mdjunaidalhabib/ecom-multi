@@ -89,7 +89,7 @@ export default function useOrdersManager({
   const canBulkSendCourier =
     selectedOrders.length > 0 &&
     selectedOrders.every(
-      (o) => o.status === "ready_to_delivery" && !o.trackingId
+      (o) => o.status === "confirmed" && !o.trackingId
     );
 
   return {

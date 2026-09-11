@@ -54,8 +54,8 @@ export default function OrderCard({
 
   const handleStatusUpdate = async (id, newStatus, order) => {
     try {
-      // ✅ READY → send_to_courier হলে auto courier create
-      if (order?.status === READY_STATUS && newStatus === "send_to_courier") {
+      // ✅ CONFIRMED → shipped হলে auto courier create
+      if (order?.status === READY_STATUS && newStatus === "shipped") {
         await onSendCourier(order);
         return;
       }
@@ -318,7 +318,7 @@ export default function OrderCard({
               {o.status === READY_STATUS && !o.courier?.trackingId && (
                 <IconBtn
                   onClick={() =>
-                    handleStatusUpdate(o._id, "send_to_courier", o)
+                    handleStatusUpdate(o._id, "shipped", o)
                   }
                   disabled={updatingId === o._id}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white transition disabled:opacity-50"

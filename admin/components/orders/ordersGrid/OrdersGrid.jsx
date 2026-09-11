@@ -48,15 +48,15 @@ export default function OrdersGrid({
 
   /* ===============================
      SINGLE ORDER STATUS CHANGE
-     READY → SEND_TO_COURIER হলে auto courier create
+     CONFIRMED → SHIPPED হলে auto courier create
   =============================== */
   const handleChange = async (id, payload, order) => {
     setUpdatingId(id);
     try {
-      // 🚚 READY → SEND TO COURIER
+      // 🚚 CONFIRMED → SHIPPED
       if (
         order?.status === READY_STATUS &&
-        payload.status === "send_to_courier"
+        payload.status === "shipped"
       ) {
         await onSendCourier(order);
 

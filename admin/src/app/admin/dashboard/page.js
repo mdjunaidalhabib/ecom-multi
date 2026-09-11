@@ -27,8 +27,8 @@ import {
 // (STATUS_BADGE_COLOR এর tailwind ক্লাসের সাথে hue মিলিয়ে বানানো)
 const STATUS_HEX = {
   pending: "#f59e0b",
-  ready_to_delivery: "#3b82f6",
-  send_to_courier: "#8b5cf6",
+  confirmed: "#3b82f6",
+  shipped: "#8b5cf6",
   delivered: "#10b981",
   cancelled: "#ef4444",
 };
@@ -58,8 +58,8 @@ export default function DashboardPage() {
   // ✅ FIXED status list (schema enum অনুযায়ী)
   const ORDER_STATUSES = [
     "pending",
-    "ready_to_delivery",
-    "send_to_courier",
+    "confirmed",
+    "shipped",
     "delivered",
     "cancelled",
   ];
@@ -69,6 +69,7 @@ export default function DashboardPage() {
     totalSales: 0,
     totalProductSales: 0,
     totalDeliveryCharge: 0,
+    cancelledAmount: 0,
   });
 
   // ✅ Online vs Offline breakdown
@@ -77,13 +78,14 @@ export default function DashboardPage() {
     offline: { orders: 0, sales: 0 },
   });
 
-  // ✅ status stats (সব status থাকবে, না থাকলে 0)
-  const [statusStats, setStatusStats] = useState(() =>
+  // ✅ status stats — প্রতিটা status এ কতগুলো অর্ডার + মোট টাকার পরিমাণ (সব status থাকবে, না থাকলে 0)
+  const emptyStatusStats = () =>
     ORDER_STATUSES.reduce((acc, st) => {
-      acc[st] = 0;
+      acc[st] = { count: 0, amount: 0 };
       return acc;
-    }, {})
-  );
+    }, {});
+
+  const [statusStats, setStatusStats] = useState(emptyStatusStats);
 
   useEffect(() => {
     async function fetchOrders() {
@@ -105,15 +107,26 @@ export default function DashboardPage() {
         if (data.length) {
           setOrders(data);
 
-          // ✅ Total Orders + Sales (delivery charge সহ সম্পূর্ণ) + Product Sales (delivery বাদে)
+          // ✅ Sales/Revenue শুধু "delivered" অর্ডার থেকে গণনা হয় — এখনো
+          // deliver না হওয়া বা cancel হওয়া অর্ডারের টাকা কখনোই Sales এ যোগ হবে না।
+          const deliveredOrders = data.filter((o) => o.status === "delivered");
+          const cancelledOrders = data.filter((o) => o.status === "cancelled");
+
           const totalOrders = data.length;
-          const totalSales = data.reduce((sum, o) => sum + (o.total || 0), 0);
-          const totalProductSales = data.reduce(
+          const totalSales = deliveredOrders.reduce(
+            (sum, o) => sum + (o.total || 0),
+            0
+          );
+          const totalProductSales = deliveredOrders.reduce(
             (sum, o) => sum + ((o.subtotal || 0) - (o.discount || 0)),
             0
           );
-          const totalDeliveryCharge = data.reduce(
+          const totalDeliveryCharge = deliveredOrders.reduce(
             (sum, o) => sum + (o.deliveryCharge || 0),
+            0
+          );
+          const cancelledAmount = cancelledOrders.reduce(
+            (sum, o) => sum + (o.total || 0),
             0
           );
           setStats({
@@ -121,22 +134,24 @@ export default function DashboardPage() {
             totalSales,
             totalProductSales,
             totalDeliveryCharge,
+            cancelledAmount,
           });
 
-          // ✅ status count (fixed enum list)
-          const statusMap = ORDER_STATUSES.reduce((acc, st) => {
-            acc[st] = 0;
-            return acc;
-          }, {});
+          // ✅ প্রতিটা status এ কতগুলো অর্ডার + সেই status এর অর্ডারগুলোর মোট টাকা (fixed enum list)
+          const statusMap = emptyStatusStats();
 
           data.forEach((order) => {
             const st = order.status || "pending";
-            if (statusMap[st] !== undefined) statusMap[st] += 1;
+            if (statusMap[st]) {
+              statusMap[st].count += 1;
+              statusMap[st].amount += order.total || 0;
+            }
           });
 
           setStatusStats(statusMap);
 
-          // ✅ Online vs Offline breakdown
+          // ✅ Online vs Offline breakdown — order count সব status থেকে,
+          // কিন্তু sales শুধু delivered অর্ডার থেকে (professional/accurate)
           const channelMap = {
             online: { orders: 0, sales: 0 },
             offline: { orders: 0, sales: 0 },
@@ -144,6 +159,9 @@ export default function DashboardPage() {
           data.forEach((order) => {
             const ch = order.saleChannel === "offline" ? "offline" : "online";
             channelMap[ch].orders += 1;
+          });
+          deliveredOrders.forEach((order) => {
+            const ch = order.saleChannel === "offline" ? "offline" : "online";
             channelMap[ch].sales += order.total || 0;
           });
           setChannelStats(channelMap);
@@ -154,13 +172,9 @@ export default function DashboardPage() {
             totalSales: 0,
             totalProductSales: 0,
             totalDeliveryCharge: 0,
+            cancelledAmount: 0,
           });
-          setStatusStats(
-            ORDER_STATUSES.reduce((acc, st) => {
-              acc[st] = 0;
-              return acc;
-            }, {})
-          );
+          setStatusStats(emptyStatusStats());
           setChannelStats({
             online: { orders: 0, sales: 0 },
             offline: { orders: 0, sales: 0 },
@@ -177,10 +191,12 @@ export default function DashboardPage() {
     fetchOrders();
   }, [API]);
 
-  // ====== Top Products ======
+  // ====== Top Products (শুধু delivered অর্ডার থেকে — প্রকৃত বিক্রি) ======
   const topProducts = useMemo(() => {
     const map = {};
-    orders.forEach((o) => {
+    orders
+      .filter((o) => o.status === "delivered")
+      .forEach((o) => {
       o.items?.forEach((it) => {
         if (!map[it.productId]) {
           map[it.productId] = { name: it.name, qty: 0, revenue: 0 };
@@ -188,13 +204,13 @@ export default function DashboardPage() {
         map[it.productId].qty += it.qty;
         map[it.productId].revenue += (it.price || 0) * (it.qty || 0);
       });
-    });
+      });
     return Object.values(map)
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 5);
   }, [orders]);
 
-  // ====== Monthly Sales ======
+  // ====== Monthly Sales (শুধু delivered অর্ডার) ======
   const monthlySales = useMemo(() => {
     const map = {};
     const now = new Date();
@@ -206,18 +222,20 @@ export default function DashboardPage() {
       )}`;
       map[key] = 0;
     }
-    orders.forEach((o) => {
-      const d = new Date(o.createdAt);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`;
-      if (map[key] !== undefined) map[key] += o.total || 0;
-    });
+    orders
+      .filter((o) => o.status === "delivered")
+      .forEach((o) => {
+        const d = new Date(o.createdAt);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}`;
+        if (map[key] !== undefined) map[key] += o.total || 0;
+      });
     return Object.entries(map).map(([month, sales]) => ({ month, sales }));
   }, [orders]);
 
-  // ====== This Month vs Last Month (growth %) ======
+  // ====== This Month vs Last Month (growth %, শুধু delivered অর্ডার) ======
   const monthlyComparison = useMemo(() => {
     const now = new Date();
     const keyOf = (d) =>
@@ -230,7 +248,9 @@ export default function DashboardPage() {
     let lastMonthSales = 0;
     let lastMonthOrders = 0;
 
-    orders.forEach((o) => {
+    orders
+      .filter((o) => o.status === "delivered")
+      .forEach((o) => {
       const key = keyOf(new Date(o.createdAt));
       if (key === thisMonthKey) {
         thisMonthSales += o.total || 0;
@@ -239,7 +259,7 @@ export default function DashboardPage() {
         lastMonthSales += o.total || 0;
         lastMonthOrders += 1;
       }
-    });
+      });
 
     const growth = (curr, prev) => {
       if (prev > 0) return ((curr - prev) / prev) * 100;
@@ -266,28 +286,33 @@ export default function DashboardPage() {
     return ORDER_STATUSES.map((st) => ({
       key: st,
       name: STATUS_LABEL[st] || st,
-      value: statusStats[st] || 0,
+      value: statusStats[st]?.count || 0,
     })).filter((d) => d.value > 0);
   }, [statusStats]);
 
-  // ✅ Avg Order Value = কাস্টমার গড়ে প্রকৃত কত পেমেন্ট করেছে (delivery charge সহ)
-  const avgOrderValue = useMemo(() => {
-    if (!orders.length) return 0;
-    const totalPaid = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    return totalPaid / orders.length;
-  }, [orders]);
+  // ✅ Avg Order Value = delivered অর্ডারে কাস্টমার গড়ে প্রকৃত কত পেমেন্ট করেছে (delivery charge সহ)
+  const deliveredOrders = useMemo(
+    () => orders.filter((o) => o.status === "delivered"),
+    [orders]
+  );
 
-  // ✅ Total Quantity Sold = প্রতিটা অর্ডারের প্রতিটা আইটেমের qty যোগ করে মোট বিক্রিত পণ্যের সংখ্যা
+  const avgOrderValue = useMemo(() => {
+    if (!deliveredOrders.length) return 0;
+    const totalPaid = deliveredOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    return totalPaid / deliveredOrders.length;
+  }, [deliveredOrders]);
+
+  // ✅ Total Quantity Sold = শুধু delivered অর্ডারের আইটেম qty যোগফল (প্রকৃত বিক্রি)
   // (একটা অর্ডারে একাধিক আইটেম, বা একটা আইটেমের একাধিক qty থাকতে পারে — তাই শুধু order count দিয়ে বোঝা যায় না)
   const totalQuantitySold = useMemo(() => {
-    return orders.reduce((sum, o) => {
+    return deliveredOrders.reduce((sum, o) => {
       const orderQty = (o.items || []).reduce(
         (s, it) => s + (it.qty || 0),
         0
       );
       return sum + orderQty;
     }, 0);
-  }, [orders]);
+  }, [deliveredOrders]);
 
   // ✅ Professional Gradient Cards Config (premium colors)
 const cards = useMemo(() => {
@@ -306,7 +331,7 @@ const cards = useMemo(() => {
       value: `৳${stats.totalSales}`,
       gradient: "from-emerald-600 via-emerald-600 to-emerald-500",
       dot: "bg-white/50",
-      sub: "Total revenue",
+      sub: "Delivered orders only",
     },
     {
       key: "totalProductSales",
@@ -314,7 +339,7 @@ const cards = useMemo(() => {
       value: `৳${stats.totalProductSales}`,
       gradient: "from-orange-600 via-amber-600 to-yellow-500",
       dot: "bg-white/50",
-      sub: "Excludes delivery charge",
+      sub: "Delivered, excludes delivery charge",
     },
     {
       key: "totalDeliveryCharge",
@@ -322,7 +347,15 @@ const cards = useMemo(() => {
       value: `৳${stats.totalDeliveryCharge}`,
       gradient: "from-cyan-600 via-sky-600 to-blue-500",
       dot: "bg-white/50",
-      sub: "Total delivery collected",
+      sub: "Delivered orders only",
+    },
+    {
+      key: "cancelledAmount",
+      label: "❌ Cancelled Amount",
+      value: `৳${stats.cancelledAmount}`,
+      gradient: "from-red-600 via-rose-600 to-red-500",
+      dot: "bg-white/50",
+      sub: `${statusStats.cancelled?.count ?? 0} orders — not counted in sales`,
     },
     {
       key: "avgOrderValue",
@@ -330,7 +363,7 @@ const cards = useMemo(() => {
       value: `৳${avgOrderValue.toFixed(0)}`,
       gradient: "from-fuchsia-600 via-fuchsia-600 to-pink-500",
       dot: "bg-white/50",
-      sub: "Per order average",
+      sub: "Per delivered order",
     },
     {
       key: "totalQuantitySold",
@@ -338,7 +371,7 @@ const cards = useMemo(() => {
       value: totalQuantitySold,
       gradient: "from-lime-600 via-green-600 to-emerald-500",
       dot: "bg-white/50",
-      sub: "Total items across all orders",
+      sub: "Delivered items only",
     },
     {
       key: "onlineOrders",
@@ -346,7 +379,7 @@ const cards = useMemo(() => {
       value: channelStats.online.orders,
       gradient: "from-blue-600 via-blue-600 to-cyan-500",
       dot: "bg-white/50",
-      sub: `৳${channelStats.online.sales} sales`,
+      sub: `৳${channelStats.online.sales} delivered sales`,
     },
     {
       key: "offlineOrders",
@@ -354,47 +387,47 @@ const cards = useMemo(() => {
       value: channelStats.offline.orders,
       gradient: "from-purple-600 via-purple-600 to-fuchsia-500",
       dot: "bg-white/50",
-      sub: `৳${channelStats.offline.sales} sales`,
+      sub: `৳${channelStats.offline.sales} delivered sales`,
     },
     {
       key: "pending",
       label: "Pending",
-      value: statusStats.pending ?? 0,
+      value: statusStats.pending?.count ?? 0,
       gradient: "from-amber-600 via-amber-600 to-amber-500",
       dot: "bg-white/50",
-      sub: "Awaiting action",
+      sub: `৳${statusStats.pending?.amount ?? 0} value`,
     },
     {
-      key: "ready_to_delivery",
-      label: "Ready",
-      value: statusStats.ready_to_delivery ?? 0,
+      key: "confirmed",
+      label: "Confirmed",
+      value: statusStats.confirmed?.count ?? 0,
       gradient: "from-sky-600 via-sky-600 to-sky-500",
       dot: "bg-white/50",
-      sub: "Ready to deliver",
+      sub: `৳${statusStats.confirmed?.amount ?? 0} value`,
     },
     {
-      key: "send_to_courier",
-      label: "Courier",
-      value: statusStats.send_to_courier ?? 0,
+      key: "shipped",
+      label: "Shipped",
+      value: statusStats.shipped?.count ?? 0,
       gradient: "from-violet-600 via-violet-600 to-violet-500",
       dot: "bg-white/50",
-      sub: "Handed to courier",
+      sub: `৳${statusStats.shipped?.amount ?? 0} value`,
     },
     {
       key: "delivered",
       label: "Delivered",
-      value: statusStats.delivered ?? 0,
+      value: statusStats.delivered?.count ?? 0,
       gradient: "from-teal-600 via-teal-700 to-teal-600",
       dot: "bg-white/50",
-      sub: "Completed",
+      sub: `৳${statusStats.delivered?.amount ?? 0} value`,
     },
     {
       key: "cancelled",
       label: "Cancelled",
-      value: statusStats.cancelled ?? 0,
+      value: statusStats.cancelled?.count ?? 0,
       gradient: "from-rose-500 via-rose-600 to-rose-500",
       dot: "bg-white/50",
-      sub: "Stopped orders",
+      sub: `৳${statusStats.cancelled?.amount ?? 0} value`,
     },
   ];
 }, [stats, statusStats, channelStats, monthlyComparison, avgOrderValue, totalQuantitySold]);

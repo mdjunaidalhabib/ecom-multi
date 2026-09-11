@@ -4,8 +4,8 @@ export default function Badge({ children, type }) {
 
   const colors = {
     pending: "border-yellow-200 text-yellow-700 bg-yellow-50",
-    ready_to_delivery: "border-blue-200 text-blue-700 bg-blue-50",
-    send_to_courier: "border-purple-200 text-purple-700 bg-purple-50",
+    confirmed: "border-blue-200 text-blue-700 bg-blue-50",
+    shipped: "border-purple-200 text-purple-700 bg-purple-50",
     delivered: "border-green-200 text-green-700 bg-green-50",
     cancelled: "border-red-200 text-red-700 bg-red-50",
   };

@@ -51,7 +51,7 @@ export default function BulkBar({
 
               try {
                 // 🚚 SEND TO COURIER
-                if (nextStatus === "send_to_courier") {
+                if (nextStatus === "shipped") {
                   await onBulkSendCourier(selectedOrders);
                   showToast("Courier order তৈরি হয়েছে", "success");
                   return;

@@ -74,7 +74,7 @@ export default function OrdersTable({
     try {
       if (
         order?.status === READY_STATUS &&
-        payload.status === "send_to_courier"
+        payload.status === "shipped"
       ) {
         await onSendCourier(order);
         manager.setSelected([]);
@@ -457,7 +457,7 @@ export default function OrdersTable({
                               onClick={() =>
                                 handleChange(
                                   o._id,
-                                  { status: "send_to_courier" },
+                                  { status: "shipped" },
                                   o,
                                 )
                               }
