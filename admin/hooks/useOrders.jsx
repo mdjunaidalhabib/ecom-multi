@@ -19,6 +19,14 @@ export default function useOrders(API) {
   const [saleChannel, setSaleChannel] = useState("");
 
   /* ===============================
+     🏷️ STATUS TAB FILTER (pending/confirmed/shipped/delivered/cancelled/"")
+     — server-side, সব পেজ মিলিয়ে ফিল্টার করে (আগে শুধু বর্তমান পেজের ২০টার
+     মধ্যে client-side ফিল্টার হতো, ফলে ট্যাবে "Cancelled (3)" দেখালেও লিস্টে
+     মাত্র ১টা দেখাতো যদি বাকি ২টা অন্য পেজে থাকতো)
+     =============================== */
+  const [tabStatus, setTabStatus] = useState("");
+
+  /* ===============================
      🔍 SEARCH — সার্ভার-সাইড, সব পেজ মিলিয়ে খোঁজে (শুধু বর্তমান পেজের
      ২০টার মধ্যে না)। `search` ইনপুটে সাথে সাথে বসে, `debouncedSearch`
      ৪০০ms পর আপডেট হয়ে আসল fetch ট্রিগার করে (প্রতি কি-স্ট্রোকে না)।
@@ -105,11 +113,12 @@ export default function useOrders(API) {
       else setLoading(true);
 
       const channelParam = saleChannel ? `&saleChannel=${saleChannel}` : "";
+      const statusParam = tabStatus ? `&status=${tabStatus}` : "";
       const searchParam = debouncedSearch
         ? `&search=${encodeURIComponent(debouncedSearch)}`
         : "";
       const res = await fetch(
-        `${API}/admin/orders?page=${targetPage}&limit=20${channelParam}${searchParam}`
+        `${API}/admin/orders?page=${targetPage}&limit=20${channelParam}${statusParam}${searchParam}`
       );
       const data = await res.json();
       setOrders(Array.isArray(data.orders) ? data.orders : []);
@@ -174,6 +183,21 @@ export default function useOrders(API) {
     fetchOrders(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saleChannel]);
+
+  // ✅ Status ট্যাব বদলালে ১ম পেজ থেকে আবার fetch হবে (সব পেজ মিলিয়ে সঠিক লিস্ট আসার জন্য)
+  const isFirstTabStatusRun = useRef(true);
+  useEffect(() => {
+    if (isFirstTabStatusRun.current) {
+      isFirstTabStatusRun.current = false;
+      return;
+    }
+    if (page !== 1) {
+      setPage(1);
+      return;
+    }
+    fetchOrders(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabStatus]);
 
   // ✅ সার্চ টার্ম বদলালে (debounce এর পর) ১ম পেজ থেকে আবার fetch হবে
   const isFirstSearchRun = useRef(true);
@@ -474,6 +498,10 @@ const sendCourierDirect = (order) =>
     // channel filter
     saleChannel,
     setSaleChannel,
+
+    // status tab filter (server-side, all pages)
+    tabStatus,
+    setTabStatus,
 
     // search (server-side, all pages)
     search,

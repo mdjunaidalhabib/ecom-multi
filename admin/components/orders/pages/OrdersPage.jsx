@@ -31,6 +31,9 @@ export default function OrdersPage() {
     saleChannel,
     setSaleChannel,
 
+    tabStatus,
+    setTabStatus,
+
     search,
     setSearch,
     searching,
@@ -59,16 +62,10 @@ export default function OrdersPage() {
     setConfirm,
   } = useOrders(API);
 
-  // ✅ Status tab — lifted up (shared by OrdersGrid + OrdersTable) so the
-  // heading count and status-tab badges can all read the same value
-  const [tabStatus, setTabStatus] = useState("");
-
-  // ✅ বর্তমান পেজে (max ২০টা) যতগুলো অর্ডার আসলে দেখা যাচ্ছে তার হিসাব —
-  // counts.filteredTotal/byStatus সব পেজ মিলিয়ে গ্লোবাল টোটাল (ট্যাব badge-এর
-  // জন্য ঠিক আছে), কিন্তু হেডিং-এর "Showing" এ বর্তমান পেজের actual count দরকার
-  const showingCount = tabStatus
-    ? filtered.filter((o) => o.status === tabStatus).length
-    : filtered.length;
+  // ✅ Status tab এখন useOrders হুকে (server-side ফিল্টার, সব পেজ মিলিয়ে) —
+  // তাই `filtered` prop already সেই status এর সব অর্ডার নিয়ে আসে, এখানে আর
+  // আলাদা করে ফিল্টার করার দরকার নেই।
+  const showingCount = filtered.length;
 
   // ✅ Edit modal state
   const [open, setOpen] = useState(false);
