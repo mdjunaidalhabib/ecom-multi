@@ -1,10 +1,24 @@
 "use client";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "../../../../context/UserContext";
 import { DOMAIN_MODE_MARKER } from "../../../../lib/shopMode";
 
+const Fallback = (
+  <div className="flex items-center justify-center min-h-screen">
+    <p className="text-center text-gray-600">⏳ Logging in...</p>
+  </div>
+);
+
 export default function AuthCallback() {
+  return (
+    <Suspense fallback={Fallback}>
+      <AuthCallbackInner />
+    </Suspense>
+  );
+}
+
+function AuthCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { fetchMe } = useUser();
@@ -50,9 +64,5 @@ export default function AuthCallback() {
     }
   }, []);
 
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <p className="text-center text-gray-600">⏳ Logging in...</p>
-    </div>
-  );
+  return Fallback;
 }

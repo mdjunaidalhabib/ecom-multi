@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronRight,
   HelpCircle,
+  Home,
   LayoutDashboard,
   MessageCircle,
   Menu,
@@ -18,13 +20,42 @@ import {
 } from "lucide-react";
 import AdminCTA from "./AdminCTA";
 
+// whileTap-সক্ষম Link — লোগো ও নেভ আইটেমে ট্যাপ করলে একটা ছোট্ট bounce
+// ফিডব্যাক দেয়, যাতে ট্যাপটা "dead"/জোলট না লেগে সন্তোষজনক লাগে।
+const MotionLink = motion.create(Link);
+const tapBounce = {
+  whileTap: { scale: 0.92 },
+  transition: { type: "spring", stiffness: 400, damping: 17 },
+};
+
 const NAV_LINKS = [
+  { id: "home", href: "/", label: "হোম", desc: "হোমপেজে ফিরে যান", icon: Home },
   { id: "features", href: "/#features", label: "সার্ভিস", desc: "সব সার্ভিস এক নজরে", icon: Sparkles },
   { id: "plans", href: "/#plans", label: "প্ল্যান", desc: "মূল্য ও প্যাকেজ", icon: Wallet },
   { id: "how-it-works", href: "/#how-it-works", label: "প্রক্রিয়া", desc: "কিভাবে কাজ করে", icon: Route },
   { id: "faq", href: "/#faq", label: "FAQ", desc: "সাধারণ জিজ্ঞাসা", icon: HelpCircle },
   { id: "contact", href: "/#contact", label: "যোগাযোগ", desc: "সরাসরি যোগাযোগ করুন", icon: MessageCircle },
 ];
+
+// ✅ native window.scrollTo({behavior:"smooth"}) মোবাইলে (বিশেষত Facebook/
+// Instagram-এর in-app browser-এ, যেখান থেকে শপের বেশিরভাগ ভিজিটর আসে) পুরো
+// টপে না গিয়েই থেমে যায় — এই rAF-ভিত্তিক ম্যানুয়াল অ্যানিমেশন প্রতি ফ্রেমে
+// নিজে scrollTo কল করে, তাই কোনো ব্রাউজারের নেটিভ smooth-scroll বাগের উপর
+// নির্ভর করে না এবং সবসময় ঠিক y=0 এ গিয়ে শেষ হয়।
+function smoothScrollToTop(duration = 450) {
+  const startY = window.scrollY || window.pageYOffset;
+  if (startY <= 0) return;
+
+  const startTime = performance.now();
+  const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+  function step(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    window.scrollTo(0, Math.round(startY * (1 - easeOutCubic(progress))));
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 
 const drawerListVariants = {
   hidden: {},
@@ -40,9 +71,23 @@ const drawerItemVariants = {
 // marketing pages (landing, privacy policy, terms of service) all render the
 // exact same header instead of each page rolling its own stripped-down copy.
 export default function PlatformHeader({ adminUrl }) {
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [mounted, setMounted] = useState(false);
+
+  // ✅ ইতিমধ্যে হোমপেজে থাকা অবস্থায় (স্ক্রল করে নিচে নামা) Home/লোগোতে
+  // ক্লিক করলে Link-এর নিজের কোনো নেভিগেশন হয় না (URL একই থাকে), তাই
+  // ম্যানুয়ালি smooth scroll-to-top করা হচ্ছে — নাহলে ক্লিকটা "dead" মনে হয়।
+  // অন্য পেজ (privacy-policy ইত্যাদি) থেকে হোমে গেলে নতুন পেজ এমনিতেই টপে
+  // মাউন্ট হয়, তাই সেখানে Link স্বাভাবিকভাবে নেভিগেট করতে দেওয়া হচ্ছে।
+  const handleHomeClick = (e) => {
+    setMobileOpen(false);
+    if (pathname === "/") {
+      e.preventDefault();
+      smoothScrollToTop();
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -86,7 +131,7 @@ export default function PlatformHeader({ adminUrl }) {
   return (
     <header className="sticky top-0 z-40 border-b border-orange-100/70 bg-gradient-to-r from-teal-50/90 via-white/90 to-orange-50/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-        <Link href="/" className="flex items-center gap-2.5">
+        <MotionLink href="/" onClick={handleHomeClick} className="flex items-center gap-2.5" {...tapBounce}>
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 shadow-md shadow-orange-200">
             <ShoppingCart size={16} className="text-white" />
           </div>
@@ -98,16 +143,18 @@ export default function PlatformHeader({ adminUrl }) {
               E-Commerce Management System
             </p>
           </div>
-        </Link>
+        </MotionLink>
 
         <nav className="hidden items-center gap-4 text-sm font-semibold text-gray-500 md:flex lg:gap-7">
           {NAV_LINKS.map((link) => (
-            <Link
+            <MotionLink
               key={link.id}
               href={link.href}
+              onClick={link.id === "home" ? handleHomeClick : undefined}
               className={`relative transition-colors hover:text-gray-900 ${
                 activeId === link.id ? "text-gray-900" : ""
               }`}
+              {...tapBounce}
             >
               {link.label}
               {activeId === link.id && (
@@ -116,7 +163,7 @@ export default function PlatformHeader({ adminUrl }) {
                   className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500"
                 />
               )}
-            </Link>
+            </MotionLink>
           ))}
         </nav>
 
@@ -163,7 +210,12 @@ export default function PlatformHeader({ adminUrl }) {
                 >
                   <div className="border-b border-orange-100/70 bg-gradient-to-r from-teal-50/90 via-white/90 to-orange-50/90 px-5 py-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
+                      <MotionLink
+                        href="/"
+                        onClick={handleHomeClick}
+                        className="flex items-center gap-2.5"
+                        {...tapBounce}
+                      >
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 shadow-md shadow-orange-200">
                           <ShoppingCart size={16} className="text-white" />
                         </div>
@@ -175,7 +227,7 @@ export default function PlatformHeader({ adminUrl }) {
                             E-Commerce Platform
                           </p>
                         </div>
-                      </div>
+                      </MotionLink>
                       <button
                         type="button"
                         onClick={() => setMobileOpen(false)}
@@ -198,14 +250,15 @@ export default function PlatformHeader({ adminUrl }) {
                       const isActive = activeId === link.id;
                       return (
                         <motion.div key={link.id} variants={drawerItemVariants}>
-                          <Link
+                          <MotionLink
                             href={link.href}
-                            onClick={() => setMobileOpen(false)}
+                            onClick={link.id === "home" ? handleHomeClick : () => setMobileOpen(false)}
                             className={`group flex items-center gap-3 rounded-2xl border px-3.5 py-3 transition-all ${
                               isActive
                                 ? "border-orange-200 bg-orange-50"
                                 : "border-transparent hover:border-gray-100 hover:bg-gray-50"
                             }`}
+                            {...tapBounce}
                           >
                             <span
                               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${
@@ -230,7 +283,7 @@ export default function PlatformHeader({ adminUrl }) {
                               size={16}
                               className={isActive ? "text-orange-500" : "text-gray-300"}
                             />
-                          </Link>
+                          </MotionLink>
                         </motion.div>
                       );
                     })}

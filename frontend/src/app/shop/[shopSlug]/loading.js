@@ -1,4 +1,4 @@
-import LoadingScreen from "../../components/Loading";
+import LoadingScreen from "../../../../components/Loading";
 
 function App() {
   return (

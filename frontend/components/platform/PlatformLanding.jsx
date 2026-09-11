@@ -30,6 +30,7 @@ import {
 import AdminCTA from "./AdminCTA";
 import PlatformHeader from "./PlatformHeader";
 import PlatformFooter from "./PlatformFooter";
+import PlatformContactFab from "./PlatformContactFab";
 
 const TICKER_ITEMS = [
   "কাস্টম ডোমেইন",
@@ -574,7 +575,7 @@ export default function PlatformLanding({ adminUrl, whatsappNumber }) {
       <PlatformHeader adminUrl={adminUrl} />
 
       {/* Hero */}
-      <section className="relative mx-auto max-w-6xl px-5 pb-16 pt-16 sm:pt-20">
+      <section className="relative mx-auto max-w-6xl px-5 pb-16 pt-6 sm:pt-10">
         <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
           <motion.div initial="hidden" animate="visible" variants={fadeUp}>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-100 to-rose-100 px-3.5 py-1.5 text-xs font-bold text-rose-600">
@@ -972,6 +973,7 @@ export default function PlatformLanding({ adminUrl, whatsappNumber }) {
       </section>
 
       <PlatformFooter />
+      <PlatformContactFab whatsappNumber={whatsappNumber} />
     </div>
   );
 }
