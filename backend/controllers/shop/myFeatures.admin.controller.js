@@ -27,6 +27,9 @@ export const getMyFeatures = async (req, res) => {
       plan: shop.plan,
       features,
       status: shop.status,
+      // ✅ পাবলিক শপ URL বানানোর জন্য (যেমন landing page লিংক) — দেখুন
+      // admin/src/app/admin/landing-pages/page.jsx এর getShopPublicUrl
+      shop: { slug: shop.slug, domain: shop.domain || "" },
       subscriptionStartDate: shop.subscriptionStartDate || null,
       subscriptionDays: shop.subscriptionDays || null,
       planExpiresAt: shop.planExpiresAt || null,

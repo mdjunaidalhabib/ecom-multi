@@ -2,9 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, Megaphone, ImageOff, Plus } from "lucide-react";
+import { Search, X, Megaphone, ImageOff, Plus, ExternalLink, Copy, Check } from "lucide-react";
 import Toast from "../../../../components/Toast";
 import ConfirmModal from "../../../../components/ConfirmModal";
+import { useMyPlanInfo } from "../../../../hooks/useShopFeatures";
+
+// ✅ কাস্টম ডোমেইন থাকলে সরাসরি সেই ডোমেইনে, নাহলে platform-এর নিজস্ব
+// slug-based path (/shop/<slug>) দিয়ে শপের পাবলিক URL বানায় — একই প্যাটার্ন
+// super-admin/components/Shops.jsx এর getShopPublicUrl-এ ব্যবহৃত হয়।
+const SHOP_BASE_URL = process.env.NEXT_PUBLIC_SHOP_BASE_URL || "";
+function getShopPublicUrl(shop) {
+  if (!shop?.slug) return "";
+  return shop.domain ? `https://${shop.domain}` : `${SHOP_BASE_URL}/shop/${shop.slug}`;
+}
 
 function Badge({ children, tone = "gray" }) {
   const tones = {
@@ -191,6 +201,22 @@ export default function LandingPagesListPage() {
   const [showPicker, setShowPicker] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
+
+  const planInfo = useMyPlanInfo();
+  const shopBaseUrl = getShopPublicUrl(planInfo?.shop);
+
+  const handleCopyLink = async (e, page) => {
+    e.stopPropagation();
+    if (!shopBaseUrl) return;
+    try {
+      await navigator.clipboard.writeText(`${shopBaseUrl}/lp/${page.slug}`);
+      setCopiedId(page._id);
+      setTimeout(() => setCopiedId((id) => (id === page._id ? null : id)), 1500);
+    } catch {
+      setToast({ message: "⚠ লিংক কপি করা যায়নি", type: "error" });
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -266,10 +292,15 @@ export default function LandingPagesListPage() {
           {pages.map((page) => {
             const product = typeof page.productId === "object" ? page.productId : null;
             return (
-              <button
+              <div
                 key={page._id}
+                role="button"
+                tabIndex={0}
                 onClick={() => router.push(`/admin/landing-pages/${page._id}`)}
-                className="text-left bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3.5 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:shadow-md transition-all group"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") router.push(`/admin/landing-pages/${page._id}`);
+                }}
+                className="text-left cursor-pointer bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl p-3.5 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:shadow-md transition-all group"
               >
                 <div className="flex items-center gap-3">
                   <span className="relative h-14 w-14 rounded-lg overflow-hidden border dark:border-slate-600 bg-gray-50 dark:bg-slate-700 shrink-0">
@@ -295,6 +326,35 @@ export default function LandingPagesListPage() {
                   {page.isPrimary && <Badge tone="indigo">Primary</Badge>}
                   <span className="text-[10px] text-gray-400 dark:text-slate-500 ml-auto">/{page.slug}</span>
                 </div>
+
+                {shopBaseUrl && page.isPublished && (
+                  <div
+                    className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-gray-50 dark:bg-slate-800 px-2 py-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="flex-1 min-w-0 truncate text-[11px] text-gray-500 dark:text-slate-400" title={`${shopBaseUrl}/lp/${page.slug}`}>
+                      {shopBaseUrl.replace(/^https?:\/\//, "")}/lp/{page.slug}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopyLink(e, page)}
+                      title="লিংক কপি করুন"
+                      className="shrink-0 p-1 rounded text-gray-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400"
+                    >
+                      {copiedId === page._id ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+                    </button>
+                    <a
+                      href={`${shopBaseUrl}/lp/${page.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="নতুন ট্যাবে লিংক খুলুন"
+                      className="shrink-0 p-1 rounded text-gray-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400"
+                    >
+                      <ExternalLink size={13} />
+                    </a>
+                  </div>
+                )}
+
                 <div className="mt-3 flex justify-end">
                   <span
                     role="button"
@@ -307,7 +367,7 @@ export default function LandingPagesListPage() {
                     ডিলিট
                   </span>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
