@@ -15,9 +15,17 @@ const storage = multer.diskStorage({
 });
 
 /* ================== ✅ DEFAULT UPLOAD (GENERIC) ================== */
+// ⚠️ FIX: এই limit আগে 100KB ছিল, কিন্তু admin panel-এর ImageUploader
+// (admin/components/ImageUploader.jsx এর DEFAULT_IMAGE_RULE) client-side
+// এ ছবি compress করে 220KB পর্যন্ত রাখে — অর্থাৎ client "সফলভাবে" convert
+// করা 100–220KB এর যেকোনো ফাইলই এখানে multer-এর LIMIT_FILE_SIZE error দিয়ে
+// reject হয়ে যেত (কোনো readable message ছাড়াই), profile avatar (admin.routes.js
+// PUT /me) ও navbar logo (navbar.admin.routes.js) দুটোই এই default upload
+// ব্যবহার করে বলে ভুগত। এখন client-এর maxBytes-এর চেয়ে বেশি রাখা হলো, যাতে
+// client যা "পাস" বলে সেটা সবসময় server-ও গ্রহণ করে।
 const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 }, // ✅ 100KB
+  limits: { fileSize: 300 * 1024 }, // ✅ 300KB (client compresses to ≤220KB)
 });
 
 /* ================== ✅ CATEGORY UPLOAD ================== */

@@ -33,39 +33,36 @@ export function middleware(req) {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-shop-domain", hostname);
 
-  // Platform legal pages ("/privacy-policy", "/terms-of-service") always show
-  // the platform's own (ECMS) content, on every domain — never a shop's own
-  // branding. A bare hit on either path is handled below by skipping the
-  // rewrite entirely (Next's file router resolves it directly). The older
-  // "?view=privacy-policy"/"?view=terms-of-service" query form can still show
-  // up on arbitrary paths (including real /shop/<slug>/... ones) for any
-  // already-shared links, so that case is still forwarded as a header for
-  // frontend/src/app/shop/[shopSlug]/layout.js to resolve, since it only sees
-  // params.shopSlug, not the rest of the request. These bare top-level paths
-  // never collide with a real shop's own /shop/<slug>/privacy-policy page
-  // because that path always carries the "/shop/" prefix, which the regex
-  // below deliberately excludes.
+  // 🔥 FIX: bare "/privacy-policy" / "/terms-of-service" শুধু প্ল্যাটফর্মের
+  // নিজের ডোমেইনে (PLATFORM_DOMAIN) ECMS-এর static content দেখাবে। আগে এই
+  // চেকটা hostname না দেখেই "legalPathMatch হলেই rewrite স্কিপ" করত (নিচের
+  // মন্তব্যে "on ANY domain" লেখা ছিল) — ফলে প্রতিটা শপের নিজের কাস্টম
+  // ডোমেইনে (যেমন https://<shop-domain>/privacy-policy) গেলেও Next.js শুধু
+  // pathname মিলিয়ে সরাসরি frontend/src/app/privacy-policy/page.js (ECMS-এর
+  // নিজস্ব static page) রেন্ডার করে ফেলত — শপের নিজের
+  // /shop/[shopSlug]/privacy-policy/page.jsx (যেটা backend থেকে সেই শপের
+  // admin-সেট প্রাইভেসি পলিসি fetch করে) পর্যন্ত পৌঁছাতই পারত না, কারণ কোনো
+  // rewrite হতোই না। এখন শুধু আসল প্ল্যাটফর্ম ডোমেইনেই bypass করা হয়; বাকি
+  // সব ডোমেইন (শপের কাস্টম ডোমেইন) নিচের সাধারণ rewrite লজিকেই পড়ে, তাই
+  // "/shop/__domain__/privacy-policy" এ গিয়ে শপের নিজের পেজটাই রেন্ডার হয় —
+  // path-based (/shop/<slug>/privacy-policy) এমনিতেই এই ব্লকে পড়ে না, কারণ
+  // সেই path "/shop/" prefix দিয়ে শুরু, যেটা নিচের regex বাদ রাখে।
   const legalPathMatch = pathname.match(/^\/(privacy-policy|terms-of-service)\/?$/);
-  const legalView = legalPathMatch?.[1] || req.nextUrl.searchParams.get("view");
-  if (legalView === "privacy-policy" || legalView === "terms-of-service") {
-    requestHeaders.set("x-legal-view", legalView);
+  const isPlatformDomain = hostname === process.env.PLATFORM_DOMAIN;
+
+  if (legalPathMatch && isPlatformDomain) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  // A bare "/privacy-policy" or "/terms-of-service" hit — on ANY domain —
-  // already matches the platform's own static top-level route
-  // (frontend/src/app/privacy-policy/page.js, .../terms-of-service/page.js)
-  // by pathname, so no rewrite is needed at all; Next's file router resolves
-  // it directly, same as it already does for PLATFORM_DOMAIN below. Routing
-  // it through the /shop/[shopSlug] tree instead (via the generic rewrite
-  // further down, relying on x-legal-view + headers() in that layout) forced
-  // the whole route to render dynamically, which combined with next/link's
-  // client-side soft navigation left the page blank after a click on a shop's
-  // custom domain until a hard refresh — going straight to the static route
-  // sidesteps that. The "?view=" legacy query form is untouched here (still
-  // resolved deeper, via the header) since it can appear on arbitrary paths,
-  // including real /shop/<slug>/... ones.
-  if (legalPathMatch) {
-    return NextResponse.next({ request: { headers: requestHeaders } });
+  // ✅ পুরনো "?view=privacy-policy"/"?view=terms-of-service" query form —
+  // এটা ইচ্ছাকৃতভাবেই সব ডোমেইনে (শপের কাস্টম ডোমেইন/path-based সহ) কাজ করে,
+  // কারণ আগে শেয়ার করা লিংকগুলো সবসময় ECMS-এর নিজের content দেখানোর কথা।
+  // বেয়ার path-এর মতো hostname-বাছাই এখানে প্রযোজ্য নয় — এটা শুধু সরাসরি এই
+  // নির্দিষ্ট query param ব্যবহার করলেই ট্রিগার হয়, নতুন কোনো ব্যবহারকারী
+  // এমনি এমনি hit করবে না।
+  const legalView = req.nextUrl.searchParams.get("view");
+  if (legalView === "privacy-policy" || legalView === "terms-of-service") {
+    requestHeaders.set("x-legal-view", legalView);
   }
 
   const pathSlugMatch = pathname.match(/^\/shop\/([^/]+)/);

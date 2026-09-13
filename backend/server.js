@@ -231,10 +231,29 @@ app.use((req, res) => {
 });
 
 // Global error handler
+//
+// 🔥 FIX (অস্পষ্ট error toast — profile photo/logo upload "silently" fail
+// করত মনে হতো): এই handler আগে শুধু `{ error: "..." }` key দিয়ে respond
+// করত, কিন্তু frontend-এর সব জায়গায় (যেমন admin/src/app/admin/profile/
+// EditProfileForm.jsx) `err.response?.data?.message` চেক করে toast দেখানো
+// হয় — key mismatch থাকায় আসল কারণ যাই হোক না কেন সবসময় generic fallback
+// টোস্টই ("Profile update failed") দেখাত, real reason কখনো UI তে পৌঁছাত না।
+// এখন `message` key-ও পাঠানো হচ্ছে, আর multer-এর file-size-limit error
+// (ImageUploader client-side এ compress করার পরও কখনো ছবি বড় থেকে গেলে)
+// আলাদাভাবে ধরে একটা readable বাংলা বার্তা দেওয়া হচ্ছে — বাকি সব ক্ষেত্রে
+// আগের মতোই generic 500 (কিন্তু এখন message key সহ)।
 app.use((err, req, res, next) => {
   console.error("❌ Uncaught error:", err);
+
+  if (err?.code === "LIMIT_FILE_SIZE") {
+    const message = "ছবির সাইজ অনেক বড়, দয়া করে ছোট একটি ছবি দিয়ে আবার চেষ্টা করুন।";
+    return res.status(413).json({ error: message, message });
+  }
+
+  const message = "Internal server error";
   res.status(500).json({
-    error: "Internal server error",
+    error: message,
+    message,
     details: isProd ? undefined : String(err),
   });
 });

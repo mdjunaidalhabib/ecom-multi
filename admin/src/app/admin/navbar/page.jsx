@@ -260,6 +260,54 @@ export default function NavbarAdminPanel() {
             />
           )}
         </div>
+
+        {/* ✅ PWA install icon status — logo upload করার সময় backend থেকে
+        favicon/192/512 auto-generate হয় (navbar.admin.routes.js), কিন্তু
+        এতদিন সেটা UI-তে কোথাও দেখানো হতো না, তাই admin নিশ্চিত হতে পারতো না
+        upload ঠিকমতো derived icon বানিয়েছে কিনা — না বানালে storefront
+        fallback icon-এ পড়ে যায় (frontend/lib/manifest.js)। */}
+        {navbar.brand?.logo && (
+          <div className="mt-3 pt-3 border-t dark:border-slate-700 space-y-2">
+            <p className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+              PWA Install Icon
+            </p>
+            <div className="flex flex-wrap items-center gap-4">
+              {[
+                { key: "favicon", label: "Favicon (64×64)" },
+                { key: "pwaIcon192", label: "192×192" },
+                { key: "pwaIcon512", label: "512×512" },
+              ].map(({ key, label }) => {
+                const src = navbar.brand?.[key];
+                return (
+                  <div key={key} className="flex items-center gap-2">
+                    {src ? (
+                      <img
+                        src={src}
+                        alt={label}
+                        className="h-10 w-10 rounded border dark:border-slate-700 object-contain bg-white"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded border dark:border-slate-700 flex items-center justify-center text-xs text-gray-400">
+                        ✕
+                      </div>
+                    )}
+                    <span className="text-xs text-gray-600 dark:text-slate-400">
+                      {label}
+                      <br />
+                      {src ? (
+                        <span className="text-green-600 dark:text-green-400">✓ Set</span>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400">
+                          ⚠ Not set — fallback icon দেখাবে
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {saving && (
