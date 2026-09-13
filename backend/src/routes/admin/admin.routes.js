@@ -105,7 +105,22 @@ router.put("/me", protect, upload.single("avatar"), async (req, res) => {
 
     // 🔹 STEP 4: update fields
     if (data.name !== undefined) admin.name = data.name;
-    if (data.username !== undefined) admin.username = data.username;
+
+    // 🔥 FIX: username field-এ unique+sparse index থাকলেও sparse শুধু
+    // পুরোপুরি missing/undefined field-কেই ignore করে — empty string ("")
+    // কে না। কিন্তু client সবসময় username: admin.username || "" পাঠায় (যে
+    // admin কখনো username set করেনি তার জন্যও), ফলে দ্বিতীয় কোনো admin এর
+    // username ও "" হয়ে গেলেই MongoServerError E11000 duplicate key
+    // (username: "") আসতো এবং পুরো PUT /me request 500 দিয়ে fail করতো —
+    // এই কারণেই avatar upload/remove কিছুই কাজ করছিল না (দুটোই এই একই
+    // request ব্যবহার করে)। তাই এখন empty/blank username আসলে সেটাকে field
+    // থেকে unset করে দেওয়া হচ্ছে (undefined), "" হিসেবে সেভ করা হচ্ছে না —
+    // ফলে sparse index ঠিকভাবে কাজ করবে।
+    if (data.username !== undefined) {
+      const trimmedUsername = String(data.username || "").trim();
+      admin.username = trimmedUsername || undefined;
+    }
+
     if (data.phone !== undefined) admin.phone = data.phone;
     if (data.address !== undefined) admin.address = data.address;
 
