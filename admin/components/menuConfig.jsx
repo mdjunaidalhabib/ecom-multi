@@ -7,7 +7,6 @@ import {
   SlidersHorizontal,
   Eye,
   Settings,
-  LayoutDashboard,
   Trash2,
   Wallet,
   BadgePercent,
@@ -15,6 +14,23 @@ import {
   UserCog,
   Megaphone,
   FileText,
+  PanelTop,
+  PanelBottom,
+  BadgeCheck,
+  AppWindow,
+  MousePointerClick,
+  Facebook,
+  Info,
+  Crown,
+  CircleHelp,
+  ShieldCheck,
+  Undo2,
+  Truck,
+  Hash,
+  PackageCheck,
+  MailPlus,
+  MailCheck,
+  GraduationCap,
 } from "lucide-react";
 
 // ✅ প্রতিটা আইটেমে `section` — Sidebar/mobile drawer এ এই কী অনুযায়ী গ্রুপ
@@ -50,33 +66,10 @@ export const navItems = [
     section: "Sales",
   },
   {
-    icon: <CreditCard size={18} />,
-    label: "Plan",
-    href: "/admin/plan",
-    permission: "plan",
-    section: "Sales",
-  },
-  {
-    icon: <FileText size={18} />,
-    label: "Invoice Design",
-    href: "/admin/invoice-design",
-    feature: "invoiceCustomization",
-    permission: "invoiceDesign",
-    section: "Sales",
-  },
-  {
     icon: <Package size={18} />,
     label: "Products",
     href: "/admin/products",
     permission: "products",
-    section: "Catalog",
-  },
-  {
-    icon: <Megaphone size={18} />,
-    label: "Landing Pages",
-    href: "/admin/landing-pages",
-    feature: "landingPages",
-    permission: "landingPages",
     section: "Catalog",
   },
   {
@@ -93,6 +86,14 @@ export const navItems = [
     href: "/admin/sliders",
     feature: "fullStorefront",
     permission: "sliders",
+    section: "Catalog",
+  },
+  {
+    icon: <Megaphone size={18} />,
+    label: "Landing Pages",
+    href: "/admin/landing-pages",
+    feature: "landingPages",
+    permission: "landingPages",
     section: "Catalog",
   },
   {
@@ -125,99 +126,189 @@ export const navItems = [
     section: "System",
   },
   {
+    // ✅ কোনো permission/feature গেট নেই — সব admin/staff দেখতে পারবে
+    icon: <GraduationCap size={18} />,
+    label: "Tutorials",
+    href: "/admin/tutorials",
+    section: "System",
+  },
+  {
     icon: <Settings size={18} />,
     label: "Settings",
     href: "/admin/settings",
-    permission: "settings",
+    // ✅ Plan / Invoice Design এখন Settings-এর ভেতরে — তাই এই তিনটার যেকোনো
+    // একটাতে view পারমিশন থাকলেই Settings মেনু দেখা যাবে।
+    permissionAny: ["settings", "plan", "invoiceDesign"],
     section: "System",
   },
 ];
 
-export const settingsChildren = [
+// ✅ Settings পেজের গ্রুপ — SettingsSideMenu ও /admin/settings হাবে এই ক্রমে
+// দেখানো হয়। `tone` এর রঙ settingsTheme.js এ ডিফাইন করা।
+export const settingsGroups = [
   {
-    icon: <LayoutDashboard size={16} />,
+    key: "storefront",
+    label: "Storefront",
+    hint: "স্টোরের চেহারা ও হোমপেজ",
+    tone: "indigo",
+  },
+  {
+    key: "pages",
+    label: "Pages & Policies",
+    hint: "কনটেন্ট ও নীতিমালা পেজ",
+    tone: "violet",
+  },
+  {
+    key: "orders",
+    label: "Orders & Delivery",
+    hint: "অর্ডার, ডেলিভারি ও কুরিয়ার",
+    tone: "emerald",
+  },
+  {
+    key: "communication",
+    label: "Email & Reports",
+    hint: "মেইল নোটিফিকেশন ও রিপোর্ট",
+    tone: "amber",
+  },
+  {
+    key: "billing",
+    label: "Billing & Documents",
+    hint: "প্ল্যান ও ইনভয়েস",
+    tone: "rose",
+  },
+];
+
+// ✅ প্রতিটা আইটেমে: `icon` (16px, হেডারের জন্য), `Icon` (হাব কার্ডে বড় সাইজে
+// রেন্ডারের জন্য), `group` (উপরের settingsGroups এর key) ও `desc`।
+// `permission` না দিলে ডিফল্ট "settings"; Plan/Invoice Design নিজস্ব পারমিশন
+// ও ফিচার গেট রাখে।
+const settingsItem = (Icon, item) => ({
+  permission: "settings",
+  ...item,
+  Icon,
+  icon: <Icon size={16} />,
+});
+
+export const settingsChildren = [
+  settingsItem(PanelTop, {
     label: "Navbar",
     href: "/admin/navbar",
     feature: "fullStorefront",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
+    group: "storefront",
+    desc: "লোগো, মেনু ও উপরের বার",
+  }),
+  settingsItem(PanelBottom, {
     label: "Footer",
     href: "/admin/footer",
     feature: "fullStorefront",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "About Page",
-    href: "/admin/about",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "Privacy Policy",
-    href: "/admin/privacy-policy",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "Refund Policy",
-    href: "/admin/refund-policy",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "Founder & CEO",
-    href: "/admin/founder-ceo",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "FAQ",
-    href: "/admin/faq",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "Action Button",
-    href: "/admin/floatingActionButton",
-    feature: "fullStorefront",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "Homepage Popup",
-    href: "/admin/homepagePopup",
-    feature: "fullStorefront",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "Facebook Group",
-    href: "/admin/facebookGroup",
-    feature: "fullStorefront",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "Delivery Charge",
-    href: "/admin/deliveryCharge",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "Order Number",
-    href: "/admin/orderCounter",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
+    group: "storefront",
+    desc: "ফুটার লিংক ও যোগাযোগের তথ্য",
+  }),
+  settingsItem(BadgeCheck, {
     label: "Home Badges",
     href: "/admin/home-badges",
     feature: "fullStorefront",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "Order Mail Send",
-    href: "/admin/order-mail-send",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
-    label: "Mail Report",
-    href: "/admin/mail-report",
-  },
-  {
-    icon: <LayoutDashboard size={16} />,
+    group: "storefront",
+    desc: "হোমপেজের ট্রাস্ট ব্যাজ",
+  }),
+  settingsItem(AppWindow, {
+    label: "Homepage Popup",
+    href: "/admin/homepagePopup",
+    feature: "fullStorefront",
+    group: "storefront",
+    desc: "ভিজিটরদের জন্য পপআপ অফার",
+  }),
+  settingsItem(MousePointerClick, {
+    label: "Action Button",
+    href: "/admin/floatingActionButton",
+    feature: "fullStorefront",
+    group: "storefront",
+    desc: "ফ্লোটিং কল/চ্যাট বাটন",
+  }),
+  settingsItem(Facebook, {
+    label: "Facebook Group",
+    href: "/admin/facebookGroup",
+    feature: "fullStorefront",
+    group: "storefront",
+    desc: "কমিউনিটি গ্রুপ লিংক",
+  }),
+
+  settingsItem(Info, {
+    label: "About Page",
+    href: "/admin/about",
+    group: "pages",
+    desc: "আপনার ব্র্যান্ডের পরিচিতি",
+  }),
+  settingsItem(Crown, {
+    label: "Founder & CEO",
+    href: "/admin/founder-ceo",
+    group: "pages",
+    desc: "প্রতিষ্ঠাতার বার্তা ও ছবি",
+  }),
+  settingsItem(CircleHelp, {
+    label: "FAQ",
+    href: "/admin/faq",
+    group: "pages",
+    desc: "সচরাচর জিজ্ঞাসিত প্রশ্ন",
+  }),
+  settingsItem(ShieldCheck, {
+    label: "Privacy Policy",
+    href: "/admin/privacy-policy",
+    group: "pages",
+    desc: "গোপনীয়তা নীতিমালা",
+  }),
+  settingsItem(Undo2, {
+    label: "Refund Policy",
+    href: "/admin/refund-policy",
+    group: "pages",
+    desc: "রিফান্ড ও রিটার্ন নীতি",
+  }),
+
+  settingsItem(Truck, {
+    label: "Delivery Charge",
+    href: "/admin/deliveryCharge",
+    group: "orders",
+    desc: "এলাকা অনুযায়ী ডেলিভারি চার্জ",
+  }),
+  settingsItem(Hash, {
+    label: "Order Number",
+    href: "/admin/orderCounter",
+    group: "orders",
+    desc: "অর্ডার নম্বরের ফরম্যাট ও কাউন্টার",
+  }),
+  settingsItem(PackageCheck, {
     label: "Courier Setup",
     href: "/admin/courier-setup",
-  },
-].map((item) => ({ ...item, permission: "settings" }));
+    group: "orders",
+    desc: "কুরিয়ার সার্ভিস কানেকশন",
+  }),
+
+  settingsItem(MailPlus, {
+    label: "Order Mail Send",
+    href: "/admin/order-mail-send",
+    group: "communication",
+    desc: "নতুন অর্ডারে ইমেইল নোটিফিকেশন",
+  }),
+  settingsItem(MailCheck, {
+    label: "Mail Report",
+    href: "/admin/mail-report",
+    group: "communication",
+    desc: "পাঠানো মেইলের রিপোর্ট",
+  }),
+
+  settingsItem(CreditCard, {
+    label: "Plan",
+    href: "/admin/plan",
+    permission: "plan",
+    group: "billing",
+    desc: "বর্তমান প্ল্যান, ফিচার ও মেয়াদ",
+  }),
+  settingsItem(FileText, {
+    label: "Invoice Design",
+    href: "/admin/invoice-design",
+    feature: "invoiceCustomization",
+    permission: "invoiceDesign",
+    group: "billing",
+    desc: "ইনভয়েসের লেআউট ও ডিজাইন",
+  }),
+];

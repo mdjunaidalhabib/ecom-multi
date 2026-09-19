@@ -39,6 +39,7 @@ import mailReportAdminRoutes from "./mailReport.admin.routes.js";
 import landingPageAdminRoutes from "./landingPage.admin.routes.js";
 import invoiceTemplateAdminRoutes from "./invoiceTemplate.admin.routes.js";
 import invoiceTemplateDefaultRoutes from "./invoiceTemplateDefault.superadmin.routes.js";
+import tutorialsAdminRoutes from "./tutorials.admin.routes.js";
 
 import { protect, requirePermission } from "../../middlewares/adminAuthMiddleware.js";
 import { requireShopContext } from "../../tenancy/adminShopContext.js";
@@ -72,6 +73,11 @@ router.use("/announcement", announcementAdminRoutes);
 // "active shop" ছাড়াই কাজ করতে হয় (super-admin কোনো শপ সিলেক্ট না করেই এটা
 // এডিট করে), নিজস্ব protect+superAdminOnly আছে routes ফাইলে।
 router.use("/invoice-template-default", invoiceTemplateDefaultRoutes);
+
+// ✅ প্ল্যাটফর্ম-ওয়াইড ভিডিও টিউটোরিয়াল — super-admin YouTube লিংক যোগ করে, সব
+// শপের admin/staff দেখে। /plans এর মতোই কোনো "active shop" লাগে না, তাই
+// global requireShopContext এর আগে বসানো (নিজস্ব protect আছে routes ফাইলে)।
+router.use("/tutorials", tutorialsAdminRoutes);
 
 // ✅ এখান থেকে নিচের সব admin route এর জন্য valid admin session +
 // active shop context বাধ্যতামূলক (আগে অনেক রুটে কোনো auth check-ই ছিল না —

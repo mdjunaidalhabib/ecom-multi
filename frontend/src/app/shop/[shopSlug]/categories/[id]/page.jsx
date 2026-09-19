@@ -1,7 +1,15 @@
 import Link from "next/link";
 import ProductCard from "../../../../../../components/home/ProductCard";
-import { serverFetch } from "../../../../../../lib/serverApi";
+import { serverFetch, getShopInfo } from "../../../../../../lib/serverApi";
 import { shopBasePath } from "../../../../../../lib/shopMode";
+import JsonLd from "../../../../../../components/seo/JsonLd";
+import {
+  getSiteOrigin,
+  pagePath,
+  shopBrand,
+  buildCategoryJsonLd,
+  buildBreadcrumbJsonLd,
+} from "../../../../../../lib/seo";
 import { requireFullStorefront } from "../../../../../../lib/requireFullStorefront";
 
 async function getCategoryData(id) {
@@ -19,11 +27,41 @@ async function getCategoryData(id) {
   };
 }
 
+export async function generateMetadata({ params }) {
+  const { id, shopSlug } = await params;
+  // পেজের সাথে একই fetch — Next-এর memoization-এ আলাদা backend hit হয় না
+  const { category, products } = await getCategoryData(id);
+
+  if (!category) {
+    return { title: "Category Not Found", robots: { index: false, follow: false } };
+  }
+
+  const shop = await getShopInfo().catch(() => null);
+  const brand = shopBrand(shop);
+  const description = `${category.name} ক্যাটাগরির ${products.length}টি প্রোডাক্ট — ${brand} থেকে সাশ্রয়ী দামে অনলাইনে অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি।`;
+  const path = pagePath(shopSlug, `/categories/${category._id}`);
+
+  return {
+    title: category.name,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      type: "website",
+      title: category.name,
+      description,
+      url: path,
+      ...(category.image ? { images: [category.image] } : {}),
+    },
+    twitter: { title: category.name, description },
+  };
+}
+
 export default async function CategoryPage({ params }) {
   const { id, shopSlug } = await params;
   await requireFullStorefront(shopSlug);
   const base = shopBasePath(shopSlug);
   const { category, products } = await getCategoryData(id);
+  const origin = await getSiteOrigin();
 
   if (!category) {
     return (
@@ -35,6 +73,17 @@ export default async function CategoryPage({ params }) {
 
   return (
     <div className="container mx-auto px-6 py-10">
+      {origin && (
+        <JsonLd
+          data={[
+            buildCategoryJsonLd({ origin, base, category, products }),
+            buildBreadcrumbJsonLd(origin, [
+              { name: "হোম", path: base || "/" },
+              { name: category.name, path: `${base}/categories/${category._id}` },
+            ]),
+          ]}
+        />
+      )}
       {/* ✅ Breadcrumb: হোম / Category name */}
       <nav className="text-sm text-gray-500 mb-3 flex items-center gap-1">
         <Link href={base || "/"} className="hover:text-blue-600 transition-colors">

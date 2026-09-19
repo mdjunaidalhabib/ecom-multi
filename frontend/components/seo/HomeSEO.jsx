@@ -1,20 +1,16 @@
-export default function HomeSEO() {
+// Screen-reader/crawler-visible intro for the storefront home page. It used to
+// hardcode "Cartvan" for every shop — now it uses the shop's own brand name.
+export default function HomeSEO({ brand }) {
+  if (!brand) return null;
+
   return (
     <div className="sr-only">
-      <h1>Cartvan – Online Shopping Platform in Bangladesh</h1>
+      <h1>{brand} – অনলাইন শপ</h1>
 
       <p>
-        Cartvan is a trusted Bangladeshi e-commerce website where you can buy
-        quality products online at affordable prices with fast delivery all over
-        Bangladesh.
+        {brand} থেকে অনলাইনে মানসম্পন্ন প্রোডাক্ট কিনুন সাশ্রয়ী দামে, সারা
+        বাংলাদেশে দ্রুত হোম ডেলিভারি ও ক্যাশ অন ডেলিভারি সুবিধাসহ।
       </p>
-
-      <h2>Why Choose Cartvan</h2>
-      <ul>
-        <li>Best online shopping platform in Bangladesh</li>
-        <li>Fast delivery service</li>
-        <li>Trusted e-commerce website</li>
-      </ul>
     </div>
   );
 }

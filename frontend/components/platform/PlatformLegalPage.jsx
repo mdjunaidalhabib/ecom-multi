@@ -219,24 +219,24 @@ function SectionBlock({ index, title, body }) {
       initial="hidden"
       animate="visible"
       variants={fadeUp}
-      className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:p-7"
+      className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:p-7"
     >
       <div className="flex items-start gap-3.5">
-        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 text-[11px] font-black text-white shadow-md shadow-orange-200">
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-[11px] font-bold text-white">
           {index}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold text-gray-900">{title}</h2>
-          <div className="mt-2.5 space-y-3 text-sm leading-relaxed text-gray-500">
+          <h2 className="font-semibold text-slate-900">{title}</h2>
+          <div className="mt-2.5 space-y-3 text-sm leading-relaxed text-slate-500">
             {body.map((block, i) => (
               <div key={i}>
-                {block.label && <p className="mb-1.5 font-semibold text-gray-700">{block.label}</p>}
+                {block.label && <p className="mb-1.5 font-semibold text-slate-700">{block.label}</p>}
                 {block.text && <p>{block.text}</p>}
                 {block.items && (
                   <ul className="space-y-2">
                     {block.items.map((item) => (
                       <li key={item} className="flex gap-2.5">
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-300" />
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-300" />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -263,24 +263,9 @@ export default function PlatformLegalPage({ type, adminUrl }) {
 
   return (
     <div
-      className="relative min-h-screen overflow-x-clip bg-gradient-to-br from-teal-50 via-amber-50 to-orange-100 text-gray-900"
+      className="relative min-h-screen overflow-x-clip bg-slate-50 text-slate-900"
       style={{ fontFamily: '"Hind Siliguri", ui-sans-serif, system-ui, sans-serif' }}
     >
-      {/* Ambient background — matches the platform landing page */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -left-32 -top-32 h-[30rem] w-[30rem] rounded-full bg-teal-300/50 blur-[100px]" />
-        <div className="absolute -right-32 top-1/4 h-[28rem] w-[28rem] rounded-full bg-orange-300/50 blur-[100px]" />
-        <div className="absolute bottom-0 left-1/3 h-[26rem] w-[26rem] rounded-full bg-rose-300/45 blur-[100px]" />
-        <div
-          className="absolute inset-0 opacity-[0.035]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-      </div>
-
       <PlatformHeader adminUrl={adminUrl} />
 
       {/* Hero */}
@@ -290,17 +275,17 @@ export default function PlatformLegalPage({ type, adminUrl }) {
         variants={fadeUp}
         className="relative mx-auto max-w-3xl px-5 pb-6 pt-14 text-center sm:pt-16"
       >
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 shadow-lg shadow-orange-200">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-600">
           <Icon size={24} className="text-white" />
         </div>
-        <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-100 to-rose-100 px-3.5 py-1.5 text-xs font-bold text-rose-600">
+        <span className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-700">
           {eyebrow}
         </span>
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl md:text-[2.2rem]">
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl md:text-[2.2rem]">
           {title}
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-gray-500 sm:text-base">{intro}</p>
-        <p className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white/70 px-3.5 py-1.5 text-xs font-medium text-gray-500">
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-500 sm:text-base">{intro}</p>
+        <p className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3.5 py-1.5 text-xs font-medium text-slate-500">
           সর্বশেষ হালনাগাদ: {LAST_UPDATED}
         </p>
       </motion.section>
@@ -317,15 +302,15 @@ export default function PlatformLegalPage({ type, adminUrl }) {
             initial="hidden"
             animate="visible"
             variants={fadeUp}
-            className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-7"
+            className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm sm:p-7"
           >
             <div className="flex items-start gap-3.5">
-              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 text-[11px] font-black text-white shadow-md shadow-orange-200">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-[11px] font-bold text-white">
                 {sections.length + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <h2 className="font-semibold text-gray-900">যোগাযোগ করুন</h2>
-                <div className="mt-2.5 space-y-1.5 text-sm leading-relaxed text-gray-500">
+                <h2 className="font-semibold text-slate-900">যোগাযোগ করুন</h2>
+                <div className="mt-2.5 space-y-1.5 text-sm leading-relaxed text-slate-500">
                   <p>
                     {isPrivacy
                       ? "আপনার তথ্য বা এই প্রাইভেসি পলিসি সম্পর্কে কোনো প্রশ্ন থাকলে যোগাযোগ করুন:"
@@ -333,12 +318,12 @@ export default function PlatformLegalPage({ type, adminUrl }) {
                   </p>
                   <p>
                     ইমেইল:{" "}
-                    <a href={`mailto:${CONTACT.email}`} className="font-semibold text-orange-600 hover:underline">
+                    <a href={`mailto:${CONTACT.email}`} className="font-semibold text-indigo-600 hover:underline">
                       {CONTACT.email}
                     </a>
                   </p>
                   <p>
-                    ফোন: <span className="font-semibold text-gray-800">{CONTACT.phone}</span>
+                    ফোন: <span className="font-semibold text-slate-800">{CONTACT.phone}</span>
                   </p>
                 </div>
               </div>

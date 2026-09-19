@@ -14,6 +14,11 @@ import { getTheme } from "../../../../lib/themeRegistry";
 import { buildThemeVars } from "../../../../lib/themeVars";
 import { DOMAIN_MODE_MARKER, shopBasePath } from "../../../../lib/shopMode";
 import { toShortName } from "../../../../lib/manifest";
+import {
+  getSiteOrigin,
+  absoluteUrl,
+  defaultShopDescription,
+} from "../../../../lib/seo";
 
 // প্ল্যাটফর্মের নিজস্ব ব্র্যান্ড রঙ (src/app/layout.js এর viewport ফলব্যাকের
 // সাথে মিলিয়ে রাখা) — কোনো শপ resolve না হলে, বা ECMS-এর নিজের legal পেজে।
@@ -81,6 +86,15 @@ export async function generateMetadata({ params }) {
 
   const title = shop?.branding?.title || "Hikmah IT";
   const favicon = shop?.branding?.favicon;
+
+  // ✅ SEO: metadataBase দিলে প্রতিটা পেজের relative canonical/OG image
+  // এই শপের নিজের ডোমেইনে absolute URL হয়ে যায়। description আগে root
+  // layout-এর হার্ডকোডেড "Hikmah IT ..." টেক্সটই সব শপে চলে যেত — এখন শপের
+  // নিজের নামে ডিফল্ট description; প্রতিটা পেজ (হোম/প্রোডাক্ট/ক্যাটাগরি)
+  // নিজের generateMetadata দিয়ে এটা override করে।
+  const origin = await getSiteOrigin();
+  const description = defaultShopDescription(title);
+  const logo = absoluteUrl(origin, shop?.branding?.logo);
   // ✅ iOS হোম স্ক্রিনের আইকন ~180×180 এ আঁকে — 64×64 favicon দিলে সেখানে
   // ঝাপসা দেখাতো। logo আপলোডের সময় বানানো 192 PNG ভ্যারিয়েন্টটাই এখানে
   // সবচেয়ে ভালো (backend/src/services/brandIconService.js), সেটা না থাকলে
@@ -88,7 +102,24 @@ export async function generateMetadata({ params }) {
   const appleIcon = shop?.branding?.pwaIcon192 || favicon;
 
   return {
-    title,
+    ...(origin ? { metadataBase: new URL(origin) } : {}),
+    // template: পেজ "Product Name" দিলে ট্যাবে/Google-এ "Product Name | ShopName"
+    title: { default: title, template: `%s | ${title}` },
+    description,
+    openGraph: {
+      type: "website",
+      siteName: title,
+      locale: "bn_BD",
+      title,
+      description,
+      ...(logo ? { images: [logo] } : {}),
+    },
+    twitter: {
+      card: logo ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(logo ? { images: [logo] } : {}),
+    },
     // ✅ মোবাইলে "Add to Home Screen"/install করলে এতদিন সব শপেই একটাই
     // স্ট্যাটিক manifest (হার্ডকোডেড "Hikmah IT") যেত। এখন প্রতিটা শপ নিজের
     // ডায়নামিক manifest পায় — path-based শপের ক্ষেত্রে সেটা "/shop/<slug>/"

@@ -5,6 +5,14 @@ import HomepagePopup from "../../../../components/home/HomepagePopup";
 import { serverFetch, getShopInfo } from "../../../../lib/serverApi";
 import { getTheme } from "../../../../lib/themeRegistry";
 import { shopBasePath } from "../../../../lib/shopMode";
+import JsonLd from "../../../../components/seo/JsonLd";
+import {
+  getSiteOrigin,
+  pagePath,
+  shopBrand,
+  defaultShopDescription,
+  buildOrganizationJsonLd,
+} from "../../../../lib/seo";
 
 async function getHomeData() {
   const [productsRes, categoriesRes, badgesRes, sliderRes] =
@@ -23,6 +31,25 @@ async function getHomeData() {
       badgesRes.status === "fulfilled" ? badgesRes.value?.badges || [] : [],
     slides:
       sliderRes.status === "fulfilled" ? sliderRes.value?.slides || [] : [],
+  };
+}
+
+export async function generateMetadata({ params }) {
+  const { shopSlug } = await params;
+  const shop = await getShopInfo().catch(() => null);
+  if (!shop) return {};
+
+  const brand = shopBrand(shop);
+  const title = `${brand} – অনলাইন শপ`;
+  const description = defaultShopDescription(brand);
+
+  return {
+    // absolute: layout-এর "%s | Brand" template এখানে প্রযোজ্য নয়
+    title: { absolute: title },
+    description,
+    alternates: { canonical: pagePath(shopSlug) },
+    openGraph: { title, description, url: pagePath(shopSlug) },
+    twitter: { title, description },
   };
 }
 
@@ -51,9 +78,21 @@ export default async function HomePage({ params }) {
   const { products, categories, badges, slides } = await getHomeData();
   const { HomeLayout } = getTheme(shop?.effectiveTheme);
 
+  const { shopSlug } = await params;
+  const origin = await getSiteOrigin();
+
   return (
     <>
-      <HomeSEO />
+      <HomeSEO brand={shopBrand(shop)} />
+      {origin && shop && (
+        <JsonLd
+          data={buildOrganizationJsonLd({
+            origin,
+            base: shopBasePath(shopSlug),
+            shop,
+          })}
+        />
+      )}
       <VisitorTracker />
       <HomepagePopup />
       <HomeLayout

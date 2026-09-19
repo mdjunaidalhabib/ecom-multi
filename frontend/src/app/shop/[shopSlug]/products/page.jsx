@@ -2,6 +2,7 @@ import Link from "next/link";
 import ProductCard from "../../../../../components/home/ProductCard";
 import { serverFetch } from "../../../../../lib/serverApi";
 import { shopBasePath } from "../../../../../lib/shopMode";
+import { pagePath } from "../../../../../lib/seo";
 
 async function getAllProducts() {
   try {
@@ -11,6 +12,15 @@ async function getAllProducts() {
     console.error("❌ Product fetch error:", err);
     return [];
   }
+}
+
+export async function generateMetadata({ params }) {
+  const { shopSlug } = await params;
+  return {
+    title: "All Products",
+    description: "সব প্রোডাক্ট এক জায়গায় — সাশ্রয়ী দামে অনলাইনে অর্ডার করুন।",
+    alternates: { canonical: pagePath(shopSlug, "/products") },
+  };
 }
 
 export default async function AllProductsPage({ params }) {

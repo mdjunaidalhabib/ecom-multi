@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import SettingsSideMenu from "./SettingsSideMenu";
 import { navItems, settingsChildren } from "./menuConfig";
 import useCurrentAdmin from "../hooks/useCurrentAdmin";
-import useShopFeatures from "../hooks/useShopFeatures";
+import useShopFeatures, { canViewItem } from "../hooks/useShopFeatures";
 
 const allNavItems = [...navItems, ...settingsChildren];
 
@@ -53,7 +53,8 @@ export default function AdminMainContent({ children }) {
   // অ্যাক্সেস ডেটা এখনো লোড হয়নি — গেটেড পেজ হলে এক মুহূর্তের জন্যও আসল
   // কন্টেন্ট flash না করার জন্য কিছু রেন্ডার করা হয় না।
   if (item?.roles && admin === null) return null;
-  if (item?.permission && admin === null) return null;
+  const gatedByPermission = !!(item?.permission || item?.permissionAny);
+  if (gatedByPermission && admin === null) return null;
   if (item?.feature && features === null) return null;
 
   if (item?.roles && admin && !item.roles.includes(admin.role)) {
@@ -65,11 +66,7 @@ export default function AdminMainContent({ children }) {
     );
   }
 
-  if (
-    item?.permission &&
-    admin?.role === "staff" &&
-    !admin.permissions?.[item.permission]?.view
-  ) {
+  if (gatedByPermission && admin && !canViewItem(item, admin)) {
     return (
       <AccessDenied
         title="এই সেকশনে আপনার অ্যাক্সেস নেই"

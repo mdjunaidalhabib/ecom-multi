@@ -15,7 +15,7 @@ import Toast from "./Toast";
 const BASE_LAYOUT_OPTIONS = [
   { value: "classic", label: "Classic" },
   { value: "aurora", label: "Aurora" },
-  { value: "terra", label: "Terra" },
+  { value: "terra", label: "Terra Prestige" },
 ];
 
 const FONT_OPTIONS = [

@@ -78,13 +78,20 @@ export function filterByRole(items, role) {
 // module→action ম্যাট্রিক্স শেপে — দেখুন admin/lib/staffPermissions.js)।
 // শপ owner/superadmin এর জন্য সবসময় সব আইটেম দেখানো হয় (তাদের permissions
 // প্রযোজ্য না)। admin === null হলে (এখনও লোড হয়নি) গেটেড আইটেম হাইড থাকে।
+//
+// ✅ `permissionAny: [...]` দিলে তালিকার *যেকোনো একটা* module-এ view থাকলেই
+// আইটেম দেখা যায় (যেমন Settings মেনু — এর ভেতরের Plan/Invoice Design
+// নিজস্ব পারমিশন রাখে)।
+export function canViewItem(item, admin) {
+  const required = item.permissionAny || (item.permission ? [item.permission] : null);
+  if (!required) return true;
+  if (!admin) return false;
+  if (admin.role !== "staff") return true;
+  return required.some((key) => !!admin.permissions?.[key]?.view);
+}
+
 export function filterByPermission(items, admin) {
-  return items.filter((item) => {
-    if (!item.permission) return true;
-    if (!admin) return false;
-    if (admin.role !== "staff") return true;
-    return !!admin.permissions?.[item.permission]?.view;
-  });
+  return items.filter((item) => canViewItem(item, admin));
 }
 
 export default useShopFeatures;

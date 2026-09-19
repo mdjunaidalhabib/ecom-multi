@@ -104,19 +104,20 @@ const SEED_THEMES = [
   },
   {
     key: "terra",
-    name: "Terra",
+    name: "Terra Prestige",
     baseLayout: "terra",
     isSystem: true,
+    // ✅ Deep forest emerald + champagne gold on ivory — premium/editorial feel
     colors: {
-      primary: "#047857",
-      primaryDark: "#065f46",
-      secondary: "#022c22",
-      background: "#fffbeb",
+      primary: "#0b5d45",
+      primaryDark: "#073f2f",
+      secondary: "#04261d",
+      background: "#faf7f0",
       surface: "#ffffff",
-      text: "#064e3b",
-      accent: "#d97706",
+      text: "#12352b",
+      accent: "#b8893b",
     },
-    fonts: { heading: "default", body: "default" },
+    fonts: { heading: "serif", body: "default" },
   },
 ];
 

@@ -21,7 +21,6 @@ import {
   FaPhoneAlt,
   FaEnvelope,
   FaMapMarkerAlt,
-  FaLeaf,
 } from "react-icons/fa";
 
 const EXPLORE_LINKS = [
@@ -52,10 +51,14 @@ const SOCIAL_ICON_MAP = {
   telegram: FaTelegram,
 };
 
-// Terra: organic rounded-top footer — same /api/footer data contract as the
-// other themes. Rounded-top "card" sitting on the page, soft blurred blob
-// decorations, and each section rendered as its own rounded card instead of
-// plain columns, for a warm/friendly visual language distinct from Aurora.
+const COLUMN_HEADING =
+  "mb-5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--theme-accent)]";
+const FOOTER_LINK =
+  "text-sm text-white/70 transition-colors hover:text-[var(--theme-accent)]";
+
+// Terra Prestige: dark forest footer with a gold hairline rule on top — same
+// /api/footer data contract as the other themes. Four clean columns (brand,
+// explore, support, contact), outlined social icons, restrained bottom bar.
 export default function TerraFooter() {
   const { base } = useShopPath();
   const [data, setData] = useState(null);
@@ -82,70 +85,70 @@ export default function TerraFooter() {
   if (!data) return null;
 
   const { brand = {}, contact = {}, socialLinks = [] } = data;
+  const brandTitle = brand.title || "Brand";
 
   return (
-    <footer className="relative mb-20 overflow-hidden rounded-t-[2.5rem] bg-gradient-to-b from-[var(--theme-text)] to-[var(--theme-secondary)] px-4 pb-8 pt-12 text-emerald-100 md:mb-0 md:px-10">
-      {/* Organic decorative blobs */}
-      <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[var(--theme-primary)]/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-10 bottom-0 h-48 w-48 rounded-full bg-[var(--theme-accent)]/10 blur-3xl" />
+    <footer className="mb-14 border-t-2 border-[var(--theme-accent)] bg-[var(--theme-secondary)] px-4 pb-8 pt-16 text-white md:mb-0 md:px-10">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-12">
+          {/* Brand */}
+          <div className="md:col-span-5">
+            <div className="flex items-center gap-3">
+              {brand.logo && !imgError ? (
+                <Image
+                  loader={cloudinaryLoader}
+                  src={brand.logo}
+                  alt={brand?.title || "Brand Logo"}
+                  width={44}
+                  height={44}
+                  className="rounded-lg object-cover ring-1 ring-[var(--theme-accent)]/50"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--theme-primary)] text-lg font-semibold text-[var(--theme-accent)] ring-1 ring-[var(--theme-accent)]/50">
+                  {brandTitle.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <h2 className="text-lg font-semibold uppercase tracking-[0.14em] text-white">
+                {brandTitle}
+              </h2>
+            </div>
 
-      <div className="relative mx-auto max-w-7xl">
-        {/* Brand strip */}
-        <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-          <div className="flex items-center gap-3">
-            {brand.logo && !imgError ? (
-              <Image
-                loader={cloudinaryLoader}
-                src={brand.logo}
-                alt={brand?.title || "Brand Logo"}
-                width={44}
-                height={44}
-                className="rounded-2xl object-cover"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--theme-primary-dark)]">
-                <FaLeaf className="h-5 w-5 text-emerald-200" />
-              </div>
-            )}
-            <div>
-              <h2 className="text-lg font-bold text-white">{brand.title || "Brand"}</h2>
-              <p className="max-w-sm text-sm leading-6 text-emerald-200/80">
-                {brand.about || "Fresh, honest products — sourced and shared with care."}
-              </p>
+            <p className="mt-5 max-w-sm text-sm leading-7 text-white/65">
+              {brand.about || "Thoughtfully sourced products, delivered with care and attention to detail."}
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-2.5">
+              {socialLinks
+                .filter((s) => s.url)
+                .map((social, idx) => {
+                  const Icon = SOCIAL_ICON_MAP[social.platform];
+                  if (!Icon) return null;
+                  return (
+                    <Link
+                      key={idx}
+                      href={shopHref(base, social.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={social.platform}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white/80 transition hover:border-[var(--theme-accent)] hover:bg-[var(--theme-accent)] hover:text-white"
+                    >
+                      <Icon className="text-sm" />
+                    </Link>
+                  );
+                })}
             </div>
           </div>
-          <div className="flex flex-wrap justify-center gap-2">
-            {socialLinks
-              .filter((s) => s.url)
-              .map((social, idx) => {
-                const Icon = SOCIAL_ICON_MAP[social.platform];
-                if (!Icon) return null;
-                return (
-                  <Link
-                    key={idx}
-                    href={shopHref(base, social.url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--theme-primary-dark)]/70 text-emerald-100 transition hover:bg-[var(--theme-accent)]"
-                  >
-                    <Icon className="text-sm" />
-                  </Link>
-                );
-              })}
-          </div>
-        </div>
 
-        {/* Section cards */}
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl bg-[var(--theme-text)]/40 p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-emerald-400">
+          {/* Explore */}
+          <div className="md:col-span-2">
+            <h3 className={COLUMN_HEADING} style={{ fontFamily: "inherit" }}>
               Explore
             </h3>
-            <ul className="space-y-2.5 text-sm">
+            <ul className="space-y-3">
               {EXPLORE_LINKS.map((item) => (
                 <li key={item.href}>
-                  <Link href={shopHref(base, item.href)} className="transition hover:text-[var(--theme-accent)]">
+                  <Link href={shopHref(base, item.href)} className={FOOTER_LINK}>
                     {item.label}
                   </Link>
                 </li>
@@ -153,14 +156,15 @@ export default function TerraFooter() {
             </ul>
           </div>
 
-          <div className="rounded-2xl bg-[var(--theme-text)]/40 p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-emerald-400">
+          {/* Support */}
+          <div className="md:col-span-2">
+            <h3 className={COLUMN_HEADING} style={{ fontFamily: "inherit" }}>
               Support
             </h3>
-            <ul className="space-y-2.5 text-sm">
+            <ul className="space-y-3">
               {SUPPORT_LINKS.map((item) => (
                 <li key={item.href}>
-                  <Link href={shopHref(base, item.href)} className="transition hover:text-[var(--theme-accent)]">
+                  <Link href={shopHref(base, item.href)} className={FOOTER_LINK}>
                     {item.label}
                   </Link>
                 </li>
@@ -168,18 +172,19 @@ export default function TerraFooter() {
             </ul>
           </div>
 
-          <div className="rounded-2xl bg-[var(--theme-text)]/40 p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-emerald-400">
+          {/* Contact */}
+          <div className="md:col-span-3">
+            <h3 className={COLUMN_HEADING} style={{ fontFamily: "inherit" }}>
               Contact
             </h3>
-            <ul className="space-y-2.5 text-sm">
+            <ul className="space-y-4 text-sm text-white/70">
               {contact.phone && (
                 <li>
                   <a
                     href={`tel:${contact.phone}`}
-                    className="flex items-center gap-2 rounded-full bg-[var(--theme-secondary)]/60 px-3 py-1.5 hover:text-[var(--theme-accent)]"
+                    className="flex items-center gap-3 transition-colors hover:text-[var(--theme-accent)]"
                   >
-                    <FaPhoneAlt className="h-3 w-3 shrink-0 text-[var(--theme-accent)]" />
+                    <FaPhoneAlt className="h-3.5 w-3.5 shrink-0 text-[var(--theme-accent)]" />
                     <span className="truncate">{contact.phone}</span>
                   </a>
                 </li>
@@ -188,24 +193,24 @@ export default function TerraFooter() {
                 <li>
                   <a
                     href={`mailto:${contact.email}`}
-                    className="flex items-center gap-2 rounded-full bg-[var(--theme-secondary)]/60 px-3 py-1.5 hover:text-[var(--theme-accent)]"
+                    className="flex items-center gap-3 transition-colors hover:text-[var(--theme-accent)]"
                   >
-                    <FaEnvelope className="h-3 w-3 shrink-0 text-[var(--theme-accent)]" />
+                    <FaEnvelope className="h-3.5 w-3.5 shrink-0 text-[var(--theme-accent)]" />
                     <span className="truncate">{contact.email}</span>
                   </a>
                 </li>
               )}
               {contact.address && (
-                <li className="flex items-start gap-2 rounded-2xl bg-[var(--theme-secondary)]/60 px-3 py-1.5">
-                  <FaMapMarkerAlt className="mt-1 h-3 w-3 shrink-0 text-[var(--theme-accent)]" />
-                  <span className="leading-5">{contact.address}</span>
+                <li className="flex items-start gap-3">
+                  <FaMapMarkerAlt className="mt-1 h-3.5 w-3.5 shrink-0 text-[var(--theme-accent)]" />
+                  <span className="leading-6">{contact.address}</span>
                 </li>
               )}
             </ul>
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-[var(--theme-primary-dark)]/60 pt-6 text-xs text-emerald-300/70 sm:flex-row">
+        <div className="mt-14 flex flex-col items-center justify-between gap-2 border-t border-white/10 pt-6 text-xs tracking-wide text-white/50 sm:flex-row">
           <p>
             © {new Date().getFullYear()} {brand.title || "Company"}. All Rights Reserved.
           </p>
@@ -215,7 +220,7 @@ export default function TerraFooter() {
               href="https://hikmahit.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-emerald-100 hover:text-[var(--theme-accent)]"
+              className="font-medium text-white/80 transition-colors hover:text-[var(--theme-accent)]"
             >
               Hikmah IT
             </a>

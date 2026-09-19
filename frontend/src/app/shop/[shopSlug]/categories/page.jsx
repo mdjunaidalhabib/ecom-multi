@@ -1,6 +1,16 @@
 import CategoryBrowserClient from "../../../../../components/categories/CategoryBrowserClient";
 import { serverFetch } from "../../../../../lib/serverApi";
 import { requireFullStorefront } from "../../../../../lib/requireFullStorefront";
+import { pagePath } from "../../../../../lib/seo";
+
+export async function generateMetadata({ params }) {
+  const { shopSlug } = await params;
+  return {
+    title: "Categories",
+    description: "ক্যাটাগরি অনুযায়ী প্রোডাক্ট ব্রাউজ করুন।",
+    alternates: { canonical: pagePath(shopSlug, "/categories") },
+  };
+}
 
 async function getCategoriesData() {
   let categories = [];
