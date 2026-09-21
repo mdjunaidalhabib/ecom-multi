@@ -52,6 +52,12 @@ export function configurePassport() {
               user.googleId = googleId;
               if (!user.avatar && avatar) user.avatar = avatar;
               if (!user.name && name) user.name = name;
+              // 🔒 ম্যানুয়াল sign-up-এ ইমেইল verify করা হয় না, তাই কেউ অন্যের
+              // ইমেইল দিয়ে আগেই account খুলে পাসওয়ার্ড বসিয়ে রাখতে পারে। আসল
+              // মালিক Google দিয়ে ঢুকলে ইমেইলের মালিকানা প্রমাণ হয় — তখন ওই
+              // পুরনো (অপ্রমাণিত) পাসওয়ার্ড মুছে দেওয়া হচ্ছে, যাতে আগের
+              // দখলদার আর ঢুকতে না পারে।
+              user.password = undefined;
               await user.save();
             }
           }

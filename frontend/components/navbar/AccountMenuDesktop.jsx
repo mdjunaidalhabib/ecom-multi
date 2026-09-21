@@ -50,7 +50,7 @@ export default function AccountMenuDesktop() {
         onClick={() => {
           // ✅ শুধু path পাঠানো হচ্ছে, origin না — cross-domain redirect এ token হারানো ঠেকাতে
           const currentPath = window.location.pathname + window.location.search;
-          window.location.href = `/api/auth/google?redirect=${encodeURIComponent(
+          window.location.href = `${base}/login?redirect=${encodeURIComponent(
             currentPath
           )}`;
         }}

@@ -5,14 +5,12 @@ import Image from "next/image";
 import cloudinaryLoader from "../../lib/cloudinaryLoader";
 import { FaUser, FaClipboardList, FaSignOutAlt } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
-import ConfirmModal from "../ConfirmModal";
 import { useUser } from "../../context/UserContext";
 import useShopPath, { shopHref } from "../../hooks/useShopPath";
 
 export default function AccountMenuMobile({ onOpen }) {
   const { me, setMe, loadingUser } = useUser();
   const [open, setOpen] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const { base, subPath } = useShopPath();
 
   if (loadingUser) {
@@ -27,23 +25,14 @@ export default function AccountMenuMobile({ onOpen }) {
     return (
       <>
         <button
-          onClick={() => setConfirmOpen(true)}
+          onClick={() => {
+            const currentPath = window.location.pathname + window.location.search;
+            window.location.href = `${base}/login?redirect=${encodeURIComponent(currentPath)}`;
+          }}
           className="flex flex-col items-center text-pink-500"
         >
           <FaUser className="w-5 h-5" />
         </button>
-
-        <ConfirmModal
-          open={confirmOpen}
-          message="আপনি কি Google দিয়ে লগইন করতে চান?"
-          onConfirm={() => {
-            // ✅ শুধু path পাঠানো হচ্ছে, origin না — যাতে cartvan.com / www.cartvan.com
-            // এর মধ্যে redirect করলে token (localStorage) হারিয়ে না যায়
-            const currentPath = window.location.pathname + window.location.search;
-            window.location.href = `/api/auth/google?redirect=${encodeURIComponent(currentPath)}`;
-          }}
-          onCancel={() => setConfirmOpen(false)}
-        />
       </>
     );
   }

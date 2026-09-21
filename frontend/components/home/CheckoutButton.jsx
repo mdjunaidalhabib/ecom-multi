@@ -91,11 +91,9 @@ export default function CheckoutButton({
         return `${base}/checkout`;
       })();
 
-      // 🔹 User not logged in → redirect to Google Auth
+      // 🔹 User not logged in → redirect to the shop's login page (email/password or Google)
       if (!me) {
-        window.location.href = `${
-          "/api"
-        }/auth/google?redirect=${encodeURIComponent(checkoutUrl)}`;
+        window.location.href = `${base}/login?redirect=${encodeURIComponent(checkoutUrl)}`;
         return;
       }
 

@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useUser } from "../../context/UserContext";
 import ReviewModal from "./ReviewModal";
+import useShopPath from "../../hooks/useShopPath";
 
 export default function AddReviewForm({ productId, onSuccess }) {
   const { me, loadingUser } = useUser();
+  const { base } = useShopPath();
   const [open, setOpen] = useState(false);
 
   // ✅ login থেকে redirect হয়ে এলে auto open modal
@@ -18,9 +20,7 @@ export default function AddReviewForm({ productId, onSuccess }) {
   const goLogin = () => {
     // ✅ শুধু path পাঠানো হচ্ছে, origin না — www/non-www cross-domain এ token হারানো ঠেকাতে
     const currentPath = window.location.pathname + window.location.search;
-    window.location.href = `${
-      "/api"
-    }/auth/google?redirect=${encodeURIComponent(currentPath)}`;
+    window.location.href = `${base}/login?redirect=${encodeURIComponent(currentPath)}`;
   };
 
   const openModal = () => {

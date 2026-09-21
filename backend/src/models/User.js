@@ -14,7 +14,14 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
 
-    googleId: { type: String, required: true, index: true },
+    // ✅ শুধু Google দিয়ে তৈরি account-এ থাকে; ইমেইল+পাসওয়ার্ডে sign-up করা
+    // account-এ এই ফিল্ড থাকে না (নিচের partial unique index সেটাই সম্ভব করে)।
+    googleId: { type: String, index: true },
+
+    // ✅ ইমেইল+পাসওয়ার্ড login-এর bcrypt hash। select: false — তাই কোনো query
+    // (/auth/me, profile, orders ইত্যাদি) এটা ফেরত দেয় না; শুধু login-এ
+    // `.select("+password")` করে আনা হয়। Google-only account-এ এটা থাকে না।
+    password: { type: String, select: false },
 
     userId: { type: Number, index: true }, // ✅ auto incremented ID (per shop)
 
@@ -44,8 +51,14 @@ const userSchema = new mongoose.Schema(
 );
 
 // ✅ একই শপে একজন কাস্টমারের একটাই googleId থাকবে, কিন্তু ভিন্ন শপে
-// একই googleId দিয়ে আলাদা account তৈরি হতে পারবে
-userSchema.index({ shopId: 1, googleId: 1 }, { unique: true });
+// একই googleId দিয়ে আলাদা account তৈরি হতে পারবে।
+// ⚠️ partial: googleId ছাড়া (ম্যানুয়াল sign-up) ডকুমেন্টগুলো index-এর বাইরে থাকে,
+// নাহলে একই শপের দ্বিতীয় ম্যানুয়াল ইউজারেই E11000 duplicate-key হতো।
+// পুরনো non-partial index বদলাতে migrations/allowManualUsers.js একবার চালাতে হবে।
+userSchema.index(
+  { shopId: 1, googleId: 1 },
+  { unique: true, partialFilterExpression: { googleId: { $type: "string" } } },
+);
 userSchema.index(
   { shopId: 1, email: 1 },
   { unique: true, partialFilterExpression: { email: { $gt: "" } } },

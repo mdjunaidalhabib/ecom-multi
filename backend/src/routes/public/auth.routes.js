@@ -1,6 +1,7 @@
 import express from "express";
 import passport from "passport";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import User from "../../models/User.js";
 import Shop from "../../models/Shop.js";
 import { runWithShopId } from "../../tenancy/shopContext.js";
@@ -291,6 +292,171 @@ router.get(
     );
   }
 );
+
+// ─────────────────────────────────────────────────────────────────────────
+// 🔹 ইমেইল + পাসওয়ার্ড (ম্যানুয়াল) Sign up / Login
+//
+// Google login-এর মতোই User মডেল per-shop identity, তাই এই দুটো রুটেও
+// resolveShopByDomain বসানো — সেটাই runWithShopId দিয়ে AsyncLocalStorage-এ
+// shopId সেট করে, ফলে User.findOne/create নিজে থেকেই সঠিক শপে scope হয়।
+// একই ইমেইল ভিন্ন শপে আলাদা account হতে পারে।
+// টোকেনের shape Google flow-এর সাথে হুবহু এক ({ id, email, shopId }, 90d),
+// তাই /auth/me, resolveAuthedCustomer ইত্যাদি কিছুই বদলাতে হয়নি।
+// ─────────────────────────────────────────────────────────────────────────
+
+const PASSWORD_MIN = 6;
+// bcrypt শুধু প্রথম ৭২ বাইটে কাজ করে — এর বেশি দিলে চুপচাপ ছেঁটে যেত।
+const PASSWORD_MAX = 72;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// timing-attack ঠেকাতে: ইউজার না থাকলেও একটা bcrypt compare চালানো হয়,
+// যাতে "ইমেইল আছে কিনা" রেসপন্স-টাইম দেখে বোঝা না যায়।
+const DUMMY_HASH = bcrypt.hashSync("dummy-password-for-timing", 10);
+
+// ছোট in-memory brute-force রোধক: প্রতি (শপ+ইমেইল)-এ ১৫ মিনিটে সর্বোচ্চ ১০ বার
+// ভুল চেষ্টা। সফল লগইনে কাউন্টার মুছে যায়। প্রসেস রিস্টার্টে রিসেট হয় —
+// একাধিক server instance চালালে Redis-ভিত্তিক limiter লাগবে।
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_FAILS = 10;
+const loginFails = new Map();
+
+function loginKey(shopId, email) {
+  return `${shopId}:${email}`;
+}
+
+function isLoginBlocked(key) {
+  const entry = loginFails.get(key);
+  if (!entry) return false;
+  if (Date.now() > entry.resetAt) {
+    loginFails.delete(key);
+    return false;
+  }
+  return entry.count >= LOGIN_MAX_FAILS;
+}
+
+function recordLoginFail(key) {
+  const now = Date.now();
+  const entry = loginFails.get(key);
+  if (!entry || now > entry.resetAt) {
+    loginFails.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+  } else {
+    entry.count += 1;
+  }
+  // memory leak ঠেকাতে মাঝে মাঝে মেয়াদোত্তীর্ণ entry সাফ করা
+  if (loginFails.size > 5000) {
+    for (const [k, v] of loginFails) if (now > v.resetAt) loginFails.delete(k);
+  }
+}
+
+function signCustomerToken(user, shopId) {
+  return jwt.sign(
+    { id: user._id, email: user.email, shopId },
+    process.env.JWT_SECRET,
+    { expiresIn: "90d" }
+  );
+}
+
+function publicUser(user) {
+  const obj = typeof user.toObject === "function" ? user.toObject() : { ...user };
+  delete obj.password;
+  return obj;
+}
+
+router.post("/register", resolveShopByDomain, async (req, res) => {
+  try {
+    const name = String(req.body?.name || "").trim();
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = String(req.body?.password || "");
+
+    if (!name || name.length > 80) {
+      return res.status(400).json({ error: "আপনার নাম দিন (সর্বোচ্চ ৮০ অক্ষর)।" });
+    }
+    if (!EMAIL_RE.test(email) || email.length > 254) {
+      return res.status(400).json({ error: "সঠিক ইমেইল দিন।" });
+    }
+    if (password.length < PASSWORD_MIN) {
+      return res
+        .status(400)
+        .json({ error: `পাসওয়ার্ড কমপক্ষে ${PASSWORD_MIN} অক্ষরের হতে হবে।` });
+    }
+    if (Buffer.byteLength(password, "utf8") > PASSWORD_MAX) {
+      return res.status(400).json({ error: "পাসওয়ার্ড অনেক বড় হয়ে গেছে।" });
+    }
+
+    // ⚠️ এই ইমেইলে (Google বা ম্যানুয়াল যেকোনো) account থাকলে নতুন করে
+    // পাসওয়ার্ড বসানো যাবে না — নাহলে অন্যের Google account-এ পাসওয়ার্ড বসিয়ে
+    // ঢুকে পড়া যেত।
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(409).json({
+        error: "এই ইমেইল দিয়ে আগেই account আছে। Login করুন।",
+        code: "EMAIL_EXISTS",
+      });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    const user = await User.create({ name, email, password: hash, avatar: "" });
+
+    return res.status(201).json({
+      token: signCustomerToken(user, req.shopId),
+      user: publicUser(user),
+    });
+  } catch (err) {
+    // দুটো একসাথে একই ইমেইলে sign up করলে unique index-এ আটকায়
+    if (err?.code === 11000) {
+      return res.status(409).json({
+        error: "এই ইমেইল দিয়ে আগেই account আছে। Login করুন।",
+        code: "EMAIL_EXISTS",
+      });
+    }
+    console.error("❌ Register failed:", err);
+    return res.status(500).json({ error: "Sign up করা যায়নি, আবার চেষ্টা করুন।" });
+  }
+});
+
+router.post("/login", resolveShopByDomain, async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = String(req.body?.password || "");
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "ইমেইল ও পাসওয়ার্ড দিন।" });
+    }
+
+    const key = loginKey(req.shopId, email);
+    if (isLoginBlocked(key)) {
+      return res.status(429).json({
+        error: "অনেকবার ভুল চেষ্টা হয়েছে। ১৫ মিনিট পরে আবার চেষ্টা করুন।",
+      });
+    }
+
+    const user = await User.findOne({ email }).select("+password");
+
+    // Google-only account (পাসওয়ার্ড সেট করা নেই) — কাস্টমারকে সঠিক পথ দেখানো হচ্ছে
+    if (user && !user.password) {
+      return res.status(400).json({
+        error: "এই account Google দিয়ে তৈরি। \"Google দিয়ে Login\" বাটন ব্যবহার করুন।",
+        code: "GOOGLE_ONLY",
+      });
+    }
+
+    const ok = await bcrypt.compare(password, user?.password || DUMMY_HASH);
+    if (!user || !ok) {
+      recordLoginFail(key);
+      return res.status(401).json({ error: "ইমেইল বা পাসওয়ার্ড ভুল।" });
+    }
+
+    loginFails.delete(key);
+
+    return res.json({
+      token: signCustomerToken(user, req.shopId),
+      user: publicUser(user),
+    });
+  } catch (err) {
+    console.error("❌ Login failed:", err);
+    return res.status(500).json({ error: "Login করা যায়নি, আবার চেষ্টা করুন।" });
+  }
+});
 
 // 🔹 Current User (protected)
 // ⚠️ /auth পুরোটাই resolveShopByDomain-এর আগে mount করা (google callback-এর
