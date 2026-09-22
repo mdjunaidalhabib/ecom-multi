@@ -19,6 +19,7 @@ import {
 import {
   listShopAdmins,
   inviteShopAdmin,
+  resetShopAdminPassword,
   removeShopAdmin,
 } from "../../../controllers/shop/admin.shopAdmins.controller.js";
 import {
@@ -56,6 +57,7 @@ router.delete("/:id", deleteShop);
 // ✅ Shop-এ Admin/Staff assign করা
 router.get("/:id/admins", listShopAdmins);
 router.post("/:id/admins", inviteShopAdmin);
+router.patch("/:id/admins/:adminId/password", resetShopAdminPassword);
 router.delete("/:id/admins/:adminId", removeShopAdmin);
 
 export default router;

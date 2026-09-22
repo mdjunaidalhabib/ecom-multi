@@ -75,6 +75,23 @@ export const inviteShopAdmin = async (req, res) => {
         });
       }
 
+      // ⚠️ এই email-এর Admin ডকুমেন্ট আগে অন্য কোনো শপে ছিল, পরে সরিয়ে
+      // ফেলা হয়েছিল (shops = [])। এই পুরনো account-টাকে চুপচাপ reuse করা
+      // হতো আগে — ফর্মে নতুন যে name/password দেওয়া হতো সেটা কখনো সেট হতো
+      // না, ফলে ব্যবহারকারী নতুন পাসওয়ার্ড টাইপ করেও লগইন করতে পারতো না
+      // (পুরনো পাসওয়ার্ডই থেকে যেত)। তাই এখন এই ক্ষেত্রেও নতুন
+      // admin তৈরির মতোই name/password আবশ্যক এবং পুরোপুরি ওভাররাইট করা হয়।
+      if (!name?.trim() || !password) {
+        return res
+          .status(400)
+          .json({ message: "নাম এবং পাসওয়ার্ড আবশ্যক" });
+      }
+      if (password.length < 6) {
+        return res
+          .status(400)
+          .json({ message: "পাসওয়ার্ড কমপক্ষে ৬ ক্যারেক্টার হতে হবে" });
+      }
+
       const currentCount = await Admin.countDocuments({
         shops: shop._id,
         role: { $ne: "superadmin" },
@@ -85,12 +102,15 @@ export const inviteShopAdmin = async (req, res) => {
         });
       }
 
-      existing.shops.push(shop._id);
+      existing.name = name.trim();
+      existing.password = password; // pre-save hook নতুন করে হ্যাশ করে দেবে
+      existing.role = finalRole;
+      existing.shops = [shop._id];
       await existing.save();
 
       const { password: _pw, ...safe } = existing.toObject();
-      return res.status(200).json({
-        message: `✅ ${existing.email} কে এই শপে assign করা হলো`,
+      return res.status(201).json({
+        message: `✅ নতুন ${finalRole} তৈরি হয়ে এই শপে assign হলো`,
         admin: safe,
       });
     }
@@ -137,6 +157,38 @@ export const inviteShopAdmin = async (req, res) => {
       return res.status(409).json({ message: "এই ইমেইল দিয়ে ইতিমধ্যে একটা admin আছে" });
     }
     res.status(500).json({ message: "Server error inviting admin" });
+  }
+};
+
+/* -------------------------------------------------------
+   PATCH /admin/shops/:id/admins/:adminId/password
+   — এই শপে assigned admin/staff-এর পাসওয়ার্ড super-admin থেকে রিসেট
+------------------------------------------------------- */
+export const resetShopAdminPassword = async (req, res) => {
+  try {
+    const { id: shopId, adminId } = req.params;
+    const { password } = req.body || {};
+
+    if (!password || password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "পাসওয়ার্ড কমপক্ষে ৬ ক্যারেক্টার হতে হবে" });
+    }
+
+    // ✅ adminId-র সাথে শপ ম্যাচ করা হয় যাতে ভুল করে অন্য শপের admin-এর
+    // পাসওয়ার্ড রিসেট না হয়ে যায়
+    const admin = await Admin.findOne({ _id: adminId, shops: shopId });
+    if (!admin) {
+      return res.status(404).json({ message: "এই শপে এই admin পাওয়া যায়নি" });
+    }
+
+    admin.password = password; // pre-save hook হ্যাশ করে দেবে
+    await admin.save();
+
+    res.json({ message: `✅ ${admin.email}-এর পাসওয়ার্ড রিসেট করা হয়েছে` });
+  } catch (err) {
+    console.error("❌ resetShopAdminPassword error:", err);
+    res.status(500).json({ message: "Server error resetting password" });
   }
 };
 

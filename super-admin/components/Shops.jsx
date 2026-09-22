@@ -22,6 +22,7 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  KeyRound,
 } from "lucide-react";
 import Toast from "./Toast";
 
@@ -133,6 +134,10 @@ export default function Shops() {
   const [invitingAdmin, setInvitingAdmin] = useState(false);
   const [adminErrors, setAdminErrors] = useState({});
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [resetPasswordFor, setResetPasswordFor] = useState(null); // admin _id being reset
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   // ================== LOAD ==================
   const loadShops = async () => {
@@ -477,6 +482,8 @@ export default function Shops() {
     setAdminForm({ name: "", email: "", password: "", role: "admin" });
     setAdminErrors({});
     setShowAdminPassword(false);
+    setResetPasswordFor(null);
+    setResetPasswordValue("");
     loadShopAdmins(shop);
   };
 
@@ -484,6 +491,36 @@ export default function Shops() {
     setAdminsModal(null);
     setShopAdmins([]);
     setAdminErrors({});
+    setResetPasswordFor(null);
+    setResetPasswordValue("");
+  };
+
+  const handleResetPassword = async (adminId) => {
+    if (!adminsModal) return;
+    if (resetPasswordValue.length < 6) {
+      setToast({ message: "পাসওয়ার্ড কমপক্ষে ৬ ক্যারেক্টার হতে হবে", type: "error" });
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const res = await fetch(`/api/admin/shops/${adminsModal._id}/admins/${adminId}/password`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: resetPasswordValue }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setToast({ message: data?.message || "❌ সমস্যা হয়েছে", type: "error" });
+      } else {
+        setToast({ message: data?.message || "✅ পাসওয়ার্ড রিসেট করা হয়েছে", type: "success" });
+        setResetPasswordFor(null);
+        setResetPasswordValue("");
+      }
+    } catch {
+      setToast({ message: "❌ Server error", type: "error" });
+    } finally {
+      setResettingPassword(false);
+    }
   };
 
   const handleInviteAdmin = async (e) => {
@@ -492,9 +529,21 @@ export default function Shops() {
 
     const normalizedEmail = adminForm.email.trim();
     const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
-    if (!emailIsValid) {
-      setAdminErrors({ email: true });
-      setToast({ message: "সঠিক ইমেইল দিন", type: "error" });
+    const nextErrors = {};
+    if (!emailIsValid) nextErrors.email = true;
+    if (!adminForm.name.trim()) nextErrors.name = true;
+    if (adminForm.password.length < 6) nextErrors.password = true;
+
+    if (Object.keys(nextErrors).length > 0) {
+      setAdminErrors(nextErrors);
+      setToast({
+        message: !emailIsValid
+          ? "সঠিক ইমেইল দিন"
+          : !adminForm.name.trim()
+            ? "নাম আবশ্যক"
+            : "পাসওয়ার্ড কমপক্ষে ৬ ক্যারেক্টার হতে হবে",
+        type: "error",
+      });
       return;
     }
 
@@ -1116,21 +1165,65 @@ export default function Shops() {
                       {shopAdmins.map((a) => (
                         <div
                           key={a._id}
-                          className="flex items-center justify-between border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2"
+                          className="border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2"
                         >
-                          <div>
-                            <div className="font-medium text-sm text-gray-900 dark:text-slate-100">{a.name}</div>
-                            <div className="text-xs text-gray-500 dark:text-slate-400">
-                              {a.email} · <span className="capitalize">{a.role}</span>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-sm text-gray-900 dark:text-slate-100">{a.name}</div>
+                              <div className="text-xs text-gray-500 dark:text-slate-400">
+                                {a.email} · <span className="capitalize">{a.role}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => {
+                                  setResetPasswordFor((prev) => (prev === a._id ? null : a._id));
+                                  setResetPasswordValue("");
+                                  setShowResetPassword(false);
+                                }}
+                                title="পাসওয়ার্ড রিসেট করুন"
+                                className="text-gray-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 p-1"
+                              >
+                                <KeyRound size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleRemoveAdmin(a._id)}
+                                title="এই শপ থেকে unassign করুন"
+                                className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1"
+                              >
+                                <Trash2 size={16} />
+                              </button>
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleRemoveAdmin(a._id)}
-                            title="এই শপ থেকে unassign করুন"
-                            className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+
+                          {resetPasswordFor === a._id && (
+                            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700 flex items-center gap-2">
+                              <div className="relative flex-1">
+                                <input
+                                  type={showResetPassword ? "text" : "password"}
+                                  autoComplete="new-password"
+                                  value={resetPasswordValue}
+                                  onChange={(e) => setResetPasswordValue(e.target.value)}
+                                  placeholder="নতুন পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)"
+                                  className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-1.5 pr-9 text-sm outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowResetPassword((v) => !v)}
+                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300"
+                                >
+                                  {showResetPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
+                              </div>
+                              <button
+                                onClick={() => handleResetPassword(a._id)}
+                                disabled={resettingPassword}
+                                className="bg-rose-600 text-white rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-rose-700 disabled:opacity-60 whitespace-nowrap"
+                              >
+                                {resettingPassword ? "..." : "সেভ করুন"}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
