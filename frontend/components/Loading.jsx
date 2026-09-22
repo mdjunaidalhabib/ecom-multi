@@ -1,5 +1,5 @@
 import React from "react";
-const LoadingSpinner = ({ size = 48, color1 = "#00e0ff", color2 = "#00bfff" }) => {
+const LoadingSpinner = ({ size = 44, color1 = "#4f46e5", color2 = "#818cf8" }) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -26,11 +26,11 @@ const LoadingSpinner = ({ size = 48, color1 = "#00e0ff", color2 = "#00bfff" }) =
 
 const LoadingScreen = () => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0f1a]">
+    <div className="flex flex-col items-center justify-center min-h-screen">
       <LoadingSpinner />
 
-      <p className="mt-4 text-gray-300 text-sm font-medium tracking-wide">
-        loading...
+      <p className="mt-4 text-gray-400 text-sm font-medium tracking-wide">
+        Loading...
       </p>
     </div>
   );
