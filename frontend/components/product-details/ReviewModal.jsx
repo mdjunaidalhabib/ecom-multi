@@ -100,7 +100,7 @@ export default function ReviewModal({ open, onClose, productId, onSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 rounded-lg bg-pink-500 text-white hover:bg-pink-600 disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary-dark)] disabled:opacity-50"
             >
               {loading ? "Submitting..." : "Submit"}
             </button>

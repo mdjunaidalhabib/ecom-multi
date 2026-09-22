@@ -81,6 +81,7 @@ export default function AccountMenuDesktop() {
         {me.avatar ? (
           <Image loader={cloudinaryLoader}
             src={me.avatar}
+            referrerPolicy="no-referrer"
             alt={me.name}
             width={28}
             height={28}
@@ -108,6 +109,7 @@ export default function AccountMenuDesktop() {
               {me.avatar ? (
                 <Image loader={cloudinaryLoader}
                   src={me.avatar}
+                  referrerPolicy="no-referrer"
                   alt={me.name}
                   width={36}
                   height={36}

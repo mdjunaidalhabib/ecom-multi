@@ -9,7 +9,7 @@ export default function ProductGallery({
   isOutOfStock,
 }) {
   return (
-    <div className="bg-pink-50 rounded-xl p-2">
+    <div className="bg-[var(--theme-bg)] rounded-xl p-2">
       {/* Main Image */}
       <div className="relative w-full max-w-[520px] sm:max-w-[560px] md:max-w-[580px] mx-auto aspect-square rounded-xl overflow-hidden bg-white shadow-sm">
         <Image
@@ -41,8 +41,8 @@ export default function ProductGallery({
               onClick={() => setActiveIdx(i)}
               className={`relative w-12 h-12 md:w-16 md:h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
                 i === activeIdx
-                  ? "border-pink-600 ring-2 ring-pink-300"
-                  : "border-gray-200 hover:border-pink-400"
+                  ? "border-[var(--theme-primary)] ring-2 ring-[var(--theme-primary)]/30"
+                  : "border-gray-200 hover:border-[var(--theme-primary)]/50"
               }`}
             >
               <Image

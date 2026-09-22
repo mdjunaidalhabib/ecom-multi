@@ -32,7 +32,7 @@ export default function StorefrontChrome({
     >
       {navbar}
       <main className={`flex-grow ${mainClassName}`}>
-        <div className="mx-auto w-full">{children}</div>
+        <div className="mx-auto w-full max-w-[1280px]">{children}</div>
       </main>
       {footer}
       {floatingActionButton}

@@ -351,6 +351,7 @@ export default function ProfilePage() {
                 {avatarPreview ? (
                   <Image loader={cloudinaryLoader}
                     src={avatarPreview}
+                    referrerPolicy="no-referrer"
                     alt={form.name || "User"}
                     fill
                     sizes="80px"

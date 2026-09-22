@@ -304,10 +304,14 @@ router.get(
 // তাই /auth/me, resolveAuthedCustomer ইত্যাদি কিছুই বদলাতে হয়নি।
 // ─────────────────────────────────────────────────────────────────────────
 
-const PASSWORD_MIN = 6;
+// শুধু sign-up-এ প্রযোজ্য — login-এ চেক হয় না, তাই আগের ৬-অক্ষরের পাসওয়ার্ডওয়ালা
+// account-ও ঢুকতে পারবে। frontend/components/auth/AuthForm.jsx-এর rule-এর সাথে মিল রাখুন।
+const PASSWORD_MIN = 8;
 // bcrypt শুধু প্রথম ৭২ বাইটে কাজ করে — এর বেশি দিলে চুপচাপ ছেঁটে যেত।
 const PASSWORD_MAX = 72;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// বাংলাদেশি মোবাইল: 016******** (অপারেটর কোড 013–019), +880 / 880 প্রিফিক্সও চলবে
+const BD_PHONE_RE = /^(?:\+?88)?(01[3-9]\d{8})$/;
 
 // timing-attack ঠেকাতে: ইউজার না থাকলেও একটা bcrypt compare চালানো হয়,
 // যাতে "ইমেইল আছে কিনা" রেসপন্স-টাইম দেখে বোঝা না যায়।
@@ -367,6 +371,9 @@ router.post("/register", resolveShopByDomain, async (req, res) => {
     const name = String(req.body?.name || "").trim();
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
+    const phoneMatch = String(req.body?.phone || "")
+      .replace(/[\s-]/g, "")
+      .match(BD_PHONE_RE);
 
     if (!name || name.length > 80) {
       return res.status(400).json({ error: "আপনার নাম দিন (সর্বোচ্চ ৮০ অক্ষর)।" });
@@ -374,10 +381,25 @@ router.post("/register", resolveShopByDomain, async (req, res) => {
     if (!EMAIL_RE.test(email) || email.length > 254) {
       return res.status(400).json({ error: "সঠিক ইমেইল দিন।" });
     }
+    if (!phoneMatch) {
+      return res
+        .status(400)
+        .json({ error: "সঠিক মোবাইল নম্বর দিন (যেমন 016********)।" });
+    }
+    const phone = phoneMatch[1];
     if (password.length < PASSWORD_MIN) {
       return res
         .status(400)
         .json({ error: `পাসওয়ার্ড কমপক্ষে ${PASSWORD_MIN} অক্ষরের হতে হবে।` });
+    }
+    if (
+      !/[A-Za-z]/.test(password) ||
+      !/\d/.test(password) ||
+      !/[^A-Za-z0-9\s]/.test(password)
+    ) {
+      return res.status(400).json({
+        error: "পাসওয়ার্ডে অন্তত একটি ইংরেজি অক্ষর, একটি সংখ্যা ও একটি চিহ্ন (যেমন @ # $ !) থাকতে হবে।",
+      });
     }
     if (Buffer.byteLength(password, "utf8") > PASSWORD_MAX) {
       return res.status(400).json({ error: "পাসওয়ার্ড অনেক বড় হয়ে গেছে।" });
@@ -395,7 +417,7 @@ router.post("/register", resolveShopByDomain, async (req, res) => {
     }
 
     const hash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hash, avatar: "" });
+    const user = await User.create({ name, email, phone, password: hash, avatar: "" });
 
     return res.status(201).json({
       token: signCustomerToken(user, req.shopId),

@@ -21,7 +21,26 @@ export function buildThemeVars(theme) {
   const colors = theme?.colors || {};
   const fonts = theme?.fonts || {};
 
+  // Shop Start ("terra" layout) reuses the shared product card but with a white
+  // body and the theme primary as its accent. Other layouts leave these unset,
+  // so the card falls back to its own built-in colors.
+  const cardVars =
+    theme?.baseLayout === "terra"
+      ? {
+          "--card-bg": "#ffffff",
+          "--card-ring": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 15%, transparent)",
+          "--card-accent": colors.primary || "#ea580c",
+          "--card-accent-hover": colors.primaryDark || "#c2410c",
+          "--card-border": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 45%, white)",
+          "--card-sel-bg": colors.primary || "#ea580c",
+          "--card-sel-text": "#ffffff",
+          "--card-sel-hover": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 12%, white)",
+          "--card-soft": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 10%, white)",
+        }
+      : {};
+
   return {
+    ...cardVars,
     "--theme-primary": colors.primary || "#db2777",
     "--theme-primary-dark": colors.primaryDark || "#be185d",
     "--theme-secondary": colors.secondary || "#111827",

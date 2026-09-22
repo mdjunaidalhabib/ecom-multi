@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import cloudinaryLoader from "../../../lib/cloudinaryLoader";
 import ImageSlider from "../../home/ImageSlider";
-import TerraProductCard from "./ProductCard";
+import FirstCartProductCard from "./ProductCard";
 import useShopPath from "../../../hooks/useShopPath";
 import { ArrowRight } from "lucide-react";
 
@@ -83,18 +83,18 @@ function ProductRail({ products }) {
           key={prod._id}
           className="w-[42%] flex-none snap-start sm:w-[30%] lg:w-[23%] xl:w-[18.2%]"
         >
-          <TerraProductCard product={prod} priority={i < 4} />
+          <FirstCartProductCard product={prod} priority={i < 4} />
         </div>
       ))}
     </div>
   );
 }
 
-// Terra Prestige: editorial home — hero banner, a "Collections" rail of
+// FirstCart: editorial home — hero banner, a "Collections" rail of
 // portrait category tiles with refined overlay captions, then category-grouped
 // product grids under serif section headings with a gold rule. Same data as
 // other themes.
-export default function TerraHomeLayout({ products = [], categories = [], slides = [] }) {
+export default function FirstCartHomeLayout({ products = [], categories = [], slides = [] }) {
   const router = useRouter();
   const { base } = useShopPath();
 
@@ -122,26 +122,26 @@ export default function TerraHomeLayout({ products = [], categories = [], slides
             <span className="mx-auto mt-4 block h-px w-14 bg-[var(--theme-accent)]" />
           </div>
 
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6">
+          <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 sm:gap-5 md:grid-cols-6">
             {activeCategories.map((cat) => (
               <button
                 key={cat._id}
                 onClick={() => goToCategoryPage(cat)}
-                className="group relative aspect-[4/5] overflow-hidden rounded-xl bg-stone-100 ring-1 ring-[var(--theme-text)]/10"
+                className="group flex flex-col items-center gap-2.5"
               >
-                <Image
-                  loader={cloudinaryLoader}
-                  src={cat.image || "/no-image.png"}
-                  alt={cat.name}
-                  fill
-                  sizes="200px"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--theme-secondary)]/85 via-[var(--theme-secondary)]/10 to-transparent" />
-                <span className="absolute inset-x-0 bottom-3 truncate px-2 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
+                <span className="relative block aspect-square w-full overflow-hidden rounded-full bg-stone-100 ring-1 ring-[var(--theme-text)]/10 transition-shadow duration-300 group-hover:ring-2 group-hover:ring-[var(--theme-primary)]">
+                  <Image
+                    loader={cloudinaryLoader}
+                    src={cat.image || "/no-image.png"}
+                    alt={cat.name}
+                    fill
+                    sizes="200px"
+                    className="rounded-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                </span>
+                <span className="w-full truncate text-center text-[12px] font-semibold uppercase tracking-[0.1em] text-[var(--theme-text)] transition-colors group-hover:text-[var(--theme-primary)]">
                   {cat.name}
                 </span>
-                <span className="absolute inset-x-6 bottom-1.5 h-px scale-x-0 bg-[var(--theme-accent)] transition-transform duration-500 group-hover:scale-x-100" />
               </button>
             ))}
           </div>
@@ -192,7 +192,7 @@ export default function TerraHomeLayout({ products = [], categories = [], slides
         ) && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
             {products.map((prod, i) => (
-              <TerraProductCard key={prod._id} product={prod} priority={i < 4} />
+              <FirstCartProductCard key={prod._id} product={prod} priority={i < 4} />
             ))}
           </div>
         )}

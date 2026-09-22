@@ -92,7 +92,7 @@ const ProductCard = memo(({ product, priority = false }) => {
   return (
     <div
       ref={cardRef}
-      className="relative bg-pink-100 shadow-md rounded-lg hover:shadow-lg transition flex flex-col group"
+      className="relative bg-[var(--card-bg,#fce7f3)] ring-1 ring-[var(--card-ring,transparent)] shadow-md rounded-lg hover:shadow-lg transition flex flex-col group"
     >
       <Link
         href={`${base}/products/${productId}`}
@@ -100,7 +100,7 @@ const ProductCard = memo(({ product, priority = false }) => {
       >
         <div className="absolute top-1 left-1 right-1 flex justify-between z-10">
           {product?.oldPrice && (
-            <span className="bg-red-500 text-white px-1 py-0.5 rounded-full text-[10px] font-semibold">
+            <span className="bg-[var(--card-accent,#ef4444)] text-white px-1 py-0.5 rounded-full text-[10px] font-semibold">
               -{discount}%
             </span>
           )}
@@ -114,8 +114,8 @@ const ProductCard = memo(({ product, priority = false }) => {
             }}
             className={`p-1 rounded-full shadow transition-colors ${
               isInWishlist
-                ? "bg-red-500 text-white"
-                : "bg-white/80 text-gray-600 hover:bg-red-100"
+                ? "bg-[var(--card-accent,#ef4444)] text-white"
+                : "bg-white/80 text-[var(--card-accent,#4b5563)] hover:bg-[var(--card-soft,#fee2e2)]"
             }`}
           >
             <FaHeart className="w-3 h-3" />
@@ -169,7 +169,7 @@ const ProductCard = memo(({ product, priority = false }) => {
 
         {/* ✅ Price */}
         <div className="flex items-center gap-2 mb-2">
-          <p className="text-blue-600 font-bold text-sm sm:text-base">
+          <p className="text-[var(--card-accent,#2563eb)] font-bold text-sm sm:text-base">
             ৳{product?.price}
           </p>
           {product?.oldPrice && (
@@ -194,7 +194,7 @@ const ProductCard = memo(({ product, priority = false }) => {
             className={`w-full px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-xs font-bold transition ${
               isOutOfStock
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-pink-600 text-white hover:bg-pink-700"
+                : "bg-[var(--card-accent,#db2777)] text-white hover:bg-[var(--card-accent-hover,#be185d)]"
             }`}
           >
             <FaShoppingCart /> Add
@@ -209,7 +209,7 @@ const ProductCard = memo(({ product, priority = false }) => {
                   e.stopPropagation();
                   updateCart(cartKey, -1, totalStock);
                 }}
-                className="p-1 bg-pink-50 shadow-sm rounded text-pink-600"
+                className="p-1 bg-[var(--card-soft,#fdf2f8)] shadow-sm rounded text-[var(--card-accent,#db2777)]"
               >
                 <FaMinus className="text-[7px]" />
               </button>
@@ -225,13 +225,13 @@ const ProductCard = memo(({ product, priority = false }) => {
                   e.stopPropagation();
                   updateCart(cartKey, +1, totalStock);
                 }}
-                className="p-1 bg-pink-50 shadow-sm rounded text-pink-600"
+                className="p-1 bg-[var(--card-soft,#fdf2f8)] shadow-sm rounded text-[var(--card-accent,#db2777)]"
               >
                 <FaPlus className="text-[7px]" />
               </button>
             </div>
 
-            <p className="text-center text-[9px] font-bold text-blue-600 mt-1">
+            <p className="text-center text-[9px] font-bold text-[var(--card-accent,#2563eb)] mt-1">
               Total: ৳{totalPrice}
             </p>
           </div>

@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 // ✅ Theme — super-admin এখান থেকে "থিম প্রিসেট" তৈরি/এডিট/ডিলিট করে
 // (দেখুন controllers/shop/themes.admin.controller.js)। প্রতিটা প্রিসেট
-// একটা `baseLayout` (এখনো কোডে লেখা ৩টা structural component সেট —
-// classic/aurora/terra, দেখুন frontend/lib/themeRegistry.js) বেছে নিয়ে
+// একটা `baseLayout` (এখনো কোডে লেখা ২টা structural component সেট —
+// classic/terra, দেখুন frontend/lib/themeRegistry.js) বেছে নিয়ে
 // তার উপর নিজস্ব color/font বসায়। Plan.theme এবং Shop.branding.theme
 // দুটোই এই মডেলের `key` ফিল্ডকে reference করে (foreign key না, প্লেইন
 // স্ট্রিং — Plan.js-এর মতোই কারণে, দেখুন সেই ফাইলের কমেন্ট)।
@@ -43,7 +43,7 @@ const themeSchema = new mongoose.Schema(
     // কোন structural component সেট (Navbar/Footer/HomeLayout) রেন্ডার হবে
     baseLayout: {
       type: String,
-      enum: ["classic", "aurora", "terra"],
+      enum: ["classic", "terra", "firstcart"],
       required: true,
     },
 
@@ -53,7 +53,7 @@ const themeSchema = new mongoose.Schema(
       body: { type: String, enum: FONT_PRESETS, default: "default" },
     },
 
-    // ✅ true হলে এটা seed করা বেস থিম (classic/aurora/terra) — ডিলিট করা
+    // ✅ true হলে এটা seed করা বেস থিম (classic/terra) — ডিলিট করা
     // যাবে না (রং/ফন্ট এডিট করা যাবে), যাতে অন্তত একটা fallback থিম প্রতি
     // baseLayout-এর জন্য সবসময় থাকে
     isSystem: { type: Boolean, default: false },
@@ -64,10 +64,10 @@ const themeSchema = new mongoose.Schema(
 const Theme = mongoose.models.Theme || mongoose.model("Theme", themeSchema);
 export default Theme;
 
-// ✅ প্রথমবার কল হওয়ার সময় collection খালি থাকলে classic/aurora/terra —
-// আজকের হার্ডকোডেড কালার থেকে reconstruct করা ৩টা system থিম দিয়ে seed করে।
+// ✅ প্রথমবার কল হওয়ার সময় collection খালি থাকলে classic/terra —
+// আজকের হার্ডকোডেড কালার থেকে reconstruct করা ২টা system থিম দিয়ে seed করে।
 // key গুলো ইচ্ছাকৃতভাবে পুরনো Plan.theme/Shop.branding.theme এনাম ভ্যালুর
-// (classic/aurora/terra) সাথে হুবহু মিলিয়ে রাখা হয়েছে, তাই কোনো ডেটা
+// (classic/terra) সাথে হুবহু মিলিয়ে রাখা হয়েছে, তাই কোনো ডেটা
 // মাইগ্রেশন ছাড়াই আগের সব শপ/প্ল্যান এই নতুন কালেকশনের মধ্য দিয়ে resolve হয়।
 const SEED_THEMES = [
   {
@@ -87,37 +87,38 @@ const SEED_THEMES = [
     fonts: { heading: "default", body: "default" },
   },
   {
-    key: "aurora",
-    name: "Aurora",
-    baseLayout: "aurora",
+    key: "terra",
+    name: "ShopStart",
+    baseLayout: "terra",
     isSystem: true,
+    // ✅ Vivid orange on white with a warm charcoal secondary — bold, energetic storefront feel
     colors: {
-      primary: "#f59e0b",
-      primaryDark: "#d97706",
-      secondary: "#0a0a0a",
+      primary: "#ea580c",
+      primaryDark: "#c2410c",
+      secondary: "#1c1917",
       background: "#ffffff",
       surface: "#ffffff",
-      text: "#171717",
-      accent: "#f59e0b",
+      text: "#1c1917",
+      accent: "#f97316",
     },
     fonts: { heading: "serif", body: "default" },
   },
   {
-    key: "terra",
-    name: "Terra Prestige",
-    baseLayout: "terra",
+    key: "firstcart",
+    name: "FirstCart",
+    baseLayout: "firstcart",
     isSystem: true,
-    // ✅ Deep forest emerald + champagne gold on ivory — premium/editorial feel
+    // ✅ Orange on slate — bold marketplace feel with a dark footer/top strip
     colors: {
-      primary: "#0b5d45",
-      primaryDark: "#073f2f",
-      secondary: "#04261d",
-      background: "#faf7f0",
+      primary: "#f97316",
+      primaryDark: "#c2410c",
+      secondary: "#0f172a",
+      background: "#f8fafc",
       surface: "#ffffff",
-      text: "#12352b",
-      accent: "#b8893b",
+      text: "#0f172a",
+      accent: "#fb923c",
     },
-    fonts: { heading: "serif", body: "default" },
+    fonts: { heading: "rounded", body: "default" },
   },
 ];
 

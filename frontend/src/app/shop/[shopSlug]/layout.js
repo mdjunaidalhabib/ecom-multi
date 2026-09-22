@@ -249,7 +249,12 @@ export default async function ShopLayout({ children, params }) {
     permanentRedirect(`https://${shop.domain}${restPath}`);
   }
 
-  const { Navbar, Footer, mainClassName = "bg-white" } = getTheme(shop.theme?.baseLayout);
+  const {
+    Navbar,
+    Footer,
+    ContactFab = FloatingActionButton,
+    mainClassName = "bg-white",
+  } = getTheme(shop.theme?.baseLayout);
   const themeVars = buildThemeVars(shop.theme);
 
   // ✅ custom-domain ভিজিটর এই routeSlug-এই আসে, শুধু middleware.js এটাকে
@@ -267,7 +272,7 @@ export default async function ShopLayout({ children, params }) {
         <StorefrontChrome
           navbar={<Navbar />}
           footer={<Footer />}
-          floatingActionButton={<FloatingActionButton />}
+          floatingActionButton={<ContactFab />}
           mainClassName={mainClassName}
           themeVars={themeVars}
         >

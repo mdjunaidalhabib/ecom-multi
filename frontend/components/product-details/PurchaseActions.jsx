@@ -2,6 +2,9 @@ import { FaShoppingBag } from "react-icons/fa";
 import QuantityController from "../home/QuantityController";
 import CheckoutButton from "../home/CheckoutButton";
 
+// ✅ variant: "row" (classic/firstcart ডিফল্ট, অপরিবর্তিত — পাশাপাশি বাটন) বা
+// "stacked" (Shop Start — দেখুন frontend/components/themes/terra/ProductDetails.jsx)।
+// শুধু বাটনের arrangement/size বদলায়, cart/checkout লজিক অভিন্ন।
 export default function PurchaseActions({
   product,
   cartKey,
@@ -11,29 +14,36 @@ export default function PurchaseActions({
   currentStock,
   updateCart,
   handleCheckout,
+  variant = "row",
 }) {
+  const isStacked = variant === "stacked";
+
   return (
     <div className="space-y-2 md:space-y-3 md:pt-2 border-gray-100">
       {!quantity ? (
-        // ✅ MOBILE + DESKTOP BOTH: side by side
-        <div className="flex flex-row justify-center md:justify-start gap-2 md:gap-4">
+        <div
+          className={
+            isStacked
+              ? "flex flex-col gap-3"
+              : "flex flex-row justify-center md:justify-start gap-2 md:gap-4"
+          }
+        >
           {/* ✅ Add to cart */}
           <button
             type="button"
             disabled={isOutOfStock}
             onClick={() => updateCart(cartKey, +1, currentStock)}
             className={`
-              w-[150px] sm:flex-1
-              h-10 md:h-12
-              rounded-lg md:rounded-xl
-              text-sm md:text-base
+              ${isStacked ? "w-full h-12 md:h-14 rounded-full text-base" : "w-[150px] sm:flex-1 h-10 md:h-12 rounded-lg md:rounded-xl text-sm md:text-base"}
               font-bold
               flex items-center justify-center gap-2
               transition-all
               ${
                 isOutOfStock
                   ? "bg-gray-200 cursor-not-allowed text-gray-400"
-                  : "bg-pink-600 text-white hover:bg-pink-700"
+                  : isStacked
+                  ? "border-2 border-[var(--theme-primary)] text-[var(--theme-primary)] hover:bg-[var(--theme-primary)]/5"
+                  : "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary-dark)]"
               }
             `}
           >
@@ -43,10 +53,11 @@ export default function PurchaseActions({
 
           {/* ✅ Checkout */}
           <div
-            className={`
-              ${isOutOfStock ? "opacity-50 cursor-not-allowed" : ""}
-              w-[150px] sm:flex-1
-            `}
+            className={
+              isStacked
+                ? `${isOutOfStock ? "opacity-50 cursor-not-allowed" : ""} w-full`
+                : `${isOutOfStock ? "opacity-50 cursor-not-allowed" : ""} w-[150px] sm:flex-1`
+            }
           >
             <CheckoutButton
               product={product}
@@ -55,13 +66,11 @@ export default function PurchaseActions({
               onClick={handleCheckout}
               disabled={isOutOfStock}
               stock={currentStock}
-              className="
-                w-full
-                h-10 md:h-12
-                text-sm md:text-base
-                px-4 md:px-0
-                rounded-lg md:rounded-xl
-              "
+              className={
+                isStacked
+                  ? "w-full h-12 md:h-14 text-base rounded-full"
+                  : "w-full h-10 md:h-12 text-sm md:text-base px-4 md:px-0 rounded-lg md:rounded-xl"
+              }
             />
           </div>
         </div>
@@ -84,7 +93,7 @@ export default function PurchaseActions({
 
           {/* ✅ Price */}
           <div className="text-center">
-            <p className="text-blue-700 font-extrabold text-lg md:text-xl">
+            <p className="text-[var(--theme-primary)] font-extrabold text-lg md:text-xl">
               ৳{totalPrice}
             </p>
           </div>
@@ -103,12 +112,11 @@ export default function PurchaseActions({
               onClick={handleCheckout}
               disabled={isOutOfStock}
               stock={currentStock}
-              className="
-                h-10 md:h-12
-                text-sm md:text-base
-                px-6 md:px-10
-                rounded-lg md:rounded-xl
-              "
+              className={
+                isStacked
+                  ? "h-10 md:h-12 text-sm md:text-base px-6 md:px-10 rounded-full"
+                  : "h-10 md:h-12 text-sm md:text-base px-6 md:px-10 rounded-lg md:rounded-xl"
+              }
             />
           </div>
         </div>

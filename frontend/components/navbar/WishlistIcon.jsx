@@ -2,16 +2,26 @@
 import React from "react";
 import Link from "next/link";
 import { FaHeart } from "react-icons/fa";
+import { Heart } from "lucide-react";
 import useShopPath from "../../hooks/useShopPath";
 
-export default function WishlistIcon({ wishlistCount, mobile }) {
+// `outline` (opt-in, used by the Shop Start navbar): stroke-only heart that
+// fills in on hover — or stays filled when `filled` is set (e.g. active tab on
+// touch screens, where there is no hover).
+export default function WishlistIcon({ wishlistCount, mobile, outline, filled }) {
   const { base } = useShopPath();
   return (
     <Link
       href={`${base}/wishlist`}
-      className={`relative flex flex-col items-center ${mobile ? "" : ""}`}
+      className={`group relative flex flex-col items-center ${mobile ? "" : ""}`}
     >
-      <FaHeart className="w-6 h-6" />
+      {outline ? (
+        <Heart
+          className={`w-6 h-6 transition-colors duration-200 group-hover:fill-current ${filled ? "fill-current" : ""}`}
+        />
+      ) : (
+        <FaHeart className="w-6 h-6" />
+      )}
       {wishlistCount > 0 && (
         <span
           className={`absolute ${

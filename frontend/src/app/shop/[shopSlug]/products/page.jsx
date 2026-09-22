@@ -1,8 +1,8 @@
 import Link from "next/link";
-import ProductCard from "../../../../../components/home/ProductCard";
-import { serverFetch } from "../../../../../lib/serverApi";
+import { serverFetch, getShopInfo } from "../../../../../lib/serverApi";
 import { shopBasePath } from "../../../../../lib/shopMode";
 import { pagePath } from "../../../../../lib/seo";
+import { getTheme } from "../../../../../lib/themeRegistry";
 
 async function getAllProducts() {
   try {
@@ -28,8 +28,21 @@ export default async function AllProductsPage({ params }) {
   const base = shopBasePath(shopSlug);
   const products = await getAllProducts();
 
+  // ✅ getShopInfo() Next-এর per-request fetch cache-এ dedupe হয় (layout.js
+  // ইতিমধ্যেই একবার কল করে থাকে), তাই এখানে আলাদা কোনো বাড়তি backend call
+  // হয় না। শপের থিম অনুযায়ী সঠিক ProductCard বেছে নেওয়া হয়, যাতে হোম পেজের
+  // মতোই একই card style এখানেও দেখায়।
+  let baseLayout;
+  try {
+    const shop = await getShopInfo();
+    baseLayout = shop?.theme?.baseLayout;
+  } catch {
+    baseLayout = undefined;
+  }
+  const { ProductCard } = getTheme(baseLayout);
+
   return (
-    <main className="bg-pink-50 min-h-screen">
+    <main className="bg-[var(--theme-bg)] min-h-screen">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav className="text-sm text-gray-500 mb-4">

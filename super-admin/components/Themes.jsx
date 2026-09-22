@@ -14,8 +14,8 @@ import Toast from "./Toast";
 
 const BASE_LAYOUT_OPTIONS = [
   { value: "classic", label: "Classic" },
-  { value: "aurora", label: "Aurora" },
-  { value: "terra", label: "Terra Prestige" },
+  { value: "terra", label: "ShopStart" },
+  { value: "firstcart", label: "FirstCart" },
 ];
 
 const FONT_OPTIONS = [
@@ -212,7 +212,7 @@ export default function Themes() {
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
             নিজের রং/ফন্ট দিয়ে নতুন থিম তৈরি করুন — এগুলো Plans ও Shops পেজে বেছে নেওয়া যাবে।
-            প্রতিটা থিম আগে থেকে বানানো ৩টা লেআউট টেমপ্লেটের (Classic/Aurora/Terra) একটার উপর বসে।
+            প্রতিটা থিম আগে থেকে বানানো ৩টা লেআউট টেমপ্লেটের (Classic/ShopStart/FirstCart) একটার উপর বসে।
           </p>
         </div>
 

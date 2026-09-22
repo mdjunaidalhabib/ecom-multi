@@ -3,8 +3,9 @@
 import React, { memo, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import cloudinaryLoader from "../../../lib/cloudinaryLoader";
-import { FaHeart, FaPlus, FaMinus, FaShoppingBasket } from "react-icons/fa";
+import { FaHeart, FaCheck, FaShoppingBasket } from "react-icons/fa";
 import { useCartUtils } from "../../../hooks/useCartUtils";
 import { useLiveStock } from "../../../hooks/useLiveStock";
 import { useInView } from "../../../hooks/useInView";
@@ -16,6 +17,7 @@ import useShopPath from "../../../hooks/useShopPath";
 const TerraProductCard = memo(({ product, priority = false }) => {
   const { cart, updateCart, wishlist, toggleWishlist } = useCartUtils();
   const { base } = useShopPath();
+  const router = useRouter();
 
   const productId = product?._id;
 
@@ -46,7 +48,7 @@ const TerraProductCard = memo(({ product, priority = false }) => {
     : 0;
 
   const isInWishlist = wishlist.includes(String(productId));
-  const totalPrice = Number(product?.price || 0) * quantity;
+  const inCart = quantity > 0;
 
   const rawIsSoldOut = live?.isSoldOut ?? product?.isSoldOut;
   const isSoldOut = rawIsSoldOut === true || rawIsSoldOut === "true";
@@ -68,10 +70,23 @@ const TerraProductCard = memo(({ product, priority = false }) => {
     return "/no-image.png";
   }, [product, defaultColor]);
 
+  // ✅ Buy now: কার্টে না থাকলে ১টা যোগ করে সরাসরি checkout এ (product details পেজের মতোই)
+  const handleBuyNow = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isOutOfStock) return;
+    if (!inCart) updateCart(cartKey, +1, totalStock);
+    router.push(
+      `${base}/checkout?productId=${productId}&qty=${quantity || 1}${
+        defaultColor ? `&color=${encodeURIComponent(defaultColor.name)}` : ""
+      }&stock=${totalStock}`,
+    );
+  };
+
   return (
     <div
       ref={cardRef}
-      className="group flex flex-col overflow-hidden rounded-xl bg-[var(--theme-surface)] ring-1 ring-[var(--theme-text)]/10 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--theme-secondary)]/10 hover:ring-[var(--theme-accent)]/50"
+      className="group flex flex-col overflow-hidden rounded-xl bg-[var(--theme-surface)] ring-1 ring-[var(--theme-primary)]/15 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[var(--theme-primary)]/15 hover:ring-[var(--theme-primary)]/60"
     >
       <Link
         href={`${base}/products/${productId}`}
@@ -82,23 +97,6 @@ const TerraProductCard = memo(({ product, priority = false }) => {
             -{discount}%
           </span>
         )}
-
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleWishlist(productId);
-          }}
-          aria-label="Toggle wishlist"
-          className={`absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition-colors ${
-            isInWishlist
-              ? "bg-[var(--theme-primary)] text-white"
-              : "bg-white/95 text-stone-400 hover:text-[var(--theme-primary)]"
-          }`}
-        >
-          <FaHeart className="h-3 w-3" />
-        </button>
 
         <Image
           loader={cloudinaryLoader}
@@ -130,70 +128,72 @@ const TerraProductCard = memo(({ product, priority = false }) => {
           {isOutOfStock ? "Out of stock" : `In stock · ${totalStock}`}
         </p>
 
-        <div className="mt-auto flex items-baseline gap-2 pt-1.5">
-          <p className="text-lg font-semibold tabular-nums text-[var(--theme-primary)]">
-            ৳{product?.price}
-          </p>
-          {product?.oldPrice && (
-            <p className="text-xs tabular-nums text-stone-400 line-through">৳{product.oldPrice}</p>
-          )}
-        </div>
+        {/* ✅ Wishlist (favourite) আইকন এখন দামের ডান পাশে */}
+        <div className="mt-auto flex items-center justify-between gap-2 pt-1.5">
+          <div className="flex min-w-0 items-baseline gap-2">
+            <p className="text-lg font-semibold tabular-nums text-[var(--theme-primary)]">
+              ৳{product?.price}
+            </p>
+            {product?.oldPrice && (
+              <p className="text-xs tabular-nums text-stone-400 line-through">৳{product.oldPrice}</p>
+            )}
+          </div>
 
-        {!quantity ? (
           <button
             type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              updateCart(cartKey, +1, totalStock);
+              toggleWishlist(productId);
             }}
-            disabled={isOutOfStock}
-            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] transition ${
-              isOutOfStock
-                ? "cursor-not-allowed bg-stone-100 text-stone-400"
-                : "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-secondary)]"
+            aria-label="Toggle wishlist"
+            aria-pressed={isInWishlist}
+            className={`flex h-8 w-8 flex-none items-center justify-center rounded-full ring-1 transition-colors ${
+              isInWishlist
+                ? "bg-[var(--theme-primary)] text-white ring-[var(--theme-primary)]"
+                : "bg-white text-[var(--theme-primary)]/60 ring-[var(--theme-primary)]/25 hover:bg-[var(--theme-primary)] hover:text-white"
             }`}
           >
-            <FaShoppingBasket className="h-3 w-3" />
-            {isOutOfStock ? "Out of stock" : "Add to cart"}
+            <FaHeart className="h-3.5 w-3.5" />
           </button>
-        ) : (
-          <div className="mt-2">
-            <div className="flex items-center justify-between rounded-lg border border-[var(--theme-primary)]/25 bg-[var(--theme-primary)]/5 px-2 py-1.5">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  updateCart(cartKey, -1, totalStock);
-                }}
-                aria-label="Decrease quantity"
-                className="flex h-6 w-6 items-center justify-center rounded-md bg-white text-[var(--theme-primary)] shadow-sm ring-1 ring-[var(--theme-text)]/10"
-              >
-                <FaMinus className="text-[9px]" />
-              </button>
+        </div>
 
-              <span className="text-xs font-semibold tabular-nums text-[var(--theme-text)]">{quantity}</span>
+        {/* ✅ ২টা বাটন: Add to cart (১টা সরাসরি কার্টে, এখান থেকে quantity বাড়ানো/কমানো যাবে না)
+            আর Buy now (সরাসরি checkout এ) */}
+        <div className="mt-2 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!inCart) updateCart(cartKey, +1, totalStock);
+            }}
+            disabled={isOutOfStock || inCart}
+            className={`flex w-full items-center justify-center gap-2 rounded-lg border py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition ${
+              isOutOfStock
+                ? "cursor-not-allowed border-transparent bg-stone-100 text-stone-400"
+                : inCart
+                  ? "cursor-default border-[var(--theme-primary)]/25 bg-[var(--theme-primary)]/10 text-[var(--theme-primary)]"
+                  : "border-[var(--theme-primary)] text-[var(--theme-primary)] hover:bg-[var(--theme-primary)] hover:text-white"
+            }`}
+          >
+            {inCart ? <FaCheck className="h-3 w-3" /> : <FaShoppingBasket className="h-3 w-3" />}
+            {isOutOfStock ? "Sold out" : inCart ? "In cart" : "Add to cart"}
+          </button>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  updateCart(cartKey, +1, totalStock);
-                }}
-                aria-label="Increase quantity"
-                className="flex h-6 w-6 items-center justify-center rounded-md bg-white text-[var(--theme-primary)] shadow-sm ring-1 ring-[var(--theme-text)]/10"
-              >
-                <FaPlus className="text-[9px]" />
-              </button>
-            </div>
-
-            <p className="mt-1.5 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-accent)]">
-              Total: ৳{totalPrice}
-            </p>
-          </div>
-        )}
+          <button
+            type="button"
+            onClick={handleBuyNow}
+            disabled={isOutOfStock}
+            className={`flex w-full items-center justify-center rounded-lg py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition ${
+              isOutOfStock
+                ? "cursor-not-allowed bg-stone-100 text-stone-400"
+                : "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary-dark)]"
+            }`}
+          >
+            Buy now
+          </button>
+        </div>
       </div>
     </div>
   );

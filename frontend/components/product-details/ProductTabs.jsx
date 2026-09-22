@@ -37,7 +37,13 @@ function toSafeHtml(value) {
   );
 }
 
-export default function ProductTabs({ product, tab, setTab }) {
+// ✅ variant: "pill" (classic ডিফল্ট, অপরিবর্তিত), "underline" (FirstCart —
+// দেখুন frontend/components/themes/firstcart/ProductDetails.jsx) — দুটোই
+// ক্লিক করে ট্যাব বদলানোর UI। "stacked" (Shop Start — দেখুন
+// frontend/components/themes/terra/ProductDetails.jsx) ট্যাব-ক্লিক ছাড়াই
+// Description/Return policy/Reviews তিনটা সেকশন একটার পর একটা সবসময় দেখায়।
+// ভেতরের description/policy/review লজিক তিন variant-এই অভিন্ন।
+export default function ProductTabs({ product, tab, setTab, variant = "pill" }) {
   const { me } = useUser();
 
   // Always use MongoDB _id for ownership
@@ -55,16 +61,27 @@ export default function ProductTabs({ product, tab, setTab }) {
     setReviews(product?.reviews || []);
   }, [product]);
 
+  const isUnderline = variant === "underline";
+  const isStacked = variant === "stacked";
+
   const tabBtn = (key, label) => (
     <button
       type="button"
       key={key}
       onClick={() => setTab(key)}
-      className={`px-2 py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 ${
-        tab === key
-          ? "bg-pink-500 text-white shadow"
-          : "text-gray-600 hover:bg-gray-200"
-      }`}
+      className={
+        isUnderline
+          ? `-mb-px border-b-2 px-1 py-2.5 text-xs font-semibold transition-colors duration-200 md:text-sm ${
+              tab === key
+                ? "border-[var(--theme-primary)] text-[var(--theme-primary)]"
+                : "border-transparent text-[var(--theme-text)]/55 hover:text-[var(--theme-text)]"
+            }`
+          : `px-2 py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 ${
+              tab === key
+                ? "bg-[var(--theme-primary)] text-white shadow"
+                : "text-gray-600 hover:bg-gray-200"
+            }`
+      }
     >
       {label}
     </button>
@@ -127,59 +144,41 @@ export default function ProductTabs({ product, tab, setTab }) {
     }
   };
 
-  return (
-    <section className="mt-12">
-      {/* Tabs Header */}
-      <div className="border-b flex border-gray-200">
-        <div className="max-w-6xl mx-auto flex gap-1 md:gap-4">
-          {tabBtn("desc", "Description")}
-          {tabBtn("info", "return policy")}
-          {tabBtn("reviews", `Reviews (${reviews?.length || 0})`)}
-        </div>
-      </div>
+  const descContent = product?.description ? (
+    <div
+      lang="en"
+      className="rich-content text-gray-700 text-[15px]"
+      dangerouslySetInnerHTML={{ __html: toSafeHtml(product.description) }}
+    />
+  ) : (
+    <div className="text-gray-500 text-center">
+      No description available for this product.
+    </div>
+  );
 
-      {/* Tabs Content */}
-      <div className="max-w-6xl mx-auto py-8">
-        {/* Description Tab */}
-        {tab === "desc" &&
-          (product?.description ? (
-            <div
-              lang="en"
-              className="rich-content text-gray-700 text-[15px]"
-              dangerouslySetInnerHTML={{ __html: toSafeHtml(product.description) }}
-            />
-          ) : (
-            <div className="text-gray-500 text-center">
-              No description available for this product.
-            </div>
-          ))}
+  const infoContent = product?.additionalInfo ? (
+    <div
+      lang="en"
+      className="rich-content text-gray-700 text-[15px]"
+      dangerouslySetInnerHTML={{ __html: toSafeHtml(product.additionalInfo) }}
+    />
+  ) : (
+    <div className="text-gray-500 text-center">
+      No additional info available for this product.
+    </div>
+  );
 
-        {/* Information Tab */}
-        {tab === "info" &&
-          (product?.additionalInfo ? (
-            <div
-              lang="en"
-              className="rich-content text-gray-700 text-[15px]"
-              dangerouslySetInnerHTML={{ __html: toSafeHtml(product.additionalInfo) }}
-            />
-          ) : (
-            <div className="text-gray-500 text-center">
-              No additional info available for this product.
-            </div>
-          ))}
+  const reviewsContent = (
+    <div className="space-y-8">
+      {/* Add Review Form */}
+      <AddReviewForm
+        productId={product?._id}
+        onSuccess={(data) => setReviews(data?.reviews || [])}
+      />
 
-        {/* Reviews Tab */}
-        {tab === "reviews" && (
-          <div className="space-y-8">
-            {/* Add Review Form */}
-            <AddReviewForm
-              productId={product?._id}
-              onSuccess={(data) => setReviews(data?.reviews || [])}
-            />
-
-            {/* Reviews List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {reviews?.length ? (
+      {/* Reviews List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {reviews?.length ? (
                 reviews.map((r) => {
                   const reviewOwnerId =
                     typeof r?.userId === "object" && r?.userId?._id
@@ -214,6 +213,7 @@ export default function ProductTabs({ product, tab, setTab }) {
                         {r.avatar ? (
                           <img
                             src={r.avatar}
+                            referrerPolicy="no-referrer"
                             alt={r.user}
                             className="w-10 h-10 rounded-full object-cover"
                           />
@@ -327,7 +327,7 @@ export default function ProductTabs({ product, tab, setTab }) {
                         <button
                           type="button"
                           onClick={saveEdit}
-                          className="px-4 py-2 rounded bg-pink-500 text-white hover:bg-pink-600"
+                          className="px-4 py-2 rounded bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary-dark)]"
                         >
                           Save
                         </button>
@@ -337,8 +337,53 @@ export default function ProductTabs({ product, tab, setTab }) {
                 </div>
               </div>
             )}
+    </div>
+  );
+
+  // ✅ "stacked" — কোনো tab-header/click নেই, সেট করা সেকশনগুলো হেডিং সহ
+  // একটার পর একটা দেখায়। Description/Return policy খালি থাকলে (কনটেন্ট সেট
+  // করা নেই) পুরো সেকশনটাই বাদ যায় — Reviews সবসময় দেখা যায় (রিভিউ যোগ করার
+  // ফর্মটা এখানেই থাকে)।
+  if (isStacked) {
+    const stackedSections = [
+      product?.description ? { key: "desc", title: "Description", content: descContent } : null,
+      product?.additionalInfo ? { key: "info", title: "Return policy", content: infoContent } : null,
+      { key: "reviews", title: `Reviews (${reviews?.length || 0})`, content: reviewsContent },
+    ].filter(Boolean);
+
+    return (
+      <section className="mt-12 max-w-6xl mx-auto space-y-10">
+        {stackedSections.map((section, idx) => (
+          <div
+            key={section.key}
+            className={idx > 0 ? "border-t border-[var(--theme-text)]/10 pt-10" : undefined}
+          >
+            <h3 className="mb-4 text-lg font-bold text-[var(--theme-text)]">
+              {section.title}
+            </h3>
+            {section.content}
           </div>
-        )}
+        ))}
+      </section>
+    );
+  }
+
+  return (
+    <section className="mt-12">
+      {/* Tabs Header */}
+      <div className={`flex border-b ${isUnderline ? "border-[var(--theme-text)]/10" : "border-gray-200"}`}>
+        <div className={`mx-auto flex max-w-6xl ${isUnderline ? "gap-5 md:gap-8" : "gap-1 md:gap-4"}`}>
+          {tabBtn("desc", "Description")}
+          {tabBtn("info", "return policy")}
+          {tabBtn("reviews", `Reviews (${reviews?.length || 0})`)}
+        </div>
+      </div>
+
+      {/* Tabs Content */}
+      <div className="max-w-6xl mx-auto py-8">
+        {tab === "desc" && descContent}
+        {tab === "info" && infoContent}
+        {tab === "reviews" && reviewsContent}
       </div>
     </section>
   );

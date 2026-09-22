@@ -1,7 +1,7 @@
-import CategoryBrowserClient from "../../../../../components/categories/CategoryBrowserClient";
-import { serverFetch } from "../../../../../lib/serverApi";
+import { serverFetch, getShopInfo } from "../../../../../lib/serverApi";
 import { requireFullStorefront } from "../../../../../lib/requireFullStorefront";
 import { pagePath } from "../../../../../lib/seo";
+import { getTheme } from "../../../../../lib/themeRegistry";
 
 export async function generateMetadata({ params }) {
   const { shopSlug } = await params;
@@ -48,11 +48,25 @@ export default async function CategoryPage({ params }) {
   const { categories, selectedCategoryId, products } =
     await getCategoriesData();
 
+  // ✅ getShopInfo() Next-এর per-request fetch cache-এ dedupe হয় (layout.js
+  // ইতিমধ্যেই একবার কল করে থাকে) — শপের থিম অনুযায়ী সম্পূর্ণ আলাদা
+  // CategoryBrowser layout বেছে নেওয়া হয় (FirstCart-এর horizontal chip
+  // layout বনাম classic/terra-র sidebar layout), দেখুন lib/themeRegistry.js।
+  let baseLayout;
+  try {
+    const shop = await getShopInfo();
+    baseLayout = shop?.theme?.baseLayout;
+  } catch {
+    baseLayout = undefined;
+  }
+  const { CategoryBrowser, ProductCard } = getTheme(baseLayout);
+
   return (
-    <CategoryBrowserClient
+    <CategoryBrowser
       initialCategories={categories}
       initialSelectedCategoryId={selectedCategoryId}
       initialProducts={products}
+      ProductCard={ProductCard}
     />
   );
 }

@@ -4,16 +4,21 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
 import Image from "next/image";
 import cloudinaryLoader from "../../lib/cloudinaryLoader";
-import ProductCard from "../home/ProductCard";
+import DefaultProductCard from "../home/ProductCard";
 import CategorySkeleton from "../skeletons/CategorySkeleton";
 import ProductDetailsSkeleton from "../skeletons/ProductDetailsSkeleton";
 
 const API_URL = "/api";
 
+// ✅ ProductCard prop হিসেবে আসে (frontend/lib/themeRegistry.js থেকে, দেখুন
+// এই ফাইলের caller) যাতে থিম অনুযায়ী সঠিক card দেখায়, না দিলে classic কার্ডে
+// fallback করে। এই ফাইল নিজে themeRegistry.js import করে না — সেটা import
+// করলে circular import হয়ে যেত (themeRegistry.js নিজেই এই কম্পোনেন্ট import করে)।
 export default function CategoryBrowserClient({
   initialCategories,
   initialSelectedCategoryId,
   initialProducts,
+  ProductCard = DefaultProductCard,
 }) {
   // ✅ /categories page (Server Component) already fetches categories +
   // the first category's products and passes them down — skips the
@@ -135,10 +140,10 @@ export default function CategoryBrowserClient({
   }
 
   return (
-    <div className="bg-pink-50">
+    <div className="bg-[var(--theme-bg)]">
       <div className="container mx-auto flex flex-col md:flex-row gap-6 p-3 md:p-6">
         {/* === Category Sidebar === */}
-        <div className="md:w-64 bg-pink-100 shadow-md rounded-xl p-3 md:p-4">
+        <div className="md:w-64 bg-[var(--card-bg,var(--theme-surface))] ring-1 ring-[var(--card-ring,transparent)] shadow-md rounded-xl p-3 md:p-4">
           <h3 className="text-lg font-semibold mb-3 border-b pb-2">
             🗂️ Categories
           </h3>
@@ -148,10 +153,10 @@ export default function CategoryBrowserClient({
               <li
                 key={cat._id}
                 onClick={() => fetchProducts(cat._id)}
-                className={`flex items-center gap-3 p-2 rounded-lg border border-pink-400 cursor-pointer transition min-w-[120px] md:min-w-0 ${
+                className={`flex items-center gap-3 p-2 rounded-lg border border-[var(--card-border,var(--theme-primary))] cursor-pointer transition min-w-[120px] md:min-w-0 ${
                   selectedCategory === cat._id
-                    ? "bg-pink-300 text-pink-600 font-medium border"
-                    : "hover:bg-pink-300"
+                    ? "bg-[var(--card-sel-bg,var(--theme-primary))] text-[var(--card-sel-text,#ffffff)] font-medium border"
+                    : "hover:bg-[var(--card-sel-hover,var(--theme-bg))]"
                 }`}
               >
                 <div className="relative w-8 h-8 md:w-10 md:h-10 flex-shrink-0 rounded-md overflow-hidden border bg-white">

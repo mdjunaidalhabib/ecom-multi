@@ -19,8 +19,8 @@ export default function VariantSelector({
             onClick={() => onSelect(color)}
             className={`px-2 py-1 text-[11px] md:px-4 md:py-2 md:text-sm border rounded-xl  font-semibold transition-all ${
               selectedColor?.name === color.name
-                ? "border-pink-600 bg-pink-600 text-white shadow-lg shadow-pink-200"
-                : "border-gray-200 bg-white text-gray-600 hover:border-pink-300"
+                ? "border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white shadow-lg shadow-[var(--theme-primary)]/20"
+                : "border-gray-200 bg-white text-gray-600 hover:border-[var(--theme-primary)]/50"
             }`}
           >
             {color.name}

@@ -1,7 +1,7 @@
 import { serverFetch, getShopInfo } from "../../../../../../lib/serverApi";
 import { shopBasePath } from "../../../../../../lib/shopMode";
-import ProductDetailsClient from "../../../../../../components/product-details/ProductDetailsClient";
 import JsonLd from "../../../../../../components/seo/JsonLd";
+import { getTheme } from "../../../../../../lib/themeRegistry";
 import {
   getSiteOrigin,
   pagePath,
@@ -127,6 +127,9 @@ export default async function ProductDetailsPage({ params }) {
   const origin = await getSiteOrigin();
   const base = shopBasePath(shopSlug);
   const brand = shopBrand(shop);
+  // ✅ শপের থিম অনুযায়ী সঠিক ProductCard — "You May Also Like" সেকশনেও
+  // home/shop/category page-এর মতোই একই card style দেখায়।
+  const { ProductCard, ProductDetails } = getTheme(shop?.theme?.baseLayout);
 
   // ✅ Google rich result (দাম/স্টক/রেটিং সহ) + breadcrumb — populate করা
   // category object থেকে প্রথম category-টাই breadcrumb-এর মাঝখানে বসে
@@ -153,11 +156,12 @@ export default async function ProductDetailsPage({ params }) {
   return (
     <>
       <JsonLd data={jsonLd} />
-      <ProductDetailsClient
+      <ProductDetails
         product={product}
         categories={categories}
         related={related}
         loading={false}
+        ProductCard={ProductCard}
       />
     </>
   );

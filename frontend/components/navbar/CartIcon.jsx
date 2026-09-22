@@ -2,16 +2,26 @@
 import React from "react";
 import Link from "next/link";
 import { FaShoppingCart } from "react-icons/fa";
+import { ShoppingCart } from "lucide-react";
 import useShopPath from "../../hooks/useShopPath";
 
-export default function CartIcon({ cartCount, mobile }) {
+// `outline` (opt-in, used by the Shop Start navbar): stroke-only cart that
+// fills in on hover — or stays filled when `filled` is set (e.g. active tab on
+// touch screens, where there is no hover).
+export default function CartIcon({ cartCount, mobile, outline, filled }) {
   const { base } = useShopPath();
   return (
     <Link
       href={`${base}/cart`}
-      className={`relative flex flex-col items-center ${mobile ? "" : ""}`}
+      className={`group relative flex flex-col items-center ${mobile ? "" : ""}`}
     >
-      <FaShoppingCart className="w-6 h-6" />
+      {outline ? (
+        <ShoppingCart
+          className={`w-6 h-6 transition-colors duration-200 group-hover:fill-current ${filled ? "fill-current" : ""}`}
+        />
+      ) : (
+        <FaShoppingCart className="w-6 h-6" />
+      )}
       {cartCount > 0 && (
         <span
           className={`absolute ${

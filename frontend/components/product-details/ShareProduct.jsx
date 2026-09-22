@@ -147,17 +147,17 @@ export default function ShareProduct({ productName = "Check out this product" })
         onClick={() => setIsOpen((current) => !current)}
         aria-label="Share this product"
         aria-expanded={isOpen}
-        className={`rounded-full p-1 md:p-3 shadow-sm md:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 ${
+        className={`rounded-full p-1 md:p-3 shadow-sm md:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]/40 focus:ring-offset-2 ${
           isOpen
-            ? "bg-pink-600 text-white"
-            : "bg-white text-gray-500 hover:bg-pink-50 hover:text-pink-600"
+            ? "bg-[var(--theme-primary)] text-white"
+            : "bg-white text-gray-500 hover:bg-[var(--theme-primary)]/10 hover:text-[var(--theme-primary)]"
         }`}
       >
         <FaShareAlt className="text-sm md:text-base" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full z-[100] mt-2 max-h-[70vh] w-64 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-2xl border border-pink-100 bg-white shadow-2xl">
+        <div className="absolute right-0 top-full z-[100] mt-2 max-h-[70vh] w-64 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-2xl border border-[var(--theme-primary)]/15 bg-white shadow-2xl">
           <div className="border-b border-gray-100 px-4 py-3">
             <p className="text-sm font-bold text-gray-800">Share product</p>
             <p className="mt-0.5 truncate text-xs text-gray-400">
@@ -169,13 +169,13 @@ export default function ShareProduct({ productName = "Check out this product" })
             <button
               type="button"
               onClick={handleCopy}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-gray-700 transition hover:bg-pink-50"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-gray-700 transition hover:bg-[var(--theme-primary)]/10"
             >
               <span
                 className={`flex h-9 w-9 items-center justify-center rounded-full ${
                   copied
                     ? "bg-emerald-500 text-white"
-                    : "bg-pink-100 text-pink-600"
+                    : "bg-[var(--theme-primary)]/15 text-[var(--theme-primary)]"
                 }`}
               >
                 {copied ? <FaCheck /> : <FaCopy />}
@@ -187,7 +187,7 @@ export default function ShareProduct({ productName = "Check out this product" })
               <button
                 type="button"
                 onClick={handleNativeShare}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-gray-700 transition hover:bg-pink-50"
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-gray-700 transition hover:bg-[var(--theme-primary)]/10"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-600">
                   <FaShareAlt />

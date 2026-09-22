@@ -81,7 +81,7 @@ export default function ProductInfo({
       <div className="md:mt-2 md:my-8">
         <div className="flex items-start md:items-center justify-between gap-3">
           <div className="flex flex-wrap items-end gap-x-2 md:gap-x-3 gap-y-1">
-            <p className="text-indigo-600 md:text-blue-600 font-extrabold text-xl md:text-4xl tracking-tight">
+            <p className="text-[var(--theme-primary)] font-extrabold text-xl md:text-4xl tracking-tight">
               ৳{currentPrice}
             </p>
 
@@ -94,7 +94,7 @@ export default function ProductInfo({
             )}
 
             {discountPct && (
-              <span className="bg-pink-600/90 text-white px-2 md:px-2.5 py-0.5 md:py-1 rounded-full text-[8px] md:text-xs font-bold uppercase md:shadow-sm">
+              <span className="bg-[var(--theme-primary)]/90 text-white px-2 md:px-2.5 py-0.5 md:py-1 rounded-full text-[8px] md:text-xs font-bold uppercase md:shadow-sm">
                 {discountPct}% OFF
               </span>
             )}

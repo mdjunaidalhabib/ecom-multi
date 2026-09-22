@@ -43,8 +43,8 @@ export default function AddReviewForm({ productId, onSuccess }) {
           type="button"
           onClick={openModal}
           disabled={loadingUser}
-          className="bg-pink-500 text-white text-xs md:text-sm px-4 py-1
-           rounded-lg font-medium hover:bg-pink-600 disabled:opacity-50 w-full md:w-auto"
+          className="bg-[var(--theme-primary)] text-white text-xs md:text-sm px-4 py-1
+           rounded-lg font-medium hover:bg-[var(--theme-primary-dark)] disabled:opacity-50 w-full md:w-auto"
         >
           {loadingUser
             ? "Loading..."

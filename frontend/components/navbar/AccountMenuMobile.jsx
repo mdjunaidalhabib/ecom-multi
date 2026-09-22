@@ -84,6 +84,7 @@ export default function AccountMenuMobile({ onOpen }) {
         {me.avatar ? (
           <Image loader={cloudinaryLoader}
             src={me.avatar}
+            referrerPolicy="no-referrer"
             alt={me.name}
             width={28}
             height={28}
@@ -116,6 +117,7 @@ export default function AccountMenuMobile({ onOpen }) {
                 {me.avatar ? (
                   <Image loader={cloudinaryLoader}
                     src={me.avatar}
+                    referrerPolicy="no-referrer"
                     alt={me.name}
                     width={30}
                     height={30}

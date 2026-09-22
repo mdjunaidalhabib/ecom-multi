@@ -14,6 +14,50 @@ const useDebouncedValue = (value, delay = 400) => {
   return v;
 };
 
+// Typewriter-style rotating placeholder: types a phrase, pauses, erases it,
+// then moves to the next. Only runs while `enabled`; users who prefer reduced
+// motion just get the first phrase, static.
+const useTypewriter = (phrases, enabled) => {
+  const [text, setText] = useState(phrases?.[0] || "");
+  useEffect(() => {
+    if (!enabled || !phrases?.length) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setText(phrases[0]);
+      return;
+    }
+    let i = 0;
+    let len = 0;
+    let deleting = false;
+    let timer;
+    const tick = () => {
+      const full = phrases[i];
+      if (!deleting) {
+        len += 1;
+        setText(full.slice(0, len));
+        if (len === full.length) {
+          deleting = true;
+          timer = setTimeout(tick, 1400);
+          return;
+        }
+        timer = setTimeout(tick, 85);
+      } else {
+        len -= 1;
+        setText(full.slice(0, len));
+        if (len === 0) {
+          deleting = false;
+          i = (i + 1) % phrases.length;
+          timer = setTimeout(tick, 350);
+          return;
+        }
+        timer = setTimeout(tick, 45);
+      }
+    };
+    timer = setTimeout(tick, 400);
+    return () => clearTimeout(timer);
+  }, [enabled, phrases]);
+  return text;
+};
+
 const ProductCard = ({ product, onClick }) => (
   <button
     onClick={onClick}
@@ -32,10 +76,14 @@ const ProductCard = ({ product, onClick }) => (
   </button>
 );
 
-export default function SearchBox({ mobileSearchOpen, setMobileSearchOpen }) {
+export default function SearchBox({ mobileSearchOpen, setMobileSearchOpen, placeholders }) {
   const router = useRouter();
   const { base } = useShopPath();
   const [query, setQuery] = useState("");
+  // animated placeholder is opt-in (`placeholders` = array of phrases) and
+  // pauses while the user is typing
+  const typed = useTypewriter(placeholders, !!placeholders?.length && !query);
+  const placeholder = placeholders?.length ? `${typed}|` : "Search products...";
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const debouncedQuery = useDebouncedValue(query);
@@ -134,7 +182,7 @@ export default function SearchBox({ mobileSearchOpen, setMobileSearchOpen }) {
       <div className="hidden md:block relative" ref={desktopRef}>
         <input
           type="text"
-          placeholder="Search products..."
+          placeholder={placeholder}
           className="rounded-lg px-3 py-1 w-64 border border-pink-300 focus:outline-none focus:border-pink-400"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -170,7 +218,7 @@ export default function SearchBox({ mobileSearchOpen, setMobileSearchOpen }) {
               <input
                 ref={mobileInputRef}
                 type="text"
-                placeholder="Search products..."
+                placeholder={placeholder}
                 className="flex-1 focus:outline-none text-sm bg-transparent"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}

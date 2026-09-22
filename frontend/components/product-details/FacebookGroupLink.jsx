@@ -33,7 +33,7 @@ const FacebookGroupLink = () => {
         className="text-xs md:text-sm text-gray-900 hover:underline"
       >
         Visit our Facebook group{" "}
-        <span className="text-pink-500 font-semibold">{config.name}</span>
+        <span className="text-[var(--theme-primary)] font-semibold">{config.name}</span>
       </a>
     </div>
   );

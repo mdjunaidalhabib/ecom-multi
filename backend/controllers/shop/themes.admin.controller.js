@@ -2,7 +2,7 @@ import Theme, { FONT_PRESETS, listActiveThemes } from "../../src/models/Theme.js
 import Plan from "../../src/models/Plan.js";
 import Shop from "../../src/models/Shop.js";
 
-const BASE_LAYOUTS = ["classic", "aurora", "terra"];
+const BASE_LAYOUTS = ["classic", "terra", "firstcart"];
 const COLOR_KEYS = [
   "primary",
   "primaryDark",

@@ -129,28 +129,30 @@ export default function PlatformHeader({ adminUrl }) {
   }, [mobileOpen]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/85 backdrop-blur-lg">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+    <header className="sticky top-0 z-40 border-b border-orange-100/70 bg-gradient-to-r from-teal-50/90 via-white/90 to-orange-50/90 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <MotionLink href="/" onClick={handleHomeClick} className="flex items-center gap-2.5" {...tapBounce}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 shadow-md shadow-orange-200">
             <ShoppingCart size={16} className="text-white" />
           </div>
           <div className="leading-tight">
-            <p className="text-base font-bold tracking-tight text-slate-900">ECMS</p>
-            <p className="hidden text-[11px] font-medium text-slate-500 lg:block">
+            <p className="bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-base font-extrabold tracking-tight text-transparent">
+              ECMS
+            </p>
+            <p className="hidden bg-gradient-to-r from-teal-600 to-orange-500 bg-clip-text text-[11px] font-medium text-transparent lg:block">
               E-Commerce Management System
             </p>
           </div>
         </MotionLink>
 
-        <nav className="hidden items-center gap-4 text-sm font-medium text-slate-600 md:flex lg:gap-7">
+        <nav className="hidden items-center gap-4 text-sm font-semibold text-gray-500 md:flex lg:gap-7">
           {NAV_LINKS.map((link) => (
             <MotionLink
               key={link.id}
               href={link.href}
               onClick={link.id === "home" ? handleHomeClick : undefined}
-              className={`relative transition-colors hover:text-slate-900 ${
-                activeId === link.id ? "text-slate-900" : ""
+              className={`relative transition-colors hover:text-gray-900 ${
+                activeId === link.id ? "text-gray-900" : ""
               }`}
               {...tapBounce}
             >
@@ -158,7 +160,7 @@ export default function PlatformHeader({ adminUrl }) {
               {activeId === link.id && (
                 <motion.span
                   layoutId="platform-nav-active"
-                  className="absolute -bottom-2 left-0 right-0 h-0.5 rounded-full bg-indigo-600"
+                  className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500"
                 />
               )}
             </MotionLink>
@@ -168,7 +170,7 @@ export default function PlatformHeader({ adminUrl }) {
         <div className="flex items-center gap-2">
           <AdminCTA
             adminUrl={adminUrl}
-            className="hidden items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 sm:inline-flex sm:text-sm"
+            className="hidden items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-200 transition-transform hover:scale-105 sm:inline-flex sm:text-sm"
           >
             <LayoutDashboard size={14} />
             অ্যাডমিন প্যানেলে যান
@@ -179,7 +181,7 @@ export default function PlatformHeader({ adminUrl }) {
             onClick={() => setMobileOpen(true)}
             aria-label="মেনু খুলুন"
             aria-expanded={mobileOpen}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-50 md:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50 md:hidden"
           >
             <Menu size={18} />
           </button>
@@ -204,9 +206,9 @@ export default function PlatformHeader({ adminUrl }) {
                   animate={{ x: 0 }}
                   exit={{ x: "-100%" }}
                   transition={{ type: "spring", stiffness: 320, damping: 34 }}
-                  className="fixed inset-y-0 left-0 z-50 flex w-[78%] max-w-xs flex-col overflow-hidden border-r border-slate-200 bg-white shadow-2xl md:hidden"
+                  className="fixed inset-y-0 left-0 z-50 flex w-[78%] max-w-xs flex-col overflow-hidden border-r border-orange-100 bg-white shadow-2xl md:hidden"
                 >
-                  <div className="border-b border-slate-200 px-5 py-4">
+                  <div className="border-b border-orange-100/70 bg-gradient-to-r from-teal-50/90 via-white/90 to-orange-50/90 px-5 py-4">
                     <div className="flex items-center justify-between">
                       <MotionLink
                         href="/"
@@ -214,19 +216,23 @@ export default function PlatformHeader({ adminUrl }) {
                         className="flex items-center gap-2.5"
                         {...tapBounce}
                       >
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 shadow-md shadow-orange-200">
                           <ShoppingCart size={16} className="text-white" />
                         </div>
                         <div className="leading-tight">
-                          <p className="text-sm font-bold tracking-tight text-slate-900">ECMS</p>
-                          <p className="text-[10px] font-medium text-slate-500">E-Commerce Platform</p>
+                          <p className="bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-sm font-extrabold tracking-tight text-transparent">
+                            ECMS
+                          </p>
+                          <p className="bg-gradient-to-r from-teal-600 to-orange-500 bg-clip-text text-[10px] font-medium text-transparent">
+                            E-Commerce Platform
+                          </p>
                         </div>
                       </MotionLink>
                       <button
                         type="button"
                         onClick={() => setMobileOpen(false)}
                         aria-label="মেনু বন্ধ করুন"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100"
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100"
                       >
                         <X size={18} />
                       </button>
@@ -247,18 +253,18 @@ export default function PlatformHeader({ adminUrl }) {
                           <MotionLink
                             href={link.href}
                             onClick={link.id === "home" ? handleHomeClick : () => setMobileOpen(false)}
-                            className={`group flex items-center gap-3 rounded-xl border px-3.5 py-3 transition-all ${
+                            className={`group flex items-center gap-3 rounded-2xl border px-3.5 py-3 transition-all ${
                               isActive
-                                ? "border-indigo-100 bg-indigo-50"
-                                : "border-transparent hover:bg-slate-50"
+                                ? "border-orange-200 bg-orange-50"
+                                : "border-transparent hover:border-gray-100 hover:bg-gray-50"
                             }`}
                             {...tapBounce}
                           >
                             <span
-                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${
                                 isActive
-                                  ? "bg-indigo-600 text-white"
-                                  : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                                  ? "bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-md shadow-orange-200"
+                                  : "bg-gray-100 text-gray-500 group-hover:bg-gray-200"
                               }`}
                             >
                               <Icon size={18} />
@@ -266,16 +272,16 @@ export default function PlatformHeader({ adminUrl }) {
                             <span className="min-w-0 flex-1">
                               <span
                                 className={`block text-sm font-bold ${
-                                  isActive ? "text-slate-900" : "text-slate-700"
+                                  isActive ? "text-gray-900" : "text-gray-700"
                                 }`}
                               >
                                 {link.label}
                               </span>
-                              <span className="block truncate text-xs text-slate-400">{link.desc}</span>
+                              <span className="block truncate text-xs text-gray-400">{link.desc}</span>
                             </span>
                             <ChevronRight
                               size={16}
-                              className={isActive ? "text-indigo-600" : "text-slate-300"}
+                              className={isActive ? "text-orange-500" : "text-gray-300"}
                             />
                           </MotionLink>
                         </motion.div>
@@ -287,11 +293,11 @@ export default function PlatformHeader({ adminUrl }) {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.25 }}
-                    className="mt-auto border-t border-slate-200 p-4"
+                    className="mt-auto border-t border-orange-100 bg-gradient-to-b from-white to-orange-50/50 p-4"
                   >
                     <AdminCTA
                       adminUrl={adminUrl}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors active:bg-indigo-700"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-3 text-sm font-bold text-white shadow-md shadow-orange-200 transition-transform active:scale-95"
                     >
                       <LayoutDashboard size={14} />
                       অ্যাডমিন প্যানেলে যান

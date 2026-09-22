@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
   Check,
   ChevronDown,
   ClipboardList,
+  Crown,
   Globe2,
   Layers,
   LifeBuoy,
@@ -18,7 +19,9 @@ import {
   Phone,
   ShieldCheck,
   ShoppingBag,
+  ShoppingCart,
   Smartphone,
+  Sparkles,
   Tag,
   Truck,
   Wallet,
@@ -29,11 +32,11 @@ import PlatformHeader from "./PlatformHeader";
 import PlatformFooter from "./PlatformFooter";
 import PlatformContactFab from "./PlatformContactFab";
 
-const CAPABILITIES = [
+const TICKER_ITEMS = [
   "কাস্টম ডোমেইন",
   "bKash / Nagad",
   "Cash on Delivery",
-  "PWA স্টোরফ্রন্ট",
+  "PWA — ইনস্টলযোগ্য স্টোরফ্রন্ট",
   "রিয়েল-টাইম অর্ডার ড্যাশবোর্ড",
   "মাল্টি-শপ ম্যানেজমেন্ট",
 ];
@@ -61,60 +64,104 @@ const PLANS = [
     name: "Free",
     tagline: "নতুন শপ শুরু করার জন্য",
     highlights: ["৫০টি পর্যন্ত প্রোডাক্ট", "১ জন অ্যাডমিন", "সম্পূর্ণ স্টোরফ্রন্ট"],
+    accent: "teal",
   },
   {
     name: "Starter",
     tagline: "বাড়ন্ত ব্যবসার জন্য",
     highlights: ["২০০টি পর্যন্ত প্রোডাক্ট", "২ জন অ্যাডমিন", "অ্যানালিটিক্স ও প্রোমো কোড", "পেমেন্ট ইন্টিগ্রেশন"],
+    accent: "emerald",
   },
   {
     name: "Business",
     tagline: "পূর্ণাঙ্গ প্রফেশনাল ফিচারের জন্য",
     highlights: ["১,০০০টি পর্যন্ত প্রোডাক্ট", "৫ জন অ্যাডমিন", "কাস্টম ডোমেইন", "ল্যান্ডিং পেজ ও ইনভয়েস কাস্টমাইজেশন"],
     popular: true,
+    accent: "orange",
   },
   {
     name: "Custom",
     tagline: "চাহিদা অনুযায়ী সম্পূর্ণ কাস্টমাইজড সমাধান",
     highlights: ["৫,০০০টি পর্যন্ত প্রোডাক্ট", "১০ জন অ্যাডমিন", "সব প্রিমিয়াম ফিচার", "প্রয়োজন অনুযায়ী কাস্টমাইজেশন"],
+    accent: "amber",
   },
   {
     name: "Reseller",
     tagline: "একাধিক ক্লায়েন্ট/শপ পরিচালনা ও রিসেল করার জন্য",
     highlights: ["১০,০০০টি পর্যন্ত প্রোডাক্ট", "২০ জন অ্যাডমিন", "মাল্টিপল ক্লায়েন্ট পরিচালনা", "রিসেলিং সুবিধা"],
+    accent: "rose",
   },
 ];
+
+const ACCENTS = {
+  orange: {
+    icon: "bg-gradient-to-br from-orange-500 to-rose-500",
+    glow: "bg-orange-300/40",
+    text: "text-orange-600",
+    chip: "bg-orange-50 text-orange-700 border-orange-100",
+  },
+  amber: {
+    icon: "bg-gradient-to-br from-amber-500 to-amber-600",
+    glow: "bg-amber-300/40",
+    text: "text-amber-600",
+    chip: "bg-amber-50 text-amber-700 border-amber-100",
+  },
+  teal: {
+    icon: "bg-gradient-to-br from-teal-500 to-teal-600",
+    glow: "bg-teal-300/40",
+    text: "text-teal-600",
+    chip: "bg-teal-50 text-teal-700 border-teal-100",
+  },
+  emerald: {
+    icon: "bg-gradient-to-br from-emerald-500 to-emerald-600",
+    glow: "bg-emerald-300/40",
+    text: "text-emerald-600",
+    chip: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  },
+  rose: {
+    icon: "bg-gradient-to-br from-rose-500 to-pink-600",
+    glow: "bg-rose-300/40",
+    text: "text-rose-600",
+    chip: "bg-rose-50 text-rose-700 border-rose-100",
+  },
+};
 
 const WHY_US = [
   {
     icon: Zap,
     title: "কয়েক মিনিটেই শপ লাইভ",
     desc: "কোনো কোডিং ছাড়াই ব্র্যান্ড নাম, লোগো ও থিম সেট করে সাথে সাথে স্টোরফ্রন্ট চালু করুন।",
+    accent: "orange",
   },
   {
     icon: Wallet,
     title: "বাংলাদেশ-কেন্দ্রিক পেমেন্ট",
     desc: "bKash, Nagad ও Cash on Delivery প্রথম থেকেই ইন্টিগ্রেটেড — আলাদা সেটআপের ঝামেলা নেই।",
+    accent: "teal",
   },
   {
     icon: Smartphone,
     title: "মোবাইল-রেডি স্টোরফ্রন্ট",
     desc: "প্রতিটি শপ PWA হিসেবে ইনস্টলযোগ্য, তাই গ্রাহক অ্যাপের মতো অভিজ্ঞতা পায় মোবাইলেই।",
+    accent: "emerald",
   },
   {
     icon: Layers,
     title: "ব্যবসার সাথে বাড়ে এমন প্ল্যান",
     desc: "নতুন শুরু থেকে মাল্টি-শপ রিসেলিং পর্যন্ত — প্রয়োজন অনুযায়ী প্ল্যান আপগ্রেড করুন।",
+    accent: "amber",
   },
   {
     icon: ShieldCheck,
     title: "নিরাপদ ও নির্ভরযোগ্য",
     desc: "এনক্রিপশন ও সিকিউর সার্ভারে ডেটা সংরক্ষিত থাকে, নিয়মিত মনিটরিং হয় প্ল্যাটফর্মের।",
+    accent: "rose",
   },
   {
     icon: LifeBuoy,
     title: "বাংলায় ডেডিকেটেড সাপোর্ট",
     desc: "WhatsApp ও ইমেইলের মাধ্যমে সরাসরি Hikmah IT টিমের সহায়তা পাবেন।",
+    accent: "orange",
   },
 ];
 
@@ -153,66 +200,303 @@ const CONTACT = {
 const SERVICES = [
   {
     icon: ShoppingBag,
+    tag: "কোর সার্ভিস",
     title: "অনলাইন স্টোর ডেভেলপমেন্ট",
     desc: "আপনার ব্র্যান্ডের জন্য সম্পূর্ণ কাস্টমাইজযোগ্য, প্রফেশনাল অনলাইন স্টোরফ্রন্ট তৈরি — নিজের কাস্টম ডোমেইনে।",
+    accent: "orange",
   },
   {
     icon: Package,
+    tag: "ইনভেন্টরি",
     title: "প্রোডাক্ট ও ক্যাটাগরি ম্যানেজমেন্ট",
     desc: "আনলিমিটেড প্রোডাক্ট, ভ্যারিয়েন্ট, স্টক ও ক্যাটাগরি সহজে সাজিয়ে রাখার সিস্টেম।",
+    accent: "teal",
   },
   {
     icon: ClipboardList,
+    tag: "অর্ডার",
     title: "অর্ডার প্রসেসিং ও ইনভয়েসিং",
     desc: "রিয়েল-টাইম অর্ডার ট্র্যাকিং, সাথে কাস্টম ডিজাইন করা ইনভয়েস জেনারেশন।",
+    accent: "amber",
   },
   {
     icon: Wallet,
+    tag: "পেমেন্ট",
     title: "পেমেন্ট গেটওয়ে ইন্টিগ্রেশন",
     desc: "bKash, Nagad ও Cash on Delivery — সব পেমেন্ট মেথড একসাথে ইন্টিগ্রেটেড।",
+    accent: "rose",
   },
   {
     icon: Truck,
+    tag: "ডেলিভারি",
     title: "কুরিয়ার ও ডেলিভারি ম্যানেজমেন্ট",
     desc: "কুরিয়ার সেটআপ ও এলাকাভিত্তিক ডেলিভারি চার্জ নিয়ন্ত্রণ করুন সহজেই।",
+    accent: "emerald",
   },
   {
     icon: Tag,
+    tag: "মার্কেটিং",
     title: "প্রোমো কোড ও ডিসকাউন্ট",
     desc: "কাস্টম প্রোমো কোড ও অফার তৈরি করে বিক্রয় বাড়ানোর সুযোগ।",
+    accent: "orange",
   },
   {
     icon: Megaphone,
+    tag: "ক্যাম্পেইন",
     title: "মার্কেটিং ল্যান্ডিং পেজ",
     desc: "প্রতিটি প্রোডাক্টের জন্য আলাদা হাই-কনভার্টিং ল্যান্ডিং পেজ তৈরি করুন।",
+    accent: "teal",
   },
   {
     icon: Palette,
+    tag: "ব্র্যান্ডিং",
     title: "স্টোরফ্রন্ট কাস্টমাইজেশন",
     desc: "থিম, নেভবার, ফুটার, স্লাইডার ও ব্র্যান্ডিং — সবকিছু নিজের মতো সাজান।",
+    accent: "amber",
   },
   {
     icon: BarChart3,
+    tag: "ম্যানেজমেন্ট",
     title: "স্টাফ, রোল ও অ্যানালিটিক্স",
     desc: "একাধিক স্টাফ অ্যাকাউন্ট ও রোল পরিচালনা, সাথে বিক্রয় অ্যানালিটিক্স।",
+    accent: "rose",
   },
 ];
 
+function useTilt() {
+  const ref = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [8, -8]), { stiffness: 150, damping: 18 });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-8, 8]), { stiffness: 150, damping: 18 });
+
+  const onMouseMove = (e) => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    x.set((e.clientX - rect.left) / rect.width - 0.5);
+    y.set((e.clientY - rect.top) / rect.height - 0.5);
+  };
+  const onMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return { ref, rotateX, rotateY, onMouseMove, onMouseLeave };
+}
+
 const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 22 },
   visible: (i = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, delay: i * 0.06, ease: "easeOut" },
+    transition: { duration: 0.6, delay: i * 0.07, ease: "easeOut" },
   }),
 };
 
-const reveal = {
-  initial: "hidden",
-  whileInView: "visible",
-  viewport: { once: true, amount: 0.25 },
-  variants: fadeUp,
-};
+function DashboardMock() {
+  const { ref, rotateX, rotateY, onMouseMove, onMouseLeave } = useTilt();
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      style={{ rotateX, rotateY, transformPerspective: 1000 }}
+      className="relative mx-auto w-full max-w-md rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-2xl shadow-orange-200/50 backdrop-blur-xl sm:max-w-lg"
+    >
+      <div className="flex items-center gap-1.5 px-2 pb-3 pt-1">
+        <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+        <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+        <span className="ml-3 rounded-md bg-gray-100 px-3 py-1 text-[10px] font-medium text-gray-400">
+          ecms-admin
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2.5 rounded-xl border border-gray-100 bg-gray-50 p-3">
+        <div className="col-span-1 space-y-2 rounded-lg bg-white p-2.5 shadow-sm">
+          {["ড্যাশবোর্ড", "অর্ডার", "প্রোডাক্ট", "কাস্টমার"].map((label, i) => (
+            <div
+              key={label}
+              className={`rounded-md px-2 py-1.5 text-[10px] font-semibold ${
+                i === 0 ? "bg-gradient-to-r from-orange-500 to-rose-500 text-white" : "text-gray-400"
+              }`}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
+        <div className="col-span-2 space-y-2.5">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-gray-100 bg-white p-2.5 shadow-sm">
+              <p className="text-[9px] font-medium text-gray-400">আজকের অর্ডার</p>
+              <p className="mt-1 text-base font-extrabold text-gray-900">৩৮</p>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-white p-2.5 shadow-sm">
+              <p className="text-[9px] font-medium text-gray-400">বিক্রয়</p>
+              <p className="mt-1 text-base font-extrabold text-gray-900">৳ ৪২,৫০০</p>
+            </div>
+          </div>
+
+          <div className="flex h-16 items-end gap-1.5 rounded-lg border border-gray-100 bg-white p-2.5 shadow-sm">
+            {[40, 65, 35, 80, 55, 90, 60].map((h, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-sm bg-gradient-to-t from-orange-500 to-rose-400"
+                style={{ height: `${h}%` }}
+              />
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-gray-100 bg-white px-2.5 py-2 shadow-sm">
+            <span className="text-[10px] text-gray-500">নতুন অর্ডার #১২৮৪</span>
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-600">
+              কনফার্মড
+            </span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function Ticker() {
+  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  return (
+    <div className="relative overflow-hidden border-y border-gray-200 bg-gradient-to-r from-teal-50 via-orange-50 to-rose-50 py-3.5">
+      <div className="animate-[ecms-marquee_28s_linear_infinite] flex w-max gap-10 whitespace-nowrap">
+        {items.map((item, i) => (
+          <span key={i} className="flex items-center gap-2 text-sm font-medium text-gray-500">
+            <Sparkles size={13} className="text-orange-500" />
+            {item}
+          </span>
+        ))}
+      </div>
+      <style>{`
+        @keyframes ecms-marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function StepsPanel() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setActive((a) => (a + 1) % STEPS.length), 3800);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+      <div className="space-y-3">
+        {STEPS.map((step, i) => (
+          <button
+            key={step.n}
+            onClick={() => setActive(i)}
+            className={`group relative block w-full rounded-2xl border px-5 py-4 text-left transition-all ${
+              active === i
+                ? "border-orange-200 bg-orange-50/60"
+                : "border-gray-100 bg-transparent hover:bg-gray-50"
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              <span
+                className={`text-sm font-black tracking-tight ${
+                  active === i ? "text-orange-600" : "text-gray-300"
+                }`}
+              >
+                {step.n}
+              </span>
+              <div className="flex-1">
+                <h3 className={`font-bold ${active === i ? "text-gray-900" : "text-gray-500"}`}>
+                  {step.title}
+                </h3>
+                {active === i && (
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mt-1.5 text-sm leading-relaxed text-gray-500"
+                  >
+                    {step.desc}
+                  </motion.p>
+                )}
+              </div>
+            </div>
+            {active === i && (
+              <motion.div
+                layoutId="step-progress"
+                className="absolute bottom-0 left-5 right-5 h-px overflow-hidden bg-gray-200"
+              >
+                <motion.div
+                  key={active}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 3.8, ease: "linear" }}
+                  style={{ transformOrigin: "left" }}
+                  className="h-full bg-gradient-to-r from-orange-500 to-rose-500"
+                />
+              </motion.div>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <motion.div
+        key={active}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        className="relative flex aspect-square max-w-sm items-center justify-center justify-self-center rounded-3xl border border-gray-200 bg-gradient-to-br from-orange-50 via-white to-teal-50 p-8 shadow-sm sm:aspect-video lg:aspect-square"
+      >
+        {active === 0 && (
+          <div className="relative w-full space-y-3">
+            <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+              <div className="h-6 w-6 rounded-md bg-gradient-to-br from-orange-500 to-rose-500" />
+              <span className="text-xs font-semibold text-gray-700">আপনার ব্র্যান্ড নাম</span>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-gray-500 shadow-sm">
+              yourbrand.com
+            </div>
+            <div className="flex gap-2">
+              {["#f97316", "#f43f5e", "#0d9488"].map((c) => (
+                <span key={c} className="h-7 w-7 rounded-full border border-white shadow" style={{ background: c }} />
+              ))}
+            </div>
+          </div>
+        )}
+        {active === 1 && (
+          <div className="relative grid w-full grid-cols-2 gap-3">
+            {[Package, ShoppingBag].map((Icon, i) => (
+              <div key={i} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <Icon size={18} className="text-orange-500" />
+                <div className="mt-3 h-2 w-3/4 rounded-full bg-gray-200" />
+                <div className="mt-2 h-2 w-1/2 rounded-full bg-gray-100" />
+              </div>
+            ))}
+          </div>
+        )}
+        {active === 2 && (
+          <div className="relative w-full space-y-2.5">
+            {["#১২৮১ — কনফার্মড", "#১২৮২ — প্রসেসিং", "#১২৮৩ — ডেলিভারড"].map((row) => (
+              <div
+                key={row}
+                className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-gray-600 shadow-sm"
+              >
+                {row}
+                <Check size={14} className="text-emerald-500" />
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
+}
 
 function whatsappPlanLink(whatsappNumber, planName) {
   if (!whatsappNumber) return "#";
@@ -226,6 +510,36 @@ function whatsappContactLink(whatsappNumber) {
   return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
 }
 
+function FAQItem({ index, q, a, isOpen, onToggle }) {
+  return (
+    <div
+      className={`overflow-hidden rounded-2xl border transition-colors ${
+        isOpen ? "border-orange-200 bg-orange-50/40" : "border-gray-100 bg-white"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(index)}
+        aria-expanded={isOpen}
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+      >
+        <span className="font-semibold text-gray-900">{q}</span>
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-gray-400 transition-transform duration-300 ${isOpen ? "rotate-180 text-orange-500" : ""}`}
+        />
+      </button>
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden px-5 pb-4 text-sm leading-relaxed text-gray-500">{a}</div>
+      </div>
+    </div>
+  );
+}
+
 function WhatsAppIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -234,368 +548,305 @@ function WhatsAppIcon(props) {
   );
 }
 
-function SectionHeading({ eyebrow, title, desc }) {
-  return (
-    <motion.div {...reveal} className="mx-auto max-w-2xl text-center">
-      <p className="text-sm font-semibold text-indigo-600">{eyebrow}</p>
-      <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h2>
-      {desc && <p className="mt-3 text-base leading-relaxed text-slate-600">{desc}</p>}
-    </motion.div>
-  );
-}
-
-function DashboardMock() {
-  return (
-    <div className="relative mx-auto w-full max-w-lg">
-      <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-gradient-to-b from-indigo-100/70 to-transparent" />
-
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
-        {/* Browser chrome */}
-        <div className="flex items-center gap-1.5 border-b border-slate-100 bg-slate-50 px-4 py-3">
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-          <span className="ml-3 flex-1 rounded-md bg-white px-3 py-1 text-[11px] text-slate-400 ring-1 ring-slate-200">
-            admin.yourshop.com
-          </span>
-        </div>
-
-        <div className="grid grid-cols-[6.5rem_1fr] sm:grid-cols-[7.5rem_1fr]">
-          {/* Sidebar */}
-          <div className="space-y-1 border-r border-slate-100 bg-slate-50/60 p-3">
-            {["ড্যাশবোর্ড", "অর্ডার", "প্রোডাক্ট", "কাস্টমার", "রিপোর্ট"].map((label, i) => (
-              <div
-                key={label}
-                className={`rounded-md px-2.5 py-1.5 text-[11px] font-medium ${
-                  i === 0 ? "bg-indigo-600 text-white" : "text-slate-500"
-                }`}
-              >
-                {label}
-              </div>
-            ))}
-          </div>
-
-          {/* Content */}
-          <div className="space-y-3 p-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-slate-100 p-3">
-                <p className="text-[10px] font-medium text-slate-500">আজকের অর্ডার</p>
-                <p className="mt-1 text-lg font-bold text-slate-900">৩৮</p>
-              </div>
-              <div className="rounded-lg border border-slate-100 p-3">
-                <p className="text-[10px] font-medium text-slate-500">বিক্রয়</p>
-                <p className="mt-1 text-lg font-bold text-slate-900">৳ ৪২,৫০০</p>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-100 p-3">
-              <p className="text-[10px] font-medium text-slate-500">সাপ্তাহিক বিক্রয়</p>
-              <div className="mt-3 flex h-16 items-end gap-2">
-                {[40, 65, 35, 80, 55, 90, 60].map((h, i) => (
-                  <div
-                    key={i}
-                    className={`flex-1 rounded-sm ${i === 5 ? "bg-indigo-600" : "bg-indigo-100"}`}
-                    style={{ height: `${h}%` }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2.5">
-              <span className="text-[11px] text-slate-600">নতুন অর্ডার #১২৮৪</span>
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                কনফার্মড
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FAQItem({ index, q, a, isOpen, onToggle }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white">
-      <button
-        type="button"
-        onClick={() => onToggle(index)}
-        aria-expanded={isOpen}
-        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-      >
-        <span className="font-semibold text-slate-900">{q}</span>
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-slate-400 transition-transform duration-300 ${isOpen ? "rotate-180 text-indigo-600" : ""}`}
-        />
-      </button>
-      <div
-        className={`grid transition-all duration-300 ease-in-out ${
-          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="overflow-hidden px-5 text-sm leading-relaxed text-slate-600">
-          <div className="pb-4">{a}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function PlatformLanding({ adminUrl, whatsappNumber }) {
   const [openFaq, setOpenFaq] = useState(0);
 
   return (
     <div
-      className="min-h-screen overflow-x-clip bg-white text-slate-900 antialiased"
+      className="relative min-h-screen overflow-x-clip bg-gradient-to-br from-teal-50 via-amber-50 to-orange-100 text-gray-900"
       style={{ fontFamily: '"Hind Siliguri", ui-sans-serif, system-ui, sans-serif' }}
     >
+      {/* Ambient background — persists across the whole page */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute -left-32 -top-32 h-[30rem] w-[30rem] rounded-full bg-teal-300/50 blur-[100px]" />
+        <div className="absolute -right-32 top-1/4 h-[28rem] w-[28rem] rounded-full bg-orange-300/50 blur-[100px]" />
+        <div className="absolute bottom-0 left-1/3 h-[26rem] w-[26rem] rounded-full bg-rose-300/45 blur-[100px]" />
+        <div className="absolute right-1/4 bottom-1/4 h-[22rem] w-[22rem] rounded-full bg-amber-200/40 blur-[100px]" />
+        <div
+          className="absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+          }}
+        />
+      </div>
+
       <PlatformHeader adminUrl={adminUrl} />
 
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.4]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)",
-            backgroundSize: "56px 56px",
-            maskImage: "radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%)",
-            WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%)",
-          }}
-        />
-
-        <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-5 pb-20 pt-14 sm:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:pb-24">
+      <section className="relative mx-auto max-w-6xl px-5 pb-16 pt-6 sm:pt-10">
+        <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
           <motion.div initial="hidden" animate="visible" variants={fadeUp}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-indigo-600" />
-              বাংলাদেশের ব্যবসার জন্য ই-কমার্স প্ল্যাটফর্ম
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-100 to-rose-100 px-3.5 py-1.5 text-xs font-bold text-rose-600">
+              <ShoppingCart size={12} />
+              Online Shopping Platform
             </span>
 
-            <h1 className="mt-5 text-3xl font-bold leading-[1.25] tracking-tight text-slate-900 sm:text-4xl lg:text-[2.75rem]">
-              অনলাইন শপ চালান, <span className="text-indigo-600">ঝামেলা ছাড়াই</span>
+            <h1 className="mt-4 text-3xl font-semibold leading-[1.2] tracking-tight text-gray-900 sm:text-4xl md:text-[2.6rem]">
+              অনলাইন শপ চালান,{" "}
+              <span className="bg-gradient-to-r from-orange-500 via-rose-500 to-pink-600 bg-clip-text text-transparent">
+                ঝামেলা ছাড়াই
+              </span>
             </h1>
 
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              ECMS, Hikmah IT-এর ই-কমার্স ম্যানেজমেন্ট সিস্টেম, দ্রুত, নিরাপদ ও
-              বিক্রয়-উপযোগী অনলাইন স্টোর তৈরি করে। প্রোডাক্ট, অর্ডার, পেমেন্ট ও
-              কাস্টমার — সব কিছু একটি ড্যাশবোর্ড থেকে নিয়ন্ত্রণ করুন।
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-gray-500 sm:text-lg">
+              ECMS, Hikmah IT-এর ই-কমার্স ম্যানেজমেন্ট সিস্টেম, বাংলাদেশের
+              ব্যবসার জন্য দ্রুত, নিরাপদ ও বিক্রয়-উপযোগী অনলাইন স্টোর তৈরি করে।
+              প্রোডাক্ট, অর্ডার, পেমেন্ট ও কাস্টমার, সব কিছু একটি ড্যাশবোর্ড
+              থেকে নিয়ন্ত্রণ করুন।
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <AdminCTA
                 adminUrl={adminUrl}
-                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-orange-300/40 transition-transform hover:scale-105"
               >
                 ফ্রি ট্রাই করুন
-                <ArrowRight size={16} />
+                <ArrowRight size={15} />
               </AdminCTA>
               <a
                 href="#plans"
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-6 py-3.5 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
               >
                 প্ল্যান দেখুন
               </a>
             </div>
 
-            <ul className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-600">
-              <li className="flex items-center gap-2">
-                <ShieldCheck size={16} className="text-indigo-600" /> নিরাপদ হোস্টিং
-              </li>
-              <li className="flex items-center gap-2">
-                <Globe2 size={16} className="text-indigo-600" /> কাস্টম ডোমেইন
-              </li>
-              <li className="flex items-center gap-2">
-                <Smartphone size={16} className="text-indigo-600" /> মোবাইল-রেডি
-              </li>
-            </ul>
+            <div className="mt-8 flex flex-wrap items-center gap-5 text-xs text-gray-500">
+              <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-emerald-500" /> নিরাপদ হোস্টিং</span>
+              <span className="flex items-center gap-1.5"><Globe2 size={14} className="text-amber-500" /> কাস্টম ডোমেইন</span>
+              <span className="flex items-center gap-1.5"><Smartphone size={14} className="text-teal-500" /> মোবাইল-রেডি</span>
+            </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.15 }}
           >
             <DashboardMock />
           </motion.div>
         </div>
       </section>
 
-      {/* Capabilities strip */}
-      <section className="border-b border-slate-100 bg-white">
-        <div className="mx-auto max-w-6xl px-5 py-6">
-          <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-            {CAPABILITIES.map((item) => (
-              <li key={item} className="flex items-center gap-2 text-sm font-medium text-slate-600">
-                <Check size={15} className="text-indigo-600" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <Ticker />
 
       {/* Services */}
-      <section id="features" className="scroll-mt-16 mx-auto max-w-6xl px-5 py-20 sm:py-24">
-        <SectionHeading
-          eyebrow="আমাদের সার্ভিস"
-          title="প্রফেশনাল ই-কমার্স সার্ভিসসমূহ"
-          desc="আপনার ব্যবসাকে অনলাইনে নিয়ে যাওয়ার জন্য যা যা দরকার, সবই এক জায়গায়।"
-        />
+      <section id="features" className="mx-auto max-w-6xl px-5 py-20 sm:py-24">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.4 }}
+          variants={fadeUp}
+          className="mx-auto max-w-xl text-center"
+        >
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">আমাদের সার্ভিস</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+            প্রফেশনাল ই-কমার্স সার্ভিসসমূহ
+          </h2>
+          <p className="mt-3 text-sm text-gray-500">
+            আপনার ব্যবসাকে অনলাইনে নিয়ে যাওয়ার জন্য যা যা দরকার, সবই এক জায়গায়।
+          </p>
+        </motion.div>
 
         <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {SERVICES.map(({ icon: Icon, title, desc }, i) => (
-            <motion.div
-              key={title}
-              custom={i % 3}
-              {...reveal}
-              className="rounded-xl border border-slate-200 bg-white p-6 transition-shadow hover:shadow-lg hover:shadow-slate-200/70"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                <Icon size={20} />
-              </div>
-              <h3 className="mt-5 font-semibold text-slate-900">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{desc}</p>
-            </motion.div>
-          ))}
+          {SERVICES.map(({ icon: Icon, tag, title, desc, accent }, i) => {
+            const a = ACCENTS[accent];
+            return (
+              <motion.div
+                key={title}
+                custom={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={fadeUp}
+                className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-gray-200/70"
+              >
+                <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full ${a.glow} blur-3xl opacity-0 transition-opacity group-hover:opacity-100`} />
+
+                <div className="relative flex items-center justify-between">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-md ${a.icon}`}>
+                    <Icon size={20} />
+                  </div>
+                  <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${a.chip}`}>{tag}</span>
+                </div>
+
+                <h3 className="relative mt-5 font-semibold text-gray-900">{title}</h3>
+                <p className="relative mt-2 text-sm leading-relaxed text-gray-500">{desc}</p>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
       {/* Why us */}
-      <section id="why-us" className="scroll-mt-16 border-y border-slate-100 bg-slate-50 py-20 sm:py-24">
+      <section id="why-us" className="border-t border-gray-100 bg-white py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-5">
-          <SectionHeading
-            eyebrow="কেন ECMS"
-            title="কেন ব্যবসার জন্য ECMS বেছে নেবেন"
-            desc="অন্য প্ল্যাটফর্মের বদলে ECMS-এ শপ চালানোর পেছনে যে কারণগুলো সবচেয়ে বেশি গুরুত্বপূর্ণ।"
-          />
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={fadeUp}
+            className="mx-auto max-w-xl text-center"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">কেন ECMS</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+              কেন ব্যবসার জন্য ECMS বেছে নেবেন
+            </h2>
+            <p className="mt-3 text-sm text-gray-500">
+              অন্য প্ল্যাটফর্মের বদলে ECMS-এ শপ চালানোর পেছনে যে কারণগুলো সবচেয়ে বেশি গুরুত্বপূর্ণ।
+            </p>
+          </motion.div>
 
-          <div className="mt-12 grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-            {WHY_US.map(({ icon: Icon, title, desc }, i) => (
-              <motion.div key={title} custom={i % 3} {...reveal} className="flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200">
-                  <Icon size={20} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900">{title}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{desc}</p>
-                </div>
-              </motion.div>
-            ))}
+          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {WHY_US.map(({ icon: Icon, title, desc, accent }, i) => {
+              const a = ACCENTS[accent];
+              return (
+                <motion.div
+                  key={title}
+                  custom={i}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.3 }}
+                  variants={fadeUp}
+                  className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+                >
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-md ${a.icon}`}>
+                    <Icon size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{title}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{desc}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* Plans */}
-      <section id="plans" className="scroll-mt-16 py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5">
-          <SectionHeading
-            eyebrow="প্ল্যান"
-            title="যে যেভাবে বড় হচ্ছেন, সেভাবেই প্ল্যান"
-            desc="ছোট শুরু থেকে বড় পরিসরের ব্যবসা — সব ধরনের প্রয়োজনের জন্য আলাদা প্ল্যান রয়েছে।"
-          />
+      <section id="plans" className="border-t border-gray-100 py-20 sm:py-24">
+        <div className="mx-auto max-w-6xl px-5">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={fadeUp}
+            className="mx-auto max-w-xl text-center"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">প্ল্যান</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+              যে যেভাবে বড় হচ্ছেন, সেভাবেই প্ল্যান
+            </h2>
+            <p className="mt-3 text-sm text-gray-500">
+              ছোট শুরু থেকে বড় পরিসরের ব্যবসা — সব ধরনের প্রয়োজনের জন্য আলাদা প্ল্যান রয়েছে।
+            </p>
+          </motion.div>
 
-          <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {PLANS.map((plan, i) => (
-              <motion.div
-                key={plan.name}
-                custom={i % 3}
-                {...reveal}
-                className={`relative flex flex-col rounded-2xl p-6 ${
-                  plan.popular
-                    ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20 xl:-translate-y-3"
-                    : "border border-slate-200 bg-white"
-                }`}
-              >
-                {plan.popular && (
-                  <span className="absolute -top-3 left-6 rounded-full bg-indigo-600 px-3 py-1 text-[11px] font-semibold text-white">
-                    সবচেয়ে জনপ্রিয়
-                  </span>
-                )}
-
-                <h3 className={`text-lg font-bold ${plan.popular ? "text-white" : "text-slate-900"}`}>
-                  {plan.name}
-                </h3>
-                <p className={`mt-1.5 min-h-[2.5rem] text-sm leading-snug ${plan.popular ? "text-slate-300" : "text-slate-600"}`}>
-                  {plan.tagline}
-                </p>
-
-                <div className={`my-5 h-px ${plan.popular ? "bg-slate-700" : "bg-slate-100"}`} />
-
-                <ul className="flex-1 space-y-3">
-                  {plan.highlights.map((h) => (
-                    <li
-                      key={h}
-                      className={`flex items-start gap-2.5 text-sm ${plan.popular ? "text-slate-200" : "text-slate-700"}`}
-                    >
-                      <Check
-                        size={16}
-                        className={`mt-0.5 shrink-0 ${plan.popular ? "text-indigo-400" : "text-indigo-600"}`}
-                      />
-                      {h}
-                    </li>
-                  ))}
-                </ul>
-
-                <a
-                  href={whatsappPlanLink(whatsappNumber, plan.name)}
-                  target={whatsappNumber ? "_blank" : undefined}
-                  rel={whatsappNumber ? "noopener noreferrer" : undefined}
-                  className={`mt-7 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            {PLANS.map((plan, i) => {
+              const a = ACCENTS[plan.accent];
+              return (
+                <motion.div
+                  key={plan.name}
+                  custom={i}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.3 }}
+                  variants={fadeUp}
+                  className={`relative flex flex-col rounded-2xl border p-6 ${
                     plan.popular
-                      ? "bg-indigo-600 text-white hover:bg-indigo-500"
-                      : "border border-slate-300 text-slate-800 hover:bg-slate-50"
+                      ? "border-orange-300 bg-gradient-to-b from-orange-50/80 to-white shadow-xl shadow-orange-100 lg:-translate-y-2"
+                      : "border-gray-100 bg-white shadow-sm"
                   }`}
                 >
-                  <WhatsAppIcon className="h-4 w-4" />
-                  এই প্ল্যান নিন
-                </a>
-              </motion.div>
-            ))}
+                  {plan.popular && (
+                    <span className="absolute -top-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-3 py-1 text-[10px] font-bold text-white shadow">
+                      <Crown size={11} />
+                      সবচেয়ে জনপ্রিয়
+                    </span>
+                  )}
+                  <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-black text-white shadow ${a.icon}`}>
+                    {plan.name.charAt(0)}
+                  </span>
+                  <h3 className="mt-3 text-lg font-semibold text-gray-900">{plan.name}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500">{plan.tagline}</p>
+
+                  <ul className="mt-5 flex-1 space-y-2.5">
+                    {plan.highlights.map((h) => (
+                      <li key={h} className="flex items-start gap-2 text-xs text-gray-600">
+                        <Check size={14} className="mt-0.5 shrink-0 text-emerald-500" />
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <a
+                    href={whatsappPlanLink(whatsappNumber, plan.name)}
+                    target={whatsappNumber ? "_blank" : undefined}
+                    rel={whatsappNumber ? "noopener noreferrer" : undefined}
+                    className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-200 transition-transform hover:scale-105"
+                  >
+                    <WhatsAppIcon className="h-3.5 w-3.5" />
+                    এই প্ল্যান নিন
+                  </a>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="scroll-mt-16 border-y border-slate-100 bg-slate-50 py-20 sm:py-24">
+      <section id="how-it-works" className="border-t border-gray-100 bg-gradient-to-b from-teal-50/70 via-white to-orange-50/50 py-20 sm:py-24">
         <div className="mx-auto max-w-5xl px-5">
-          <SectionHeading eyebrow="প্রক্রিয়া" title="মাত্র ৩ ধাপে শুরু করুন" />
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={fadeUp}
+            className="mx-auto max-w-xl text-center"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">প্রক্রিয়া</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+              মাত্র ৩ ধাপে শুরু করুন
+            </h2>
+          </motion.div>
 
-          <div className="relative mt-14 grid gap-5 md:grid-cols-3">
-            {STEPS.map((step, i) => (
-              <motion.div
-                key={step.n}
-                custom={i}
-                {...reveal}
-                className="relative rounded-xl border border-slate-200 bg-white p-6"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">
-                  {step.n}
-                </span>
-                <h3 className="mt-5 font-semibold text-slate-900">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.desc}</p>
-                {i < STEPS.length - 1 && (
-                  <ArrowRight
-                    size={18}
-                    className="absolute -right-[1.15rem] top-1/2 z-10 hidden -translate-y-1/2 text-slate-300 md:block"
-                  />
-                )}
-              </motion.div>
-            ))}
+          <div className="mt-14">
+            <StepsPanel />
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="scroll-mt-16 py-20 sm:py-24">
+      <section id="faq" className="border-t border-gray-100 py-20 sm:py-24">
         <div className="mx-auto max-w-3xl px-5">
-          <SectionHeading
-            eyebrow="সাধারণ জিজ্ঞাসা"
-            title="যা সবচেয়ে বেশি জানতে চাওয়া হয়"
-            desc="ECMS নিয়ে সাধারণ প্রশ্নের উত্তর। আরও কিছু জানতে চাইলে নিচে যোগাযোগ করুন।"
-          />
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={fadeUp}
+            className="mx-auto max-w-xl text-center"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">সাধারণ জিজ্ঞাসা</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+              যা সবচেয়ে বেশি জানতে চাওয়া হয়
+            </h2>
+            <p className="mt-3 text-sm text-gray-500">
+              ECMS নিয়ে সাধারণ প্রশ্নের উত্তর। আরও কিছু জানতে চাইলে নিচে যোগাযোগ করুন।
+            </p>
+          </motion.div>
 
-          <motion.div {...reveal} className="mt-10 space-y-3">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={fadeUp}
+            className="mt-10 space-y-3"
+          >
             {FAQS.map((faq, i) => (
               <FAQItem
                 key={faq.q}
@@ -611,13 +862,23 @@ export default function PlatformLanding({ adminUrl, whatsappNumber }) {
       </section>
 
       {/* Contact */}
-      <section id="contact" className="scroll-mt-16 border-y border-slate-100 bg-slate-50 py-20 sm:py-24">
+      <section id="contact" className="border-t border-gray-100 bg-gradient-to-b from-teal-50/60 via-white to-orange-50/40 py-20 sm:py-24">
         <div className="mx-auto max-w-5xl px-5">
-          <SectionHeading
-            eyebrow="যোগাযোগ"
-            title="আমাদের সাথে যোগাযোগ করুন"
-            desc="শপ শুরু করা নিয়ে প্রশ্ন থাকলে বা ডেমো দেখতে চাইলে সরাসরি যোগাযোগ করুন — দ্রুত উত্তর পাবেন।"
-          />
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={fadeUp}
+            className="mx-auto max-w-xl text-center"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">যোগাযোগ</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">
+              আমাদের সাথে যোগাযোগ করুন
+            </h2>
+            <p className="mt-3 text-sm text-gray-500">
+              শপ শুরু করা নিয়ে প্রশ্ন থাকলে বা ডেমো দেখতে চাইলে সরাসরি যোগাযোগ করুন — দ্রুত উত্তর পাবেন।
+            </p>
+          </motion.div>
 
           <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-3">
             <motion.a
@@ -625,45 +886,54 @@ export default function PlatformLanding({ adminUrl, whatsappNumber }) {
               target={whatsappNumber ? "_blank" : undefined}
               rel={whatsappNumber ? "noopener noreferrer" : undefined}
               custom={0}
-              {...reveal}
-              className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white p-6 text-center transition-shadow hover:shadow-lg hover:shadow-slate-200/70"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-gray-200/70"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#25D366] text-white shadow-md shadow-emerald-200">
                 <WhatsAppIcon className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">WhatsApp</h3>
-                <p className="mt-1 text-sm text-slate-600">দ্রুততম উত্তরের জন্য মেসেজ করুন</p>
+                <h3 className="font-semibold text-gray-900">WhatsApp</h3>
+                <p className="mt-1 text-sm text-gray-500">দ্রুততম উত্তরের জন্য মেসেজ করুন</p>
               </div>
             </motion.a>
 
             <motion.a
               href={`mailto:${CONTACT.email}`}
               custom={1}
-              {...reveal}
-              className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white p-6 text-center transition-shadow hover:shadow-lg hover:shadow-slate-200/70"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-gray-200/70"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-md shadow-orange-200">
                 <Mail size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">ইমেইল</h3>
-                <p className="mt-1 break-all text-sm text-slate-600">{CONTACT.email}</p>
+                <h3 className="font-semibold text-gray-900">ইমেইল</h3>
+                <p className="mt-1 break-all text-sm text-gray-500">{CONTACT.email}</p>
               </div>
             </motion.a>
 
             <motion.a
               href={`tel:${CONTACT.phone.replace(/[^0-9]/g, "")}`}
               custom={2}
-              {...reveal}
-              className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white p-6 text-center transition-shadow hover:shadow-lg hover:shadow-slate-200/70"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-gray-200/70"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-200">
                 <Phone size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">ফোন</h3>
-                <p className="mt-1 text-sm text-slate-600">{CONTACT.phone}</p>
+                <h3 className="font-semibold text-gray-900">ফোন</h3>
+                <p className="mt-1 text-sm text-gray-500">{CONTACT.phone}</p>
               </div>
             </motion.a>
           </div>
@@ -673,39 +943,29 @@ export default function PlatformLanding({ adminUrl, whatsappNumber }) {
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-5 py-20 sm:py-24">
         <motion.div
-          {...reveal}
-          className="relative overflow-hidden rounded-2xl bg-indigo-600 px-6 py-14 text-center sm:px-12 sm:py-16"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.5 }}
+          variants={fadeUp}
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-rose-500 to-pink-600 px-6 py-16 text-center shadow-2xl shadow-orange-200"
         >
-          <div
-            className="pointer-events-none absolute inset-0 opacity-20"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-              maskImage: "radial-gradient(ellipse at center, #000 20%, transparent 75%)",
-              WebkitMaskImage: "radial-gradient(ellipse at center, #000 20%, transparent 75%)",
-            }}
-          />
+          <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 select-none text-center text-[8rem] font-black leading-none text-white/10 sm:text-[11rem]">
+            ECMS
+          </p>
           <div className="relative">
-            <h2 className="text-2xl font-bold text-white sm:text-3xl">আজই আপনার অনলাইন শপ চালু করুন</h2>
-            <p className="mx-auto mt-3 max-w-md text-indigo-100">
+            <h2 className="text-2xl font-semibold text-white sm:text-3xl">আজই আপনার অনলাইন শপ চালু করুন</h2>
+            <p className="mx-auto mt-3 max-w-md text-white/80">
               Hikmah IT-এর ECMS প্ল্যাটফর্মে আপনার ব্যবসাকে ডিজিটাল রূপ দিন।
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <AdminCTA
-                adminUrl={adminUrl}
-                className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-sm transition-colors hover:bg-indigo-50"
-              >
-                ফ্রি ট্রাই করুন
-                <ArrowRight size={16} />
-              </AdminCTA>
+            <div className="mt-8 flex justify-center">
               <a
                 href="https://hikmahit.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-indigo-300/60 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-gray-900 shadow-xl transition-transform hover:scale-105"
               >
                 Hikmah IT সম্পর্কে জানুন
+                <ArrowRight size={16} />
               </a>
             </div>
           </div>

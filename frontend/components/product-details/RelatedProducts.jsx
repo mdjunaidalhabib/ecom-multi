@@ -1,6 +1,9 @@
-import ProductCard from "../home/ProductCard";
+import DefaultProductCard from "../home/ProductCard";
 
-export default function RelatedProducts({ related = [] }) {
+// ✅ ProductCard prop হিসেবে আসে (frontend/lib/themeRegistry.js থেকে, দেখুন
+// ProductDetailsClient.jsx) যাতে থিম অনুযায়ী সঠিক card দেখায়, না দিলে classic
+// কার্ডে fallback করে।
+export default function RelatedProducts({ related = [], ProductCard = DefaultProductCard }) {
   if (!related?.length) return null;
 
   return (

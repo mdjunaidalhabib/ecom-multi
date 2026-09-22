@@ -2,21 +2,27 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ProductDetailsSkeleton from "../skeletons/ProductDetailsSkeleton";
-import { useCartUtils } from "../../hooks/useCartUtils";
-import { useLiveStock } from "../../hooks/useLiveStock";
+import ProductDetailsSkeleton from "../../skeletons/ProductDetailsSkeleton";
+import { useCartUtils } from "../../../hooks/useCartUtils";
+import { useLiveStock } from "../../../hooks/useLiveStock";
 
-import ProductBreadcrumb from "./ProductBreadcrumb";
-import ProductGallery from "./ProductGallery";
-import ProductInfo from "./ProductInfo";
-import PurchaseActions from "./PurchaseActions";
-import ProductTabs from "./ProductTabs";
-import RelatedProducts from "./RelatedProducts";
-import FacebookGroupLink from "./FacebookGroupLink";
-import ReviewVideoLink from "./ReviewVideoLink";
-import useShopPath from "../../hooks/useShopPath";
+import ProductBreadcrumb from "../../product-details/ProductBreadcrumb";
+import ProductGallery from "../../product-details/ProductGallery";
+import ProductInfo from "../../product-details/ProductInfo";
+import PurchaseActions from "../../product-details/PurchaseActions";
+import ProductTabs from "../../product-details/ProductTabs";
+import RelatedProducts from "../../product-details/RelatedProducts";
+import FacebookGroupLink from "../../product-details/FacebookGroupLink";
+import ReviewVideoLink from "../../product-details/ReviewVideoLink";
+import useShopPath from "../../../hooks/useShopPath";
 
-export default function ProductDetailsClient({
+// Shop Start: premium "sticky split-screen" product page — the gallery stays
+// pinned to the viewport while the info column scrolls beside it, generous
+// whitespace instead of card chrome, a large serif heading, and full-width
+// stacked buy buttons. All business logic here is unchanged from
+// ProductDetailsClient.jsx — only the markup/layout differs (same pattern as
+// FirstCartProductDetails).
+export default function TerraProductDetails({
   product,
   categories = [],
   related = [],
@@ -144,60 +150,81 @@ export default function ProductDetailsClient({
     );
   };
 
-return (
-  <main className="container mx-auto px-4 sm:px-6 lg:px-8 mt-4 md:py-8">
-    <ProductBreadcrumb product={product} categories={categories} />
+  return (
+    <main className="bg-[var(--theme-bg)]">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+        <ProductBreadcrumb product={product} categories={categories} />
 
-    <section className="bg-[var(--theme-bg)] rounded-2xl grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 overflow-visible">
-      {/* Product Gallery */}
-      <div className="lg:col-span-7">
-        <ProductGallery
-          images={images}
-          activeIdx={activeIdx}
-          setActiveIdx={setActiveIdx}
-          productName={product.name}
-          isOutOfStock={isOutOfStock}
-        />
+        <section className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-16">
+          {/* Gallery — sticky, no card chrome, floats on the page bg */}
+          <div className="lg:sticky lg:top-24 lg:col-span-7 lg:self-start">
+            <ProductGallery
+              images={images}
+              activeIdx={activeIdx}
+              setActiveIdx={setActiveIdx}
+              productName={product.name}
+              isOutOfStock={isOutOfStock}
+            />
+          </div>
+
+          {/* Info — open whitespace, no surrounding card */}
+          <div
+            className="flex flex-col gap-6 lg:col-span-5 lg:py-4"
+            style={{ fontFamily: "var(--theme-font-heading)" }}
+          >
+            <ProductInfo
+              product={product}
+              categories={categories}
+              isOutOfStock={isOutOfStock}
+              currentStock={currentStock}
+              soldCount={soldCount}
+              currentPrice={currentPrice}
+              currentOldPrice={currentOldPrice}
+              hasOldPrice={hasOldPrice}
+              discountPct={discountPct}
+              isInWishlist={isInWishlist}
+              toggleWishlist={toggleWishlist}
+              selectedColor={selectedColor}
+              setSelectedColor={(c) => {
+                setSelectedColor(c);
+                setActiveIdx(0);
+              }}
+            />
+
+            <div className="border-t border-[var(--theme-text)]/10 pt-6">
+              <PurchaseActions
+                product={product}
+                cartKey={cartKey}
+                quantity={quantity}
+                totalPrice={totalPrice}
+                isOutOfStock={isOutOfStock}
+                currentStock={currentStock}
+                updateCart={updateCart}
+                handleCheckout={handleCheckout}
+                variant="stacked"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <ReviewVideoLink product={product} />
+              <FacebookGroupLink />
+            </div>
+          </div>
+        </section>
+
+        {/* Description / return policy / reviews — stacked one after another,
+            no tab-click switching */}
+        <div className="mt-16">
+          <ProductTabs product={product} tab={tab} setTab={setTab} variant="stacked" />
+        </div>
+
+        {/* Related products */}
+        {related?.length > 0 && (
+          <div className="mt-8">
+            <RelatedProducts related={related} ProductCard={ProductCard} />
+          </div>
+        )}
       </div>
-
-      {/* Product Info */}
-      <div className="lg:col-span-5 flex flex-col md:px-6 md:py-6 bg-[var(--theme-bg)] gap-4">
-        <ProductInfo
-          product={product}
-          categories={categories}
-          isOutOfStock={isOutOfStock}
-          currentStock={currentStock}
-          soldCount={soldCount}
-          currentPrice={currentPrice}
-          currentOldPrice={currentOldPrice}
-          hasOldPrice={hasOldPrice}
-          discountPct={discountPct}
-          isInWishlist={isInWishlist}
-          toggleWishlist={toggleWishlist}
-          selectedColor={selectedColor}
-          setSelectedColor={(c) => {
-            setSelectedColor(c);
-            setActiveIdx(0);
-          }}
-        />
-
-        <PurchaseActions
-          product={product}
-          cartKey={cartKey}
-          quantity={quantity}
-          totalPrice={totalPrice}
-          isOutOfStock={isOutOfStock}
-          currentStock={currentStock}
-          updateCart={updateCart}
-          handleCheckout={handleCheckout}
-        />
-      </div>
-    </section>
-
-    <ProductTabs product={product} tab={tab} setTab={setTab} />
-    <ReviewVideoLink product={product} />
-    <FacebookGroupLink />
-    <RelatedProducts related={related} ProductCard={ProductCard} />
-  </main>
-);
+    </main>
+  );
 }

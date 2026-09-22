@@ -55,7 +55,7 @@ export default function PlatformContactFab({ whatsappNumber }) {
                 exit="exit"
                 variants={itemVariants}
                 whileTap={{ scale: 0.9 }}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-slate-900/20"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-emerald-200"
               >
                 <WhatsAppIcon className="h-4 w-4" />
               </motion.a>
@@ -71,7 +71,7 @@ export default function PlatformContactFab({ whatsappNumber }) {
               exit="exit"
               variants={itemVariants}
               whileTap={{ scale: 0.9 }}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-white shadow-lg shadow-slate-900/20"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-lg shadow-teal-200"
             >
               <Phone size={16} />
             </motion.a>
@@ -88,7 +88,7 @@ export default function PlatformContactFab({ whatsappNumber }) {
               exit="exit"
               variants={itemVariants}
               whileTap={{ scale: 0.9 }}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-white shadow-lg shadow-slate-900/20"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-200"
             >
               <Globe2 size={16} />
             </motion.a>
@@ -102,9 +102,10 @@ export default function PlatformContactFab({ whatsappNumber }) {
         aria-label={open ? "যোগাযোগ মেনু বন্ধ করুন" : "যোগাযোগ করুন"}
         aria-expanded={open}
         whileTap={{ scale: 0.9 }}
-        className="relative flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600 text-white shadow-xl shadow-indigo-900/25 transition-colors hover:bg-indigo-700"
+        className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-xl shadow-orange-300/50"
       >
-                <motion.span
+        {!open && <span className="absolute inset-0 -z-10 animate-ping rounded-full bg-orange-400/50" />}
+        <motion.span
           animate={{ rotate: open ? 90 : 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           className="flex items-center justify-center"
