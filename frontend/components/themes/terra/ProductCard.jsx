@@ -5,14 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import cloudinaryLoader from "../../../lib/cloudinaryLoader";
-import { FaHeart, FaCheck, FaShoppingBasket } from "react-icons/fa";
+import { FaHeart } from "react-icons/fa";
 import { useCartUtils } from "../../../hooks/useCartUtils";
 import { useLiveStock } from "../../../hooks/useLiveStock";
 import { useInView } from "../../../hooks/useInView";
 import useShopPath from "../../../hooks/useShopPath";
 
 // Terra Prestige: refined card — portrait image, hairline ring that turns gold
-// on hover, ribbon discount tag, uppercase tracked "Add to cart" button. Same
+// on hover, ribbon discount tag, sentence-case "Add to cart" button. Same
 // data/cart/wishlist/live-stock logic as classic.
 const TerraProductCard = memo(({ product, priority = false }) => {
   const { cart, updateCart, wishlist, toggleWishlist } = useCartUtils();
@@ -93,7 +93,7 @@ const TerraProductCard = memo(({ product, priority = false }) => {
         className="relative block aspect-[4/5] w-full overflow-hidden bg-stone-100"
       >
         {discount > 0 && (
-          <span className="absolute left-0 top-3 z-10 bg-[var(--theme-accent)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+          <span className="absolute left-0 top-2 z-10 bg-[var(--theme-accent)] px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-white md:top-3 md:px-2 md:py-1">
             -{discount}%
           </span>
         )}
@@ -106,36 +106,41 @@ const TerraProductCard = memo(({ product, priority = false }) => {
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           priority={priority}
           loading={priority ? "eager" : "lazy"}
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
+          className={`object-cover transition-transform duration-700 group-hover:scale-105 ${
+            isOutOfStock ? "grayscale-[60%]" : ""
+          }`}
         />
+
+        {/* ✅ Stock নেই: ছবি হালকা গাঢ় করে মাঝখানে "Out of stock" লেবেল */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
+            <span className="rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold text-red-600 shadow md:text-xs">
+              Out of stock
+            </span>
+          </div>
+        )}
       </Link>
 
-      <div className="flex flex-1 flex-col gap-1.5 p-4">
-        <h4 className="truncate text-sm font-semibold tracking-tight text-[var(--theme-text)]">
+      <div className="flex flex-1 flex-col gap-1.5 p-3 md:p-4">
+        <h4 className="truncate text-sm font-semibold leading-tight tracking-tight text-[var(--theme-text)]">
           {product?.name}
         </h4>
 
-        <p
-          className={`flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider ${
-            isOutOfStock ? "text-red-500" : "text-[var(--theme-text)]/60"
-          }`}
-        >
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              isOutOfStock ? "bg-red-500" : "bg-[var(--theme-primary)]"
-            }`}
-          />
-          {isOutOfStock ? "Out of stock" : `In stock · ${totalStock}`}
-        </p>
+        {!isOutOfStock && (
+          <p className="-mt-1 flex items-center gap-1.5 text-[10px] font-medium leading-tight text-[var(--theme-text)]/60 md:text-[11px]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--theme-primary)]" />
+            In stock · {totalStock}
+          </p>
+        )}
 
         {/* ✅ Wishlist (favourite) আইকন এখন দামের ডান পাশে */}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-1.5">
-          <div className="flex min-w-0 items-baseline gap-2">
-            <p className="text-lg font-semibold tabular-nums text-[var(--theme-primary)]">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 md:gap-x-2">
+            <p className="text-[15px] font-semibold tabular-nums text-[var(--theme-primary)] md:text-lg">
               ৳{product?.price}
             </p>
             {product?.oldPrice && (
-              <p className="text-xs tabular-nums text-stone-400 line-through">৳{product.oldPrice}</p>
+              <p className="text-[11px] tabular-nums text-stone-400 line-through md:text-xs">৳{product.oldPrice}</p>
             )}
           </div>
 
@@ -148,19 +153,19 @@ const TerraProductCard = memo(({ product, priority = false }) => {
             }}
             aria-label="Toggle wishlist"
             aria-pressed={isInWishlist}
-            className={`flex h-8 w-8 flex-none items-center justify-center rounded-full ring-1 transition-colors ${
+            className={`flex h-6 w-6 flex-none items-center justify-center rounded-full ring-1 transition-colors md:h-8 md:w-8 ${
               isInWishlist
                 ? "bg-[var(--theme-primary)] text-white ring-[var(--theme-primary)]"
                 : "bg-white text-[var(--theme-primary)]/60 ring-[var(--theme-primary)]/25 hover:bg-[var(--theme-primary)] hover:text-white"
             }`}
           >
-            <FaHeart className="h-3.5 w-3.5" />
+            <FaHeart className="h-3 w-3 md:h-3.5 md:w-3.5" />
           </button>
         </div>
 
         {/* ✅ ২টা বাটন: Add to cart (১টা সরাসরি কার্টে, এখান থেকে quantity বাড়ানো/কমানো যাবে না)
             আর Buy now (সরাসরি checkout এ) */}
-        <div className="mt-2 flex flex-col gap-2">
+        <div className="mt-auto flex flex-col gap-1.5 pt-2 md:gap-2">
           <button
             type="button"
             onClick={(e) => {
@@ -169,7 +174,7 @@ const TerraProductCard = memo(({ product, priority = false }) => {
               if (!inCart) updateCart(cartKey, +1, totalStock);
             }}
             disabled={isOutOfStock || inCart}
-            className={`flex w-full items-center justify-center gap-2 rounded-lg border py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition ${
+            className={`flex w-full items-center justify-center whitespace-nowrap rounded-lg border py-1.5 text-xs font-semibold transition md:py-2 md:text-sm ${
               isOutOfStock
                 ? "cursor-not-allowed border-transparent bg-stone-100 text-stone-400"
                 : inCart
@@ -177,7 +182,6 @@ const TerraProductCard = memo(({ product, priority = false }) => {
                   : "border-[var(--theme-primary)] text-[var(--theme-primary)] hover:bg-[var(--theme-primary)] hover:text-white"
             }`}
           >
-            {inCart ? <FaCheck className="h-3 w-3" /> : <FaShoppingBasket className="h-3 w-3" />}
             {isOutOfStock ? "Sold out" : inCart ? "In cart" : "Add to cart"}
           </button>
 
@@ -185,7 +189,7 @@ const TerraProductCard = memo(({ product, priority = false }) => {
             type="button"
             onClick={handleBuyNow}
             disabled={isOutOfStock}
-            className={`flex w-full items-center justify-center rounded-lg py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition ${
+            className={`flex w-full items-center justify-center whitespace-nowrap rounded-lg py-1.5 text-xs font-semibold transition md:py-2 md:text-sm ${
               isOutOfStock
                 ? "cursor-not-allowed bg-stone-100 text-stone-400"
                 : "bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary-dark)]"

@@ -196,7 +196,7 @@ export default function FirstCartNavbar() {
             </div>
 
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full bg-[var(--theme-primary)] text-white shadow-md shadow-[var(--theme-primary)]/30 transition-colors hover:bg-[var(--theme-primary-dark)] md:h-11 md:w-11 ${BADGE_ON_PRIMARY}`}
+              className={`hidden h-11 w-11 items-center justify-center rounded-full bg-[var(--theme-primary)] text-white shadow-md shadow-[var(--theme-primary)]/30 transition-colors hover:bg-[var(--theme-primary-dark)] md:flex ${BADGE_ON_PRIMARY}`}
             >
               <CartIcon cartCount={cartCount} outline />
             </div>

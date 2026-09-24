@@ -1,5 +1,6 @@
 import multer from "multer";
 import path from "path";
+import { AsyncResource } from "node:async_hooks";
 
 /* ================== ✅ STORAGE ================== */
 // ⚠️ আগে শুধু Date.now() দিয়ে filename বানানো হতো — কিন্তু একই request-এ
@@ -14,6 +15,31 @@ const storage = multer.diskStorage({
   },
 });
 
+/* ================== ✅ SHOP CONTEXT PRESERVE ================== */
+// ⚠️ FIX: multer (busboy) stream event-এর ভেতর থেকে next() কল করে — সেখানে
+// AsyncLocalStorage-এর context (requireShopContext যে shopId বসায়) মাঝে মাঝে
+// হারিয়ে যায়। ফলে controller-এ getCurrentShopId() null পেত, tenantPlugin
+// নতুন document-এ shopId বসাতে পারত না → "Path `shopId` is required" (মাঝে
+// মাঝে fail), আর countDocuments()/shiftOrdersForInsert সব শপ জুড়ে চলত।
+// এখন next() কে middleware কল হওয়ার মুহূর্তের async context-এ bind করে দেওয়া
+// হচ্ছে, যাতে multer শেষ হওয়ার পরও একই shopId context থাকে।
+function withShopContext(instance) {
+  const wrap = (method) =>
+    (...args) => {
+      const middleware = method.apply(instance, args);
+      return (req, res, next) =>
+        middleware(req, res, AsyncResource.bind(next));
+    };
+
+  return {
+    single: wrap(instance.single),
+    array: wrap(instance.array),
+    fields: wrap(instance.fields),
+    any: wrap(instance.any),
+    none: wrap(instance.none),
+  };
+}
+
 /* ================== ✅ DEFAULT UPLOAD (GENERIC) ================== */
 // ⚠️ FIX: এই limit আগে 100KB ছিল, কিন্তু admin panel-এর ImageUploader
 // (admin/components/ImageUploader.jsx এর DEFAULT_IMAGE_RULE) client-side
@@ -23,13 +49,13 @@ const storage = multer.diskStorage({
 // PUT /me) ও navbar logo (navbar.admin.routes.js) দুটোই এই default upload
 // ব্যবহার করে বলে ভুগত। এখন client-এর maxBytes-এর চেয়ে বেশি রাখা হলো, যাতে
 // client যা "পাস" বলে সেটা সবসময় server-ও গ্রহণ করে।
-const upload = multer({
+const upload = withShopContext(multer({
   storage,
   limits: { fileSize: 300 * 1024 }, // ✅ 300KB (client compresses to ≤220KB)
-});
+}));
 
 /* ================== ✅ CATEGORY UPLOAD ================== */
-export const categoryUpload = multer({
+export const categoryUpload = withShopContext(multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // ✅ input can be larger (server will compress)
   fileFilter: (req, file, cb) => {
@@ -39,10 +65,10 @@ export const categoryUpload = multer({
     }
     cb(null, true);
   },
-});
+}));
 
 /* ================== ✅ PRODUCT UPLOAD ================== */
-export const productUpload = multer({
+export const productUpload = withShopContext(multer({
   storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // ✅ input can be larger (server will compress)
@@ -58,14 +84,14 @@ export const productUpload = multer({
     }
     cb(null, true);
   },
-});
+}));
 
 /* ================== ✅ SLIDER UPLOAD ==================
    ✅ UPDATED RULE:
    INPUT : jpeg/png/webp allowed
    OUTPUT: controller will convert to 1500×500 WEBP under 100KB
 ================================================== */
-export const sliderUpload = multer({
+export const sliderUpload = withShopContext(multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // ✅ input can be larger
   fileFilter: (req, file, cb) => {
@@ -78,13 +104,13 @@ export const sliderUpload = multer({
     }
     cb(null, true);
   },
-});
+}));
 
 /* ================== ✅ HOMEPAGE POPUP UPLOAD ==================
    INPUT : jpeg/png/webp allowed
    OUTPUT: controller will convert to 800×800 WEBP (1:1) under 200KB
 ================================================== */
-export const popupUpload = multer({
+export const popupUpload = withShopContext(multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // ✅ input can be larger
   fileFilter: (req, file, cb) => {
@@ -97,13 +123,13 @@ export const popupUpload = multer({
     }
     cb(null, true);
   },
-});
+}));
 
 /* ================== ✅ SUPPORT TEAM PHOTO UPLOAD ==================
    INPUT : jpeg/png/webp allowed (client আগে থেকেই WEBP এ convert করে পাঠায়)
    OUTPUT: 400×400 (1:1) WEBP, ছোট ছবি বলে limit ছোট রাখা হলো
 ================================================== */
-export const teamPhotoUpload = multer({
+export const teamPhotoUpload = withShopContext(multer({
   storage,
   limits: { fileSize: 1 * 1024 * 1024 }, // ✅ input can be larger (client already compresses)
   fileFilter: (req, file, cb) => {
@@ -116,7 +142,7 @@ export const teamPhotoUpload = multer({
     }
     cb(null, true);
   },
-});
+}));
 
 /* ================== ✅ LANDING PAGE HERO IMAGE UPLOAD ==================
    INPUT : jpeg/png/webp allowed
@@ -124,7 +150,7 @@ export const teamPhotoUpload = multer({
    NOT force-cropped like product/category images — ad hero images vary
    widely in shape) under ~250KB WEBP
 ================================================== */
-export const landingHeroUpload = multer({
+export const landingHeroUpload = withShopContext(multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024, files: 5 }, // ✅ input can be larger (server will compress)
   fileFilter: (req, file, cb) => {
@@ -137,14 +163,14 @@ export const landingHeroUpload = multer({
     }
     cb(null, true);
   },
-});
+}));
 
 /* ================== ✅ INVOICE BACKGROUND UPLOAD ==================
    INPUT : jpeg/png/webp allowed
    OUTPUT: controller resizes to fit within an A4-ish 1240×1754 box
    (aspect preserved) under ~300KB WEBP
 ================================================== */
-export const invoiceBgUpload = multer({
+export const invoiceBgUpload = withShopContext(multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // ✅ input can be larger (server will compress)
   fileFilter: (req, file, cb) => {
@@ -157,6 +183,6 @@ export const invoiceBgUpload = multer({
     }
     cb(null, true);
   },
-});
+}));
 
 export default upload;
