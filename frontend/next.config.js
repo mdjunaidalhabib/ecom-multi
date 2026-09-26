@@ -7,6 +7,10 @@ const parsedBackendApiUrl = new URL(backendApiUrl);
 const r2PublicUrl = process.env.R2_PUBLIC_URL ? new URL(process.env.R2_PUBLIC_URL) : null;
 
 const nextConfig = {
+  // ✅ Docker-এর জন্য: শুধু চালাতে যা লাগে সেটুকু .next/standalone-এ কপি হয় — image অনেক ছোট হয়
+  output: "standalone",
+  // রুটেও package-lock আছে, তাই tracing root এই অ্যাপের ফোল্ডারে আটকে রাখা হলো
+  outputFileTracingRoot: __dirname,
   images: {
     remotePatterns: [
       {
