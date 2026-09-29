@@ -32,13 +32,35 @@ const PLATFORM_THEME_COLOR = "#f472b6";
 // enough to turn an unknown slug/domain into a real not-found page instead
 // of a silently-empty storefront. It also carries effectiveTheme, which
 // picks which Navbar/Footer to render for this shop's plan.
+//
+// 🔥 FIX (রিফ্রেশে মাঝে মাঝে শপের বদলে ECMS landing আসা): আগে যেকোনো
+// error (429 rate limit, 5xx, network/timeout) হলেই shop=null ধরা হতো, আর
+// custom domain-এ সেটা সরাসরি PlatformLanding রেন্ডার করত — অর্থাৎ backend-এর
+// এক মুহূর্তের সমস্যাতেই আসল শপের ভিজিটর ECMS-এর marketing পেজ দেখত। এখন শুধু
+// backend-এর নিশ্চিত "শপ নেই/অনুমোদিত নয়" উত্তর (4xx, 429 বাদে) হলেই shop=null;
+// সাময়িক error হলে একবার retry, তারপরও ব্যর্থ হলে throw — src/app/error.js
+// "আবার চেষ্টা করুন" দেখায়, ভুল করে landing নয়।
+function isTransientError(err) {
+  const status = err?.status;
+  return !status || status === 429 || status >= 500;
+}
+
 async function getShop() {
-  try {
-    return { shop: await getShopInfo(), suspended: false };
-  } catch (err) {
-    const suspended =
-      err?.status === 403 && err?.body?.errorType === "SHOP_SUSPENDED";
-    return { shop: null, suspended };
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return { shop: await getShopInfo(), suspended: false };
+    } catch (err) {
+      if (isTransientError(err)) {
+        if (attempt < 1) {
+          await new Promise((r) => setTimeout(r, 300));
+          continue;
+        }
+        throw err;
+      }
+      const suspended =
+        err?.status === 403 && err?.body?.errorType === "SHOP_SUSPENDED";
+      return { shop: null, suspended };
+    }
   }
 }
 

@@ -23,6 +23,19 @@ export async function serverFetch(path, { revalidate = 30, ...options } = {}) {
   if (shopSlug) shopHeaders["x-shop-slug"] = shopSlug;
   if (shopDomain) shopHeaders["x-shop-domain"] = shopDomain;
 
+  // 🔥 FIX (রিফ্রেশে মাঝে মাঝে শপের বদলে ECMS landing আসা): backend-এর
+  // rate limiter (backend/server.js) লগইন-বিহীন ট্রাফিক IP দিয়ে গোনে। এই
+  // SSR fetch গুলো ব্রাউজার থেকে নয়, Next.js সার্ভার থেকে যায় — তাই আগে সব
+  // শপের সব ভিজিটরের SSR request একটাই IP (frontend সার্ভারের) bucket-এ পড়ত,
+  // ১৫ মিনিটে ১২০০ ছাড়ালেই /shop-info 429 দিত আর ShopLayout সেটাকে "শপ নেই"
+  // ধরে PlatformLanding দেখাত। /api proxy route-এর মতোই আসল ভিজিটরের IP
+  // (reverse proxy-র বসানো x-forwarded-for) ফরওয়ার্ড করা হচ্ছে, যাতে প্রতিটা
+  // ভিজিটর নিজের bucket পায়।
+  const forwardedFor = incomingHeaders.get("x-forwarded-for");
+  const realIp = incomingHeaders.get("x-real-ip");
+  if (forwardedFor) shopHeaders["x-forwarded-for"] = forwardedFor;
+  if (realIp) shopHeaders["x-real-ip"] = realIp;
+
   // Next's fetch cache keys on the request URL (+ a few options) but not on
   // arbitrary headers — without this, two different shops requesting the
   // same backend path (e.g. every shop's homepage calling "/products")
