@@ -150,7 +150,7 @@ export default function FirstCartNavbar() {
       {/* ── Sticky header: main bar + category row ── */}
       <header className="sticky top-0 z-50 bg-[var(--theme-surface)] shadow-sm">
         {/* Main bar */}
-        <div className="mx-auto flex h-[60px] w-full max-w-[1320px] items-center gap-3 px-4 sm:px-6 md:h-[76px] md:gap-8">
+        <div className="mx-auto flex h-[60px] w-full max-w-[1280px] items-center gap-3 px-4 sm:px-6 md:h-[76px] md:gap-8">
           <button
             onClick={() => setMenuOpen(true)}
             className="-ml-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[var(--theme-text)] transition-colors hover:bg-[var(--theme-bg)] md:hidden"
@@ -205,7 +205,7 @@ export default function FirstCartNavbar() {
 
         {/* Category / link row (desktop) */}
         <div className="hidden text-white md:block" style={{ background: "var(--theme-primary)" }}>
-          <div className="mx-auto flex h-11 w-full max-w-[1320px] items-stretch justify-between px-6">
+          <div className="mx-auto flex h-11 w-full max-w-[1280px] items-stretch justify-between px-6">
             <div className="flex items-stretch gap-1">
               <Link
                 href={shopHref(base, "/categories")}

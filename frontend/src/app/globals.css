@@ -13,6 +13,27 @@
 }
 
 
+/* ✅ সাইটের সর্বোচ্চ width 1400px — বড় স্ক্রিনে (2xl) Tailwind-এর default
+   container 1536px পর্যন্ত ছড়িয়ে যায়, সেটা এখানে 1400px-এ আটকানো হলো।
+   প্রতিটা পেজের নিজের px-* padding আগের মতোই কাজ করবে। */
+@utility container {
+  max-width: min(100%, 1400px);
+}
+
+/* ✅ Ready-made wrapper: 1400px + center + responsive side padding
+   ব্যবহার: <div className="max-container">...</div> */
+@utility max-container {
+  width: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
+  padding-inline: 0.5rem;
+  @variant sm { padding-inline: 1.25rem; }
+  @variant md { padding-inline: 2.5rem; }
+  @variant lg { padding-inline: 3.5rem; }
+  @variant xl { padding-inline: 5rem; }
+  @variant 2xl { padding-inline: 1rem; }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
