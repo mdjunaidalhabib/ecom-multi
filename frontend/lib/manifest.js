@@ -111,9 +111,9 @@ export function buildManifest(shop, shopSlug = DOMAIN_MODE_MARKER) {
     lang: "bn",
     dir: "ltr",
     background_color: colors.surface || "#ffffff",
-    // splash screen ও Android task-switcher bar এই রঙে আঁকা হয় — শপের
-    // storefront theme (buildThemeVars) যে primary রঙ ব্যবহার করে সেটাই ঠিক।
-    theme_color: colors.primary || branding.themeColor || PLATFORM_THEME_COLOR,
+    // ইনস্টল করা PWA-র status/title bar এই রঙে আঁকা হয় — generateViewport()-এর
+    // মতোই surface (সাদা) রঙ, যাতে বারটা রঙিন না দেখায়।
+    theme_color: colors.surface || "#ffffff",
     icons: buildIcons(branding),
   };
 }

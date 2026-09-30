@@ -182,10 +182,10 @@ export async function generateViewport() {
   }
 
   const { shop } = await getShop();
-  const themeColor =
-    shop?.theme?.colors?.primary ||
-    shop?.branding?.themeColor ||
-    PLATFORM_THEME_COLOR;
+  // মোবাইল ব্রাউজারের address bar এই রঙে আঁকা হয় — primary রঙ দিলে বারটা
+  // রঙিন হয়ে যায়, তাই navbar-এর মতো surface (সাদা) রঙ দেওয়া হয় যাতে
+  // বারটা header-এর সাথে মিশে যায়।
+  const themeColor = shop?.theme?.colors?.surface || "#ffffff";
 
   return { themeColor };
 }
