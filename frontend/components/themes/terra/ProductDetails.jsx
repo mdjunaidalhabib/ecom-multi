@@ -152,7 +152,7 @@ export default function TerraProductDetails({
 
   return (
     <main className="bg-[var(--theme-bg)]">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+      <div className="max-container py-6 md:py-10">
         <ProductBreadcrumb product={product} categories={categories} />
 
         <section className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-16">

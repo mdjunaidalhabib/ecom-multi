@@ -1,7 +1,12 @@
 import express from "express";
 import PaymentMethod from "../../models/PaymentMethod.js";
 import Order from "../../models/Order.js";
-import { restockOrderItems } from "../../utils/inventory/restock.js";
+import {
+  LOCKED_STATUSES,
+  actorFromAdmin,
+  changeOrderStatus,
+  sendOrderStatusError,
+} from "../../services/orderStatusService.js";
 import { moveToTrash } from "../../../utils/trash/trash.helpers.js";
 import { requirePlanFeature } from "../../middlewares/requirePlanFeature.js";
 
@@ -230,36 +235,41 @@ router.patch("/:orderId/verify", async (req, res) => {
     }
 
     order.paymentStatus = paymentStatus;
-
-    // ✅ Payment reject হলে অর্ডার আর কখনো process/accept করা যাবে না —
-    // (already delivered/cancelled না হলে) সাথে সাথে order cancel করে
-    // stock ফেরত দেওয়া হচ্ছে, চাই সেটা এখনো pending থাকুক বা admin
-    // ইতিমধ্যে processing-এ পাঠিয়ে থাকুক।
-    if (
-      paymentStatus === "failed" &&
-      !["delivered", "cancelled"].includes(order.status)
-    ) {
-      order.status = "cancelled";
-      order.cancelReason = "Payment verification ব্যর্থ (Admin কর্তৃক reject করা হয়েছে)";
-
-      try {
-        await restockOrderItems(order.items);
-      } catch (restockErr) {
-        console.error("❌ Restock on payment-reject failed:", restockErr);
-      }
-    }
-
-    // ✅ Payment accept (paid) হলে — order যেহেতু এতক্ষণ payment verification
-    // এর জন্য "pending" এ hold হয়ে ছিল, এখন সেটা automatically পরের
-    // step ("confirmed") এ চলে যাবে, admin কে আলাদা করে status
-    // আপডেট করতে হবে না।
-    if (paymentStatus === "paid" && order.status === "pending") {
-      order.status = "confirmed";
-    }
-
     await order.save();
 
-    res.json(order);
+    const actor = actorFromAdmin(req.admin);
+    let result = { order };
+
+    try {
+      // ✅ Payment reject হলে অর্ডার আর কখনো process/accept করা যাবে না —
+      // (already delivered/cancelled/returned না হলে) সাথে সাথে order cancel
+      // হয় — orderStatusService এর মাধ্যমে, তাই stock + promo দুটোই ফেরত
+      // যায় আর history-তে কারণ থাকে।
+      if (
+        paymentStatus === "failed" &&
+        !LOCKED_STATUSES.includes(order.status)
+      ) {
+        result = await changeOrderStatus(order, "cancelled", {
+          actor,
+          reason: "Payment verification ব্যর্থ (Admin কর্তৃক reject করা হয়েছে)",
+        });
+      }
+
+      // ✅ Payment accept (paid) হলে — order যেহেতু এতক্ষণ payment verification
+      // এর জন্য "pending" এ hold হয়ে ছিল, এখন সেটা automatically পরের
+      // step ("confirmed") এ চলে যাবে, admin কে আলাদা করে status
+      // আপডেট করতে হবে না।
+      if (paymentStatus === "paid" && order.status === "pending") {
+        result = await changeOrderStatus(order, "confirmed", {
+          actor,
+          reason: "Payment verified",
+        });
+      }
+    } catch (statusErr) {
+      return sendOrderStatusError(res, statusErr, "Failed to update order status");
+    }
+
+    res.json(result.order);
   } catch (err) {
     console.error("❌ Failed to update payment status:", err);
     res.status(500).json({ error: "Failed to update payment status" });

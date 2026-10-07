@@ -65,14 +65,14 @@ export default async function CategoryPage({ params }) {
 
   if (!category) {
     return (
-      <div className="container mx-auto px-6 py-10">
+      <div className="max-container py-10">
         <h2 className="text-2xl font-semibold mb-6">Category not found ❌</h2>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-6 py-10">
+    <div className="max-container py-10">
       {origin && (
         <JsonLd
           data={[

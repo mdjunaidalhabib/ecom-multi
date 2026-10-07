@@ -152,7 +152,7 @@ export default function ImageSlider({
         className={
           bare
             ? "w-full"
-            : "mx-auto w-full max-w-full  md:max-w-[1024px] xl:max-w-[1536px] md:px-8 md:mt-2"
+            : "max-container md:mt-2"
         }
       >
         {error && (

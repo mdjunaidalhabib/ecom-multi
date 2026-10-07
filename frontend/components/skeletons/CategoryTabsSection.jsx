@@ -89,7 +89,7 @@ function HorizontalScrollRow({ children, className = "" }) {
 // ── Full page skeleton ─────────────────────────────────────────────────────────
 function PageSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
+    <div className="max-container py-4 lg:py-8">
       {/* Offer badges placeholder */}
       <div className="h-12 w-full rounded-xl bg-gray-100 mb-6 overflow-hidden relative">
         <motion.div
@@ -204,7 +204,7 @@ export default function CategoryTabsSection() {
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 lg:py-8"
+      className="max-container py-4 lg:py-8"
     >
       {/* Offer Badges */}
       <div className="mb-6">

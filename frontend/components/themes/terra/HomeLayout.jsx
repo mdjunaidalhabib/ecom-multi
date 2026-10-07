@@ -106,12 +106,12 @@ export default function TerraHomeLayout({ products = [], categories = [], slides
 
   return (
     <div className="bg-[var(--theme-bg)]">
-      <div className="mx-auto w-full max-w-[1280px] overflow-hidden px-4 pt-4 sm:px-6">
+      <div className="max-container overflow-hidden pt-4">
         <ImageSlider images={slides} bare />
       </div>
 
       {activeCategories.length > 0 && (
-        <div className="mx-auto max-w-[1280px] px-4 pb-4 pt-12 sm:px-6">
+        <div className="max-container pb-4 pt-12">
           <div className="mb-8 text-center">
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--theme-accent)]">
               Curated for you
@@ -148,7 +148,7 @@ export default function TerraHomeLayout({ products = [], categories = [], slides
         </div>
       )}
 
-      <div className="mx-auto max-w-[1280px] space-y-16 px-4 pb-20 pt-10 sm:px-6">
+      <div className="max-container space-y-16 pb-20 pt-10">
         {activeCategories.map((cat) => {
           const catProducts = products.filter(
             (p) =>

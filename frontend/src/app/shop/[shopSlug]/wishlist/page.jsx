@@ -37,7 +37,7 @@ export default function WishlistPage() {
   if (loading) {
     return (
       <div className="bg-pink-50">
-        <div className="container mx-auto p-3 sm:p-6 space-y-3">
+        <div className="max-container py-3 sm:py-6 space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <CartSkeleton key={i} />
           ))}
@@ -66,7 +66,7 @@ export default function WishlistPage() {
   // ✅ Wishlist view
   return (
     <div className="bg-pink-50">
-      <div className="container mx-auto p-3 md:p-6">
+      <div className="max-container py-3 md:py-6">
         <div className="text-xl sm:text-2xl font-semibold text-center relative inline-block w-full mb-8">
           <span className="bg-gradient-to-r p-4 from-pink-500 via-purple-500 to-blue-600 text-transparent bg-clip-text">
             ❤️ আপনার উইশলিস্ট

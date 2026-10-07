@@ -120,7 +120,7 @@ export default function FirstCartCategoryBrowser({
   if (shouldShowCategorySkeleton) {
     return (
       <div className="bg-[var(--theme-bg)]">
-        <div className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6">
+        <div className="max-container py-4">
           <div className="flex gap-3 overflow-hidden">
             {[...Array(6)].map((_, i) => (
               <div
@@ -143,7 +143,7 @@ export default function FirstCartCategoryBrowser({
     <div className="bg-[var(--theme-bg)]">
       {/* Category chip row */}
       <div className="sticky top-0 z-10 border-b border-[var(--theme-text)]/10 bg-[var(--theme-surface)]">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6">
+        <div className="max-container">
           <div className="flex gap-2.5 overflow-x-auto py-3.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {categories.map((cat) => {
               const active = selectedCategory === cat._id;
@@ -180,7 +180,7 @@ export default function FirstCartCategoryBrowser({
       </div>
 
       {/* Product grid */}
-      <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6">
+      <div className="max-container py-6">
         <h1
           className="mb-5 text-xl font-bold text-[var(--theme-text)] sm:text-2xl"
           style={{ fontFamily: "var(--theme-font-heading)" }}

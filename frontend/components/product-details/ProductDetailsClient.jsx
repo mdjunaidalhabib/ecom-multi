@@ -145,7 +145,7 @@ export default function ProductDetailsClient({
   };
 
 return (
-  <main className="container mx-auto px-4 sm:px-6 lg:px-8 mt-4 md:py-8">
+  <main className="max-container mt-4 md:py-8">
     <ProductBreadcrumb product={product} categories={categories} />
 
     <section className="bg-[var(--theme-bg)] rounded-2xl grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 overflow-visible">

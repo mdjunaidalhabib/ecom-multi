@@ -83,8 +83,8 @@ export default function TerraFooter() {
   const brandTitle = brand.title || "Brand";
 
   return (
-    <footer className="mb-14 border-t-2 border-orange-500 bg-white px-4 pb-8 pt-16 text-gray-900 md:mb-0 md:px-10">
-      <div className="mx-auto max-w-[1280px]">
+    <footer className="mb-14 border-t-2 border-orange-500 bg-white pb-8 pt-16 text-gray-900 md:mb-0">
+      <div className="max-container">
         <div className="grid grid-cols-1 gap-12 text-center md:grid-cols-3">
           {/* Brand */}
           <div>

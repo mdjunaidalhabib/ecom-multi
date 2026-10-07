@@ -1,5 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FINAL_STATUSES, STATUS_LABEL } from "../components/orders/shared/constants";
+
+const orderLabel = (o) => `#${o?.orderNumber ?? String(o?._id || "").slice(-6)}`;
 
 export default function useOrders(API) {
   const [orders, setOrders] = useState([]);
@@ -81,6 +84,16 @@ export default function useOrders(API) {
      ❓ CONFIRM
      =============================== */
   const [confirm, setConfirm] = useState(null);
+
+  /* ===============================
+     📝 STATUS ACTION (confirm + কারণ) — StatusActionModal
+     =============================== */
+  const [actionModal, setActionModal] = useState(null);
+
+  /* ===============================
+     ↩️ UNDO SNACKBAR (final status দেওয়ার পর কয়েক সেকেন্ড)
+     =============================== */
+  const [undoSnack, setUndoSnack] = useState(null);
 
   /* ===============================
      🗑 DELETE LOADING
@@ -234,7 +247,9 @@ export default function useOrders(API) {
         );
         fetchCounts();
 
-        if (!options.silent) {
+        if (updated?.warnings?.length) {
+          setToast({ message: `⚠️ ${updated.warnings.join(" ")}`, type: "error" });
+        } else if (!options.silent) {
           setToast({ message: "✔ Order updated", type: "success" });
         }
 
@@ -250,50 +265,225 @@ export default function useOrders(API) {
     });
 
   /* ===============================
-     Update status (bulk)
+     ✅ Dropdown থেকে single status পরিবর্তন
+     Delivered/Cancelled (lock হয়ে যায়) হলে আগে confirm + কারণ, তারপর
+     কয়েক সেকেন্ডের "Undo" বার। অন্য status সরাসরি আপডেট।
      =============================== */
-  const updateManyStatus = (ids, payload) =>
-    setConfirm({
-      title: "Update order status?",
-      message: `Change status for ${ids.length} orders.`,
-      onConfirm: async () => {
-        try {
-          const res = await fetch(`${API}/admin/orders/bulk/status`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ids,
-              status: payload.status,
-              cancelReason: payload.cancelReason,
-            }),
-          });
+  const requestStatusChange = (order, status) => {
+    if (!FINAL_STATUSES.includes(status)) {
+      return updateStatus(order._id, { status });
+    }
 
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error);
-
-          setOrders((prev) =>
-            prev.map((o) =>
-              data.updated.includes(o._id)
-                ? { ...o, status: payload.status }
-                : o
-            )
-          );
-          fetchCounts();
-
-          setToast({
-            message: `✔ ${data.updated.length} orders updated`,
-            type: "success",
-          });
-        } catch (err) {
-          setToast({
-            message: err.message || "❌ Bulk update failed",
-            type: "error",
-          });
-        } finally {
-          setConfirm(null);
-        }
+    const isCancel = status === "cancelled";
+    setActionModal({
+      title: isCancel
+        ? `Order ${orderLabel(order)} Cancel করবেন?`
+        : `Order ${orderLabel(order)} Delivered করবেন?`,
+      message: isCancel
+        ? "Stock ফেরত যাবে, promo code ছেড়ে দেওয়া হবে, আর অর্ডারটি lock হয়ে যাবে।"
+        : "অর্ডারটি বিক্রি হিসেবে গণনা হবে আর lock হয়ে যাবে। পণ্য পরে ফেরত এলে History থেকে Return করুন।",
+      tone: isCancel ? "danger" : "primary",
+      reason: isCancel
+        ? {
+            required: true,
+            label: "Cancel এর কারণ",
+            placeholder: "যেমন: কাস্টমার ফোন ধরেনি / কাস্টমার বাতিল করেছে",
+          }
+        : null,
+      confirmText: isCancel ? "Cancel Order" : "Mark Delivered",
+      onConfirm: async ({ reason }) => {
+        const updated = await updateStatus(
+          order._id,
+          isCancel ? { status, cancelReason: reason } : { status },
+          { silent: true },
+        );
+        setUndoSnack({
+          orderId: order._id,
+          message: `Order ${orderLabel(order)} → ${STATUS_LABEL[status]}`,
+        });
+        return updated;
       },
     });
+    return Promise.resolve();
+  };
+
+  /* ===============================
+     Update status (bulk)
+     =============================== */
+  const updateManyStatus = (ids, payload) => {
+    const isCancel = payload.status === "cancelled";
+    const isFinal = FINAL_STATUSES.includes(payload.status);
+
+    setActionModal({
+      title: `${ids.length} টি অর্ডার ${STATUS_LABEL[payload.status] || payload.status} করবেন?`,
+      message: isFinal
+        ? `${ids.length} টি অর্ডার lock হয়ে যাবে।${
+            isCancel ? " সবগুলোর stock ও promo ফেরত যাবে।" : ""
+          } ভুল হলে প্রতিটা অর্ডারের History থেকে আলাদাভাবে Undo/Reopen করতে হবে।`
+        : `${ids.length} টি অর্ডারের status পরিবর্তন হবে।`,
+      tone: isCancel ? "danger" : isFinal ? "warning" : "primary",
+      reason: isCancel
+        ? { required: true, label: "Cancel এর কারণ (সবগুলোর জন্য)" }
+        : null,
+      confirmText: `${ids.length} টি আপডেট করুন`,
+      onConfirm: async ({ reason }) => {
+        const res = await fetch(`${API}/admin/orders/bulk/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ids,
+            status: payload.status,
+            cancelReason: isCancel ? reason : payload.cancelReason,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "❌ Bulk update failed");
+
+        // ✅ status/stock/history সার্ভারে বদলেছে — পুরো লিস্ট আবার আনা হয়
+        fetchOrders();
+        fetchCounts();
+
+        const skipped =
+          (data.skipped?.length || 0) +
+          (data.paymentHold?.length || 0) +
+          (data.errors?.length || 0);
+        setToast({
+          message: `✔ ${data.updated.length} orders updated${
+            skipped ? ` • ${skipped} টি বাদ গেছে` : ""
+          }`,
+          type: skipped ? "error" : "success",
+        });
+      },
+    });
+  };
+
+  /* ===============================
+     🕘 ORDER HISTORY (status log + stock ledger)
+     useCallback — OrderHistoryModal এর useEffect dependency
+     =============================== */
+  const fetchOrderHistory = useCallback(
+    async (id) => {
+      const res = await fetch(`${API}/admin/orders/${id}/history`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "History লোড করা যায়নি");
+      return data;
+    },
+    [API],
+  );
+
+  const applyOrderUpdate = (data, successMessage) => {
+    if (data?.order) {
+      setOrders((prev) =>
+        prev.map((o) => (o._id === data.order._id ? data.order : o))
+      );
+    }
+    fetchCounts();
+    setToast(
+      data?.warnings?.length
+        ? { message: `⚠️ ${data.warnings.join(" ")}`, type: "error" }
+        : { message: successMessage, type: "success" },
+    );
+  };
+
+  /* ===============================
+     ↩️ UNDO / REOPEN (আগের status-এ ফেরত — stock/promo উল্টে যায়)
+     =============================== */
+  const revertOrder = (orderId, reason) =>
+    enqueue(async () => {
+      const res = await fetch(`${API}/admin/orders/${orderId}/revert`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Undo করা যায়নি");
+      applyOrderUpdate(
+        data,
+        `↩️ Order আগের status (${STATUS_LABEL[data.order?.status] || data.order?.status}) এ ফেরত নেওয়া হয়েছে`,
+      );
+      return data;
+    });
+
+  /* ===============================
+     📦 RETURN (delivered → returned, stock ফেরত + refund রেকর্ড)
+     =============================== */
+  const returnOrder = (orderId, { reason, refundAmount }) =>
+    enqueue(async () => {
+      const res = await fetch(`${API}/admin/orders/${orderId}/return`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason, refundAmount }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Return করা যায়নি");
+      applyOrderUpdate(data, "📦 Order Returned — stock ফেরত গেছে");
+      return data;
+    });
+
+  // ✅ History মডালের বাটন → confirm + কারণ মডাল
+  const openRevert = (order, history, onDone) => {
+    const status = history?.status || order.status;
+    const target = history?.revert?.target;
+    setActionModal({
+      title:
+        status === "cancelled"
+          ? `Order ${orderLabel(order)} আবার চালু করবেন?`
+          : `Order ${orderLabel(order)} আগের status-এ ফেরত নেবেন?`,
+      message: `${STATUS_LABEL[status]} → ${STATUS_LABEL[target] || target}\n${
+        status === "cancelled"
+          ? "Stock আবার কাটা হবে (stock না থাকলে হবে না) আর promo আবার গোনা হবে।"
+          : status === "returned"
+            ? "Return বাতিল হবে, ফেরত আসা stock আবার কাটা হবে।"
+            : status === "delivered"
+              ? "অর্ডারটি আর বিক্রি হিসেবে গণনা হবে না, যতক্ষণ না আবার Delivered হয়।"
+              : "অর্ডারটি আগের status-এ ফিরে যাবে।"
+      }\nকারণসহ History-তে রেকর্ড থাকবে।`,
+      tone: "warning",
+      reason: {
+        required: true,
+        label: "কেন ফেরত নিচ্ছেন",
+        placeholder: "যেমন: ভুল অর্ডারে cancel চাপা হয়েছিল",
+      },
+      confirmText: status === "cancelled" ? "Reopen" : "ফেরত নিন",
+      onConfirm: async ({ reason }) => {
+        await revertOrder(order._id, reason);
+        onDone?.();
+      },
+    });
+  };
+
+  const openReturn = (order, onDone) => {
+    const total = Number(order.total || 0);
+    setActionModal({
+      title: `Order ${orderLabel(order)} Return করবেন?`,
+      message:
+        "পণ্য ফেরত এসেছে — stock ফেরত যাবে, অর্ডারটি বিক্রি থেকে বাদ যাবে। আসল Delivered রেকর্ড History-তে থেকে যাবে।",
+      tone: "warning",
+      reason: {
+        required: true,
+        label: "Return এর কারণ",
+        placeholder: "যেমন: পণ্য ড্যামেজ / সাইজ মেলেনি",
+      },
+      refund: { defaultValue: total, max: total },
+      confirmText: "Return করুন",
+      onConfirm: async ({ reason, refundAmount }) => {
+        await returnOrder(order._id, { reason, refundAmount });
+        onDone?.();
+      },
+    });
+  };
+
+  // ✅ Undo বার থেকে — নিজের সদ্য করা পরিবর্তন ফেরত
+  const undoLastChange = async (snack) => {
+    try {
+      await revertOrder(snack.orderId, "Undo — ভুল ক্লিক");
+    } catch (err) {
+      setToast({ message: err?.message || "Undo করা যায়নি", type: "error" });
+    } finally {
+      setUndoSnack(null);
+    }
+  };
 
   /* ===============================
      🚚 COURIER (SINGLE) – FINAL & SAFE
@@ -431,13 +621,20 @@ const sendCourierDirect = (order) =>
         method: "DELETE",
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "❌ Delete failed");
+      }
 
       setOrders((prev) => prev.filter((o) => o._id !== order._id));
       fetchCounts();
       setToast({ message: "🗑 Order deleted", type: "success" });
-    } catch {
-      setToast({ message: "❌ Delete failed", type: "error" });
+    } catch (err) {
+      // ✅ Active অর্ডার delete আটকানো (আগে Cancel করতে হবে) — কারণ সহ দেখানো
+      setAlertBox({
+        title: "❌ Delete করা যায়নি",
+        message: err?.message || "Delete failed",
+      });
     } finally {
       setDeleting(false);
       setConfirm(null);
@@ -450,7 +647,7 @@ const sendCourierDirect = (order) =>
   const deleteMany = (ids) =>
     setConfirm({
       title: "Delete orders?",
-      message: `${ids.length} orders will be permanently deleted.`,
+      message: `${ids.length} orders Trash-এ যাবে। শুধু Cancelled/Returned অর্ডার delete হয় — active অর্ডার আগে Cancel করুন।`,
       danger: true,
       confirmText: "Delete",
       onConfirm: async () => {
@@ -464,11 +661,16 @@ const sendCourierDirect = (order) =>
           const data = await res.json();
           if (!res.ok) throw new Error(data.error);
 
-          setOrders((prev) => prev.filter((o) => !ids.includes(o._id)));
+          // ✅ কিছু অর্ডার (active) delete আটকানো হতে পারে — তাই লিস্ট আবার আনা
+          fetchOrders();
           fetchCounts();
           setToast({
-            message: `🗑 ${data.deletedCount} orders deleted`,
-            type: "success",
+            message: `🗑 ${data.deletedCount} orders deleted${
+              data.blocked
+                ? ` • ${data.blocked} টি active অর্ডার বাদ (আগে Cancel করুন)`
+                : ""
+            }`,
+            type: data.blocked ? "error" : "success",
           });
         } catch (err) {
           setToast({
@@ -515,6 +717,17 @@ const sendCourierDirect = (order) =>
     // status
     updateStatus,
     updateManyStatus,
+    requestStatusChange,
+
+    // undo / reopen / return / history
+    fetchOrderHistory,
+    openRevert,
+    openReturn,
+    actionModal,
+    setActionModal,
+    undoSnack,
+    setUndoSnack,
+    undoLastChange,
 
     // courier
     sendCourierDirect,

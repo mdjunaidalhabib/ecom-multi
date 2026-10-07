@@ -148,9 +148,44 @@ const orderSchema = new mongoose.Schema(
     ============================ */
     status: {
       type: String,
-      enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
+      enum: ["pending", "confirmed", "shipped", "delivered", "cancelled", "returned"],
       default: "pending",
       index: true,
+    },
+
+    /* ===========================
+       ✅ STATUS HISTORY (AUDIT LOG)
+       - প্রতিটা status পরিবর্তন এখানে append হয় (কখনো edit/delete হয় না)
+       - কে, কখন, কেন পরিবর্তন করেছে — হিসাব গরমিল হলে trace করার জন্য
+       - Undo/Reopen এখান থেকেই বের করে অর্ডার আগে কোন status-এ ছিল
+       - সব লেখা হয় services/orderStatusService.js থেকে
+    ============================ */
+    statusHistory: [
+      {
+        _id: false,
+        from: { type: String, default: null },
+        to: { type: String, required: true },
+        // create | status_change | revert | return
+        action: { type: String, default: "status_change" },
+        reason: { type: String, default: "" },
+        // admin | staff | superadmin | customer | courier | system
+        byType: { type: String, default: "system" },
+        byId: { type: String, default: null },
+        byName: { type: String, default: null },
+        at: { type: Date, default: Date.now },
+      },
+    ],
+
+    /* ===========================
+       ✅ RETURN INFO (delivered → returned)
+       - পণ্য ফেরত এলে stock ফেরত যায়, refund এখানে রেকর্ড থাকে
+       - আসল delivered রেকর্ড মোছা হয় না — শুধু status "returned" হয়
+    ============================ */
+    returnInfo: {
+      reason: { type: String, default: null },
+      refundAmount: { type: Number, default: null },
+      returnedAt: { type: Date, default: null },
+      returnedByName: { type: String, default: null },
     },
 
     /* ===========================

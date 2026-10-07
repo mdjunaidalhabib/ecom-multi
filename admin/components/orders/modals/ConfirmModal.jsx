@@ -9,8 +9,10 @@ export default function ConfirmModal({ data, onClose }) {
     <ModalWrapper open={!!data}>
       <h2 className="text-lg font-bold mb-2 text-gray-900 dark:text-slate-100">{data.title}</h2>
 
-      {data.description && (
-        <p className="text-sm text-gray-600 dark:text-slate-400 mb-5">{data.description}</p>
+      {(data.description || data.message) && (
+        <p className="text-sm text-gray-600 dark:text-slate-400 mb-5">
+          {data.description || data.message}
+        </p>
       )}
 
       <div className="flex justify-end gap-3">

@@ -1,6 +1,11 @@
 "use client";
 import { useState } from "react";
-import { STATUS_OPTIONS, STATUS_LABEL, STATUS_FLOW } from "../shared/constants";
+import {
+  STATUS_OPTIONS,
+  STATUS_LABEL,
+  STATUS_FLOW,
+  FINAL_STATUSES,
+} from "../shared/constants";
 import { needsPaymentVerification } from "../shared/utils";
 import Toast from "../../Toast";
 
@@ -93,10 +98,13 @@ export default function BulkActions({
                 }
 
                 // 🔁 NORMAL STATUS UPDATE
-                if (selected.length === 1) {
+                // Delivered/Cancelled বা একাধিক অর্ডার হলে confirm + কারণ
+                // মডাল (useOrders.updateManyStatus), success toast সেখান থেকেই
+                if (selected.length === 1 && !FINAL_STATUSES.includes(nextStatus)) {
                   await onStatusChange(selected[0], { status: nextStatus });
                 } else {
                   await onBulkStatusChange(selected, { status: nextStatus });
+                  return;
                 }
 
                 showToast("Status update হয়েছে", "success");

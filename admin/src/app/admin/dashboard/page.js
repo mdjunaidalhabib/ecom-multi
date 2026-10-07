@@ -31,6 +31,7 @@ const STATUS_HEX = {
   shipped: "#8b5cf6",
   delivered: "#10b981",
   cancelled: "#ef4444",
+  returned: "#f97316",
 };
 
 function GrowthBadge({ value }) {
@@ -62,6 +63,7 @@ export default function DashboardPage() {
     "shipped",
     "delivered",
     "cancelled",
+    "returned",
   ];
 
   const [stats, setStats] = useState({
@@ -428,6 +430,14 @@ const cards = useMemo(() => {
       gradient: "from-rose-500 via-rose-600 to-rose-500",
       dot: "bg-white/50",
       sub: `৳${statusStats.cancelled?.amount ?? 0} value`,
+    },
+    {
+      key: "returned",
+      label: "Returned",
+      value: statusStats.returned?.count ?? 0,
+      gradient: "from-orange-500 via-orange-600 to-orange-500",
+      dot: "bg-white/50",
+      sub: `৳${statusStats.returned?.amount ?? 0} value — not counted in sales`,
     },
   ];
 }, [stats, statusStats, channelStats, monthlyComparison, avgOrderValue, totalQuantitySold]);

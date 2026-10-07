@@ -1,6 +1,6 @@
 "use client";
 
-export default function ProductCard({ product, onEdit, onDelete }) {
+export default function ProductCard({ product, onEdit, onDelete, onStockHistory }) {
   const cats = Array.isArray(product?.categories) ? product.categories : [];
   const isHidden = product?.isActive === false;
 
@@ -246,6 +246,21 @@ export default function ProductCard({ product, onEdit, onDelete }) {
             <span>🗑</span>
             <span className="hidden sm:inline">মুছুন</span>
           </button>
+
+          {onStockHistory && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onStockHistory();
+              }}
+              title="Stock History"
+              aria-label="Stock History"
+              className="shrink-0 flex items-center justify-center px-2 bg-slate-700 hover:bg-slate-800 active:scale-[0.98] text-white py-1.5 rounded-md text-xs font-semibold transition"
+            >
+              <span>📊</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

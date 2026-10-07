@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import ProductForm from "../../../../components/productForm/ProductForm";
 import ProductCard from "../../../../components/ProductCard";
+import ProductStockHistoryModal from "../../../../components/ProductStockHistoryModal";
 import Toast from "../../../../components/Toast";
 import ProductsSkeleton from "../../../../components/Skeleton/ProductsSkeleton";
 import Pagination from "../../../../components/Pagination";
@@ -38,6 +39,9 @@ export default function ProductsPage() {
   const [homeBadges, setHomeBadges] = useState([]);
 
   const [showForm, setShowForm] = useState(false);
+
+  // ✅ Stock History (ledger) মডাল
+  const [stockHistoryProduct, setStockHistoryProduct] = useState(null);
   const [editProduct, setEditProduct] = useState(null);
 
   const [toast, setToast] = useState(null);
@@ -386,6 +390,7 @@ export default function ProductsPage() {
                   setShowForm(true);
                 }}
                 onDelete={() => confirmDelete(p)}
+                onStockHistory={() => setStockHistoryProduct(p)}
               />
             ))}
           </div>
@@ -469,6 +474,12 @@ export default function ProductsPage() {
           </div>
         </>
       )}
+
+      {/* STOCK HISTORY (ledger) */}
+      <ProductStockHistoryModal
+        product={stockHistoryProduct}
+        onClose={() => setStockHistoryProduct(null)}
+      />
 
       {/* TOAST */}
       {toast && (

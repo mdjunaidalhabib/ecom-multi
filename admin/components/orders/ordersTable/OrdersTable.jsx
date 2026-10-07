@@ -1,6 +1,14 @@
 "use client";
 import { useState } from "react";
-import { Send, FileText, Edit2, Trash2, Search, Loader2 } from "lucide-react";
+import {
+  Send,
+  FileText,
+  Edit2,
+  Trash2,
+  Search,
+  Loader2,
+  History,
+} from "lucide-react";
 
 import Badge from "../../Badge";
 import CopyButton from "../../CopyButton";
@@ -37,6 +45,8 @@ export default function OrdersTable({
   onEdit,
   onDelete = null,
   onStatusChange,
+  onStatusSelect,
+  onHistory,
   onSendCourier,
   onBulkStatusChange,
   onBulkDelete,
@@ -81,7 +91,9 @@ export default function OrdersTable({
         return;
       }
 
-      await onStatusChange(id, payload);
+      // ✅ Delivered/Cancelled হলে আগে confirm + কারণ (useOrders.requestStatusChange)
+      if (onStatusSelect && order) await onStatusSelect(order, payload.status);
+      else await onStatusChange(id, payload);
       manager.setSelected([]);
     } finally {
       setUpdatingId(null);
@@ -385,6 +397,15 @@ export default function OrdersTable({
                         </div>
                       )}
 
+                      {o.status === "returned" && o.returnInfo?.reason && (
+                        <div className="text-[11px] text-orange-600 dark:text-orange-400 max-w-[180px]">
+                          <span className="font-semibold">
+                            Refund ৳{o.returnInfo.refundAmount ?? 0}:
+                          </span>{" "}
+                          {o.returnInfo.reason}
+                        </div>
+                      )}
+
                       {paymentHold && (
                         <div className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded px-2 py-1 max-w-[180px]">
                           ⏳ Payment verify হয়নি — status hold করা আছে। Payments পেজ থেকে Accept/Reject করুন।
@@ -438,6 +459,16 @@ export default function OrdersTable({
                           className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-lg transition"
                         >
                           <Edit2 size={15} />
+                        </button>
+
+                        {/* History / Undo / Reopen / Return */}
+                        <button
+                          onClick={() => onHistory?.(o)}
+                          title="History / Undo / Return"
+                          aria-label="History"
+                          className="bg-slate-700 hover:bg-slate-800 text-white p-2 rounded-lg transition"
+                        >
+                          <History size={15} />
                         </button>
 
                         {/* Delete */}

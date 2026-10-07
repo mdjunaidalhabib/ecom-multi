@@ -110,7 +110,7 @@ export default async function ProductDetailsPage({ params }) {
 
   if (!product) {
     return (
-      <div className="container mx-auto px-4 py-20 text-center">
+      <div className="max-container py-20 text-center">
         <div className="bg-white p-8 rounded-2xl shadow-sm inline-block">
           <h2 className="text-2xl font-bold text-gray-800">
             Oops! Product Not Found

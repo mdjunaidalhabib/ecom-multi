@@ -3,7 +3,7 @@ import React from "react";
 
 export default function ProductDetailsSkeleton() {
   return (
-    <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
+    <main className="max-container py-8 animate-pulse">
       {/* Breadcrumb Skeleton */}
       <div className="h-4 bg-gray-300 rounded w-1/3 mb-6"></div>
 

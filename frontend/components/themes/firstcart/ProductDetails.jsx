@@ -160,7 +160,7 @@ export default function FirstCartProductDetails({
 
   return (
     <main className="bg-[var(--theme-bg)]">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 mt-4 py-4 md:py-8">
+      <div className="max-container mt-4 py-4 md:py-8">
         {/* Breadcrumb — no background, just the trail */}
         <div className="mb-4 px-1 md:mb-6">
           <ProductBreadcrumb product={product} categories={categories} />

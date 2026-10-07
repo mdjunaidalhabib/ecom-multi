@@ -8,6 +8,7 @@ export default function Badge({ children, type }) {
     shipped: "border-purple-200 dark:border-purple-500/20 text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10",
     delivered: "border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-500/10",
     cancelled: "border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/10",
+    returned: "border-orange-200 dark:border-orange-500/20 text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10",
   };
 
   return (

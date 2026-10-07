@@ -8,6 +8,11 @@ import path from "path";
 import { deleteFromR2, uploadToR2 } from "../../utils/r2/r2Helpers.js";
 import { moveToTrash } from "../../utils/trash/trash.helpers.js";
 import {
+  stockSnapshot,
+  recordManualStockChange,
+} from "../../src/services/inventoryService.js";
+import { actorFromAdmin } from "../../src/services/orderStatusService.js";
+import {
   toNumber,
   computeIsSoldOut,
   computeVariantTotalStock,
@@ -449,6 +454,9 @@ export const createProduct = async (req, res) => {
     await product.save();
     await normalizeOrders();
 
+    // ✅ Stock ledger — শুরুর stock (opening balance)
+    await recordManualStockChange({ product, actor: actorFromAdmin(req.admin) });
+
     res.status(201).json(product);
   } catch (err) {
     console.error("Create Error:", err);
@@ -468,6 +476,9 @@ export const updateProduct = async (req, res) => {
       cleanupReqFiles(req);
       return res.status(404).json({ error: "Product not found" });
     }
+
+    // ✅ Stock ledger-এর জন্য এডিটের আগের stock
+    const stockBefore = stockSnapshot(product);
 
     const {
       name,
@@ -707,6 +718,13 @@ export const updateProduct = async (req, res) => {
 
     await product.save();
     await normalizeOrders();
+
+    // ✅ হাতে stock বদলালে পার্থক্যটুকু ledger-এ (না বদলালে কিছুই লেখা হয় না)
+    await recordManualStockChange({
+      before: stockBefore,
+      product,
+      actor: actorFromAdmin(req.admin),
+    });
 
     res.json(product);
   } catch (err) {

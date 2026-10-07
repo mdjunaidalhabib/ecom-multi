@@ -1,6 +1,11 @@
 import express from "express";
 import CourierSetting from "../../models/CourierSetting.js";
 import Order from "../../models/Order.js";
+import {
+  actorFromAdmin,
+  assertTransitionAllowed,
+  changeOrderStatus,
+} from "../../services/orderStatusService.js";
 
 const router = express.Router();
 
@@ -83,6 +88,18 @@ router.post("/send-order", async (req, res) => {
       });
     }
 
+    // ✅ কুরিয়ারে consignment তৈরির আগেই যাচাই — নাহলে কুরিয়ারে পার্সেল তৈরি
+    // হয়ে যাওয়ার পর status বদলাতে না পারলে দুই দিকে গরমিল হতো
+    try {
+      assertTransitionAllowed(order.status, "shipped");
+    } catch {
+      return res.status(400).json({
+        ok: false,
+        requestId,
+        error: `শুধু Confirmed অর্ডার কুরিয়ারে পাঠানো যায় (বর্তমান: ${order.status})`,
+      });
+    }
+
     // ✅ COD amount is always computed server-side from the order itself —
     // never trust a client-supplied value here. If the delivery charge was
     // already collected online (bKash/Nagad, verified/paid), the courier
@@ -142,9 +159,7 @@ router.post("/send-order", async (req, res) => {
       });
     }
 
-    order.status = "shipped";
-
-    order.courier = {
+    const courierInfo = {
       provider: "steadfast",
       trackingId: data?.consignment?.tracking_code || "",
       consignmentId: data?.consignment?.consignment_id || null,
@@ -154,16 +169,37 @@ router.post("/send-order", async (req, res) => {
       sentAt: new Date(),
     };
 
-    order.trackingId = order.courier.trackingId;
-
-    await order.save();
+    let updatedOrder;
+    try {
+      const result = await changeOrderStatus(order, "shipped", {
+        actor: actorFromAdmin(req.admin),
+        reason: `Steadfast-এ পাঠানো হয়েছে (${courierInfo.trackingId || "no tracking"})`,
+        extraSet: {
+          courier: courierInfo,
+          trackingId: courierInfo.trackingId,
+        },
+      });
+      updatedOrder = result.order;
+    } catch (statusErr) {
+      // ⚠️ কুরিয়ারে পার্সেল তৈরি হয়ে গেছে কিন্তু অর্ডার আপডেট হয়নি —
+      // tracking info অন্তত সেভ করে রাখা হয় যাতে হারিয়ে না যায়
+      await Order.updateOne(
+        { _id: order._id },
+        { $set: { courier: courierInfo, trackingId: courierInfo.trackingId } },
+      ).catch(() => {});
+      return res.status(409).json({
+        ok: false,
+        requestId,
+        error: `Courier-এ পার্সেল তৈরি হয়েছে (${courierInfo.trackingId}), কিন্তু অর্ডারের status আপডেট হয়নি: ${statusErr.message}`,
+      });
+    }
 
     return res.json({
       ok: true,
       requestId,
       message: "Courier order created & status updated",
-      trackingCode: order.courier.trackingId,
-      order,
+      trackingCode: updatedOrder.courier?.trackingId,
+      order: updatedOrder,
     });
   } catch (err) {
     return res.status(500).json({
@@ -217,14 +253,27 @@ router.post("/sync-courier-final", async (req, res) => {
       });
     }
 
-    order.status = finalStatus;
-
-    if (order.courier) {
-      order.courier.status = finalStatus;
-      order.courier.syncedAt = new Date();
+    // ✅ orderStatusService এর মাধ্যমে — কুরিয়ার cancel করলে stock + promo
+    // ফেরত যায় (আগে এই পথে cancel হলে stock ফেরত যেত না, হিসাব গরমিল হতো)
+    let result;
+    try {
+      result = await changeOrderStatus(order, finalStatus, {
+        actor: { type: "courier", id: null, name: "Steadfast" },
+        reason:
+          finalStatus === "cancelled"
+            ? "Courier থেকে cancelled/returned"
+            : "Courier থেকে delivered",
+        extraSet: order.courier?.provider
+          ? { "courier.status": finalStatus }
+          : {},
+      });
+    } catch (statusErr) {
+      return res.status(statusErr?.statusCode || 500).json({
+        ok: false,
+        requestId,
+        error: statusErr?.message || "Courier sync error",
+      });
     }
-
-    await order.save();
 
     console.log("✅ Courier final status synced:", order._id);
 
@@ -232,7 +281,7 @@ router.post("/sync-courier-final", async (req, res) => {
       ok: true,
       requestId,
       message: "Courier final status synced successfully",
-      order,
+      order: result.order,
     });
   } catch (err) {
     return res.status(500).json({

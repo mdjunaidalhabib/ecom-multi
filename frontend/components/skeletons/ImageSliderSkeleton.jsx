@@ -6,7 +6,7 @@ export default function ImageSliderSkeleton({
   showDots = true,
 }) {
   return (
-    <section className="relative container mx-auto py-4 sm:px-6 lg:px-8">
+    <section className="max-container relative py-4">
       {/* main skeleton box */}
       <div
         className={`relative w-full ${ratioClass} bg-gray-200 rounded-2xl overflow-hidden`}

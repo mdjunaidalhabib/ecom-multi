@@ -13,6 +13,11 @@ import {
   releasePromoUsage,
 } from "../../services/promoService.js";
 import { updateInventoryForItems } from "../../services/inventoryService.js";
+import {
+  buildHistoryEntry,
+  changeOrderStatus,
+  sendOrderStatusError,
+} from "../../services/orderStatusService.js";
 import { resolveAuthedCustomer } from "../../auth/resolveAuthedCustomer.js";
 
 // ✅ correct relative path
@@ -274,6 +279,18 @@ router.post("/", async (req, res) => {
       paymentStatus: "pending",
       paymentDetails: finalPaymentDetails,
       status: "pending",
+      statusHistory: [
+        buildHistoryEntry({
+          from: null,
+          to: "pending",
+          action: "create",
+          actor: {
+            type: "customer",
+            id: userId || null,
+            name: billing.name || "Customer",
+          },
+        }),
+      ],
     });
 
     const savedOrder = await order.save();
@@ -303,7 +320,15 @@ router.post("/", async (req, res) => {
        - If stock update fails => rollback order + return 400
     */
     try {
-      await updateInventoryForItems(trustedItems, "decrease");
+      await updateInventoryForItems(trustedItems, "decrease", {
+        reason: "order",
+        order: savedOrder,
+        actor: {
+          type: "customer",
+          id: userId || null,
+          name: billing.name || "Customer",
+        },
+      });
     } catch (stockErr) {
       console.error("❌ Stock/Sold Update Error:", stockErr);
 
@@ -431,29 +456,36 @@ router.get("/", async (req, res) => {
  */
 router.put("/:id", async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: "অর্ডার পাওয়া যায়নি।" });
-
-    const { status, cancelReason, billing, paymentStatus } = req.body;
-
-    if (billing) {
-      order.billing = {
-        ...order.billing,
-        name: billing.name ?? order.billing.name,
-        phone: billing.phone ?? order.billing.phone,
-        address: billing.address ?? order.billing.address,
-        note: billing.note ?? order.billing.note,
-      };
+    // ✅ শুধু লগইন করা কাস্টমার, শুধু নিজের অর্ডার — আগে order ID জানলেই
+    // যে কেউ অন্যের অর্ডার cancel/ঠিকানা বদল করতে পারত, এমনকি
+    // paymentStatus "paid" বসিয়ে Payment verification এড়িয়ে যেতে পারত।
+    const authedCustomer = await resolveAuthedCustomer(req);
+    if (!authedCustomer) {
+      return res.status(401).json({ error: "লগইন প্রয়োজন।" });
     }
 
-    if (paymentStatus) {
-      const ps = String(paymentStatus);
-      if (["pending", "paid", "failed"].includes(ps)) {
-        order.paymentStatus = ps;
-      }
+    let order = await Order.findById(req.params.id);
+    if (
+      !order ||
+      !order.userId ||
+      String(order.userId) !== String(authedCustomer.userId)
+    ) {
+      // অন্যের অর্ডার হলেও 404 — অর্ডারটা আছে কিনা সেটাও জানানো হয় না
+      return res.status(404).json({ error: "অর্ডার পাওয়া যায়নি।" });
     }
 
-    // ✅ Cancel -> Restock (ONLY if pending)
+    // ⚠️ paymentStatus ইচ্ছাকৃতভাবে নেওয়া হয় না — এটা শুধু Admin
+    // (Payments > Verify) বদলাতে পারে।
+    const { status, cancelReason, billing } = req.body;
+
+    if (billing && order.status !== "pending") {
+      return res.status(403).json({
+        error: "অর্ডারটি ইতিমধ্যে প্রসেস হয়ে গেছে, এখন আর ঠিকানা বদলানো যাবে না। শপে যোগাযোগ করুন।",
+      });
+    }
+
+    // ✅ Cancel -> Restock + promo release + history (ONLY if pending) —
+    // orderStatusService এর মাধ্যমে, admin cancel-এর একই নিয়মে
     if (status === "cancelled") {
       if (order.status !== "pending") {
         return res.status(403).json({
@@ -461,13 +493,18 @@ router.put("/:id", async (req, res) => {
         });
       }
 
-      order.status = "cancelled";
-      order.cancelReason = cancelReason || "Cancelled by user";
-
       try {
-        await updateInventoryForItems(order.items, "increase");
-      } catch (restockErr) {
-        console.error("❌ Restock Error:", restockErr);
+        const result = await changeOrderStatus(order, "cancelled", {
+          actor: {
+            type: "customer",
+            id: order.userId || null,
+            name: order.billing?.name || "Customer",
+          },
+          reason: cancelReason || "Cancelled by user",
+        });
+        order = result.order;
+      } catch (statusErr) {
+        return sendOrderStatusError(res, statusErr, "অর্ডার আপডেট ব্যর্থ হয়েছে।");
       }
     } else if (status) {
       // ✅ Customer এর জন্য শুধু cancel-ই allowed (উপরে হ্যান্ডেল করা হয়েছে)।
@@ -479,7 +516,17 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    await order.save();
+    if (billing) {
+      order.billing = {
+        ...order.billing,
+        name: billing.name ?? order.billing.name,
+        phone: billing.phone ?? order.billing.phone,
+        address: billing.address ?? order.billing.address,
+        note: billing.note ?? order.billing.note,
+      };
+    }
+
+    if (order.isModified()) await order.save();
 
     return res.json(order);
   } catch (err) {

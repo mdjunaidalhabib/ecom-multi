@@ -104,7 +104,7 @@ export default function TerraNavbar() {
   return (
     <>
       <nav className="sticky top-0 z-50 border-b border-[var(--theme-text)]/10 bg-white text-[var(--theme-text)] shadow-sm">
-        <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="max-container flex h-16 items-center justify-between gap-4">
           <button
             onClick={() => setMenuOpen(true)}
             className="-ml-1 p-1 text-[var(--theme-text)] transition-colors hover:text-[var(--theme-primary)] md:hidden"

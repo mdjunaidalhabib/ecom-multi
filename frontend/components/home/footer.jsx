@@ -95,8 +95,8 @@ export default function Footer() {
   const { brand = {}, contact = {}, socialLinks = [] } = data;
 
   return (
-    <footer className="bg-pink-200 pt-16 pb-8 px-4 md:px-12 mb-14 md:mb-0 border-t border-[var(--theme-primary)]/25 font-sans tracking-wide">
-      <div className="mx-auto max-w-7xl">
+    <footer className="bg-pink-200 pt-16 pb-8 mb-14 md:mb-0 border-t border-[var(--theme-primary)]/25 font-sans tracking-wide">
+      <div className="max-container">
         {/* Main Grid Section — ৪টি কলামকেই সমান ভাগ (lg:grid-cols-4) করা হয়েছে */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 ">
           {/* Column 1: Brand Info */}

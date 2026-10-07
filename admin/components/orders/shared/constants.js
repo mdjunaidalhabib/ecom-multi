@@ -4,6 +4,7 @@ export const STATUS_OPTIONS = [
   "shipped",
   "delivered",
   "cancelled",
+  "returned",
 ];
 
 export const STATUS_LABEL = {
@@ -12,9 +13,15 @@ export const STATUS_LABEL = {
   shipped: "SHIPPED",
   delivered: "DELIVERED",
   cancelled: "CANCELLED",
+  returned: "RETURNED",
 };
 
-export const LOCKED_STATUSES = ["delivered", "cancelled"];
+// ✅ এই status-গুলো dropdown থেকে আর বদলানো যায় না — ভুল ঠিক করতে History
+// থেকে Undo/Reopen, আর delivered পণ্য ফেরত এলে Return (backend: orderStatusService)
+export const LOCKED_STATUSES = ["delivered", "cancelled", "returned"];
+
+// ✅ এই status-এ যাওয়ার আগে confirm + (cancel হলে) কারণ চাওয়া হয়
+export const FINAL_STATUSES = ["delivered", "cancelled"];
 
 export const STATUS_FLOW = {
   pending: ["confirmed", "cancelled"],
@@ -22,6 +29,7 @@ export const STATUS_FLOW = {
   shipped: ["delivered", "cancelled"],
   delivered: [],
   cancelled: [],
+  returned: [],
 };
 
 export const READY_STATUS = "confirmed";
@@ -32,6 +40,7 @@ export const STATUS_BADGE_COLOR = {
   shipped: "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20",
   delivered: "bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20",
   cancelled: "bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20",
+  returned: "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20",
 };
 
 /* ===============================
@@ -43,6 +52,7 @@ export const STATUS_TEXT_COLOR = {
   shipped: "text-purple-600 dark:text-purple-400",
   delivered: "text-green-600 dark:text-green-400",
   cancelled: "text-red-600 dark:text-red-400",
+  returned: "text-orange-600 dark:text-orange-400",
 };
 
 /* ===============================
@@ -54,4 +64,5 @@ export const STATUS_COLORS = {
   shipped: "text-purple-700 bg-purple-50 ring-purple-200 dark:text-purple-400 dark:bg-purple-500/10 dark:ring-purple-500/20",
   delivered: "text-green-700 bg-green-50 ring-green-200 dark:text-green-400 dark:bg-green-500/10 dark:ring-green-500/20",
   cancelled: "text-red-700 bg-red-50 ring-red-200 dark:text-red-400 dark:bg-red-500/10 dark:ring-red-500/20",
+  returned: "text-orange-700 bg-orange-50 ring-orange-200 dark:text-orange-400 dark:bg-orange-500/10 dark:ring-orange-500/20",
 };

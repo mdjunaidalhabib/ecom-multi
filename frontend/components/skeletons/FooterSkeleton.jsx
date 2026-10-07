@@ -5,7 +5,7 @@ import React from "react";
 export default function FooterSkeleton() {
   return (
     <footer className="bg-gray-900 text-gray-200 pt-10 pb-6 px-6 md:px-12">
-      <div className="max-w-7xl mx-auto animate-pulse grid grid-cols-1 md:grid-cols-4 gap-10">
+      <div className="max-container animate-pulse grid grid-cols-1 md:grid-cols-4 gap-10">
         {[1, 2, 3, 4].map((col) => (
           <div key={col} className="space-y-4">
             <div className="h-6 w-32 bg-gray-700 rounded"></div>

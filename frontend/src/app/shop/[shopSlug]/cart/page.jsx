@@ -318,7 +318,7 @@ export default function CartPage() {
 
   return (
     <main className="bg-pink-50">
-      <div className="container mx-auto px-3 sm:px-6 py-5">
+      <div className="max-container py-5">
         {/* ✅ Header */}
         <div className="mb-2">
           <h2 className="text-center text-lg sm:text-xl font-semibold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-600 text-transparent bg-clip-text mb-2">

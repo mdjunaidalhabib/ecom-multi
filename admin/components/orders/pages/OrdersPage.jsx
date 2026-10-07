@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import useOrders from "../../../hooks/useOrders";
 
@@ -14,6 +14,9 @@ import Pagination from "../../Pagination";
 
 import ConfirmModal from "../modals/ConfirmModal";
 import AlertModal from "../modals/AlertModal";
+import StatusActionModal from "../modals/StatusActionModal";
+import OrderHistoryModal from "../modals/OrderHistoryModal";
+import UndoSnackbar from "../modals/UndoSnackbar";
 
 export default function OrdersPage() {
   const API = "/api";
@@ -60,7 +63,28 @@ export default function OrdersPage() {
 
     confirm,
     setConfirm,
+
+    requestStatusChange,
+    fetchOrderHistory,
+    openRevert,
+    openReturn,
+    actionModal,
+    setActionModal,
+    undoSnack,
+    setUndoSnack,
+    undoLastChange,
   } = useOrders(API);
+
+  // ✅ History মডাল (status timeline + stock ledger + Undo/Reopen/Return)
+  const [historyOrder, setHistoryOrder] = useState(null);
+
+  const handleHistoryAction = (type, order, history) => {
+    const done = () => setHistoryOrder(null);
+    if (type === "return") openReturn(order, done);
+    else openRevert(order, history, done);
+  };
+
+  const closeUndoSnack = useCallback(() => setUndoSnack(null), [setUndoSnack]);
 
   // ✅ Status tab এখন useOrders হুকে (server-side ফিল্টার, সব পেজ মিলিয়ে) —
   // তাই `filtered` prop already সেই status এর সব অর্ডার নিয়ে আসে, এখানে আর
@@ -91,7 +115,8 @@ export default function OrdersPage() {
   const confirmDelete = (order) => {
     setConfirm({
       title: "Delete Order",
-      message: "আপনি কি নিশ্চিত এই order টি delete করতে চান?",
+      message:
+        "আপনি কি নিশ্চিত এই order টি delete করতে চান? (শুধু Cancelled/Returned অর্ডার delete করা যায়)",
       danger: true,
       loading: deleting,
       onConfirm: () => handleDelete(order),
@@ -225,6 +250,8 @@ export default function OrdersPage() {
               onEdit={openEdit}
               onDelete={confirmDelete}
               onStatusChange={updateStatus}
+              onStatusSelect={requestStatusChange}
+              onHistory={setHistoryOrder}
               onSendCourier={sendCourierDirect}
               onBulkStatusChange={updateManyStatus}
               onBulkDelete={deleteMany}
@@ -242,6 +269,8 @@ export default function OrdersPage() {
               onEdit={openEdit}
               onDelete={confirmDelete}
               onStatusChange={updateStatus}
+              onStatusSelect={requestStatusChange}
+              onHistory={setHistoryOrder}
               onSendCourier={sendCourierDirect}
               onBulkStatusChange={updateManyStatus}
               onBulkDelete={deleteMany}
@@ -274,6 +303,27 @@ export default function OrdersPage() {
         setForm={setForm}
         onSave={() => updateOrder(form)}
         onClose={() => setOpen(false)}
+      />
+
+      {/* HISTORY MODAL (timeline + stock ledger + Undo/Reopen/Return) */}
+      <OrderHistoryModal
+        order={historyOrder}
+        onClose={() => setHistoryOrder(null)}
+        fetchHistory={fetchOrderHistory}
+        onAction={handleHistoryAction}
+      />
+
+      {/* STATUS ACTION MODAL (confirm + কারণ) — History মডালের উপরে */}
+      <StatusActionModal
+        data={actionModal}
+        onClose={() => setActionModal(null)}
+      />
+
+      {/* UNDO BAR (Cancelled/Delivered দেওয়ার পর কয়েক সেকেন্ড) */}
+      <UndoSnackbar
+        data={undoSnack}
+        onUndo={undoLastChange}
+        onClose={closeUndoSnack}
       />
 
       {/* CONFIRM MODAL */}

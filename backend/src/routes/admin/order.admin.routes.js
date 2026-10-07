@@ -1,26 +1,45 @@
 import express from "express";
 import Order from "../../models/Order.js";
+import StockMovement from "../../models/StockMovement.js";
 import { moveToTrash } from "../../../utils/trash/trash.helpers.js";
 import { releasePromoUsage } from "../../services/promoService.js";
 import {
   updateInventoryForItems,
   updateInventoryForItem,
+  recordStockMovements,
 } from "../../services/inventoryService.js";
+import {
+  LOCKED_STATUSES,
+  STOCK_RELEASED_STATUSES,
+  UNDO_WINDOW_MS,
+  actorFromAdmin,
+  assertTransitionAllowed,
+  buildHistoryEntry,
+  canRevert,
+  changeOrderStatus,
+  returnOrder,
+  revertOrderStatus,
+  sendOrderStatusError,
+} from "../../services/orderStatusService.js";
 
 const router = express.Router();
 
 /**
  * ================================
- * STATUS FLOW (SINGLE SOURCE)
+ * 🗑 DELETE GUARD
  * ================================
+ * যে অর্ডারের stock এখনো অর্ডারে আটকে আছে (pending/confirmed/shipped) বা
+ * যেটা বিক্রির রেকর্ড (delivered), সেটা সরাসরি delete করলে stock/promo
+ * ফেরত যায় না আর হিসাব গরমিল হয়। তাই আগে Cancel/Return করতে হবে —
+ * তাতে stock ও promo নিয়মমতো ফেরত যায়, তারপর delete।
  */
-const STATUS_FLOW = {
-  pending: ["confirmed", "cancelled"],
-  confirmed: ["shipped", "cancelled"],
-  shipped: ["delivered", "cancelled"],
-  delivered: [],
-  cancelled: [],
-};
+function deleteBlockReason(order) {
+  if (STOCK_RELEASED_STATUSES.includes(order.status)) return null;
+  if (order.status === "delivered") {
+    return "Delivered অর্ডার বিক্রির রেকর্ড, তাই delete করা যাবে না। পণ্য ফেরত এলে Return করুন।";
+  }
+  return "এই অর্ডারের stock এখনো আটকে আছে। আগে অর্ডারটি Cancel করুন (stock ও promo ফেরত যাবে), তারপর Delete করুন।";
+}
 
 /**
  * ================================
@@ -187,15 +206,32 @@ router.post("/", async (req, res) => {
       createdById,
 
       saleChannel,
+
+      statusHistory: [
+        buildHistoryEntry({
+          from: null,
+          to: status,
+          action: "create",
+          actor: actorFromAdmin(req.admin),
+        }),
+      ],
     });
 
     /* ✅✅ STRICT INVENTORY UPDATE
        - Validates real stock and decrements stock/sold, same as
          customer checkout. If any item doesn't have enough stock,
          the order is rolled back (not silently created).
+       - Cancelled হিসেবে তৈরি অর্ডার stock আটকায় না (নাহলে stock কাটা
+         অবস্থায় আটকে থাকত, কারণ cancel-এর restock কখনো চলত না)।
     */
     try {
-      await updateInventoryForItems(finalItems, "decrease");
+      if (!STOCK_RELEASED_STATUSES.includes(status)) {
+        await updateInventoryForItems(finalItems, "decrease", {
+          reason: "order",
+          order: created,
+          actor: actorFromAdmin(req.admin),
+        });
+      }
     } catch (stockErr) {
       console.error("❌ Stock/Sold Update Error (admin order):", stockErr);
 
@@ -354,9 +390,11 @@ router.put("/bulk/status", async (req, res) => {
       errors: [],
     };
 
+    const actor = actorFromAdmin(req.admin);
+
     for (const o of orders) {
       try {
-        if (["delivered", "cancelled"].includes(o.status)) {
+        if (LOCKED_STATUSES.includes(o.status)) {
           result.skipped.push(o._id);
           continue;
         }
@@ -367,44 +405,20 @@ router.put("/bulk/status", async (req, res) => {
           continue;
         }
 
-        const allowedNext = STATUS_FLOW[o.status] || [];
-        if (!allowedNext.includes(status)) {
+        try {
+          assertTransitionAllowed(o.status, status);
+        } catch {
           result.skipped.push(o._id);
           continue;
         }
 
-        const update = { status };
-
-        if (status === "cancelled") {
-          update.cancelReason = cancelReason?.trim() || "Cancelled by admin";
-        }
-
-        const updated = await Order.findByIdAndUpdate(o._id, update, {
-          new: true,
+        const { order: updated } = await changeOrderStatus(o, status, {
+          actor,
+          reason:
+            status === "cancelled"
+              ? cancelReason?.trim() || "Cancelled by admin"
+              : "",
         });
-
-        if (status === "cancelled" && o.promo?.promoId) {
-          try {
-            await releasePromoUsage({
-              promoId: o.promo.promoId,
-              orderId: o._id,
-            });
-          } catch (promoReleaseErr) {
-            console.error(
-              "❌ Failed to release promo usage on bulk cancel:",
-              promoReleaseErr,
-            );
-          }
-        }
-
-        // ✅ Order cancelled -> restock
-        if (status === "cancelled") {
-          try {
-            await updateInventoryForItems(o.items, "increase");
-          } catch (restockErr) {
-            console.error("❌ Restock Error (admin bulk cancel):", restockErr);
-          }
-        }
 
         result.updated.push(updated._id);
       } catch (e) {
@@ -443,7 +457,18 @@ router.post("/bulk/delete", async (req, res) => {
     }
 
     // ✅ hard-delete এর বদলে Trash এ move — 3 দিন পর auto-purge হবে
-    const orders = await Order.find({ _id: { $in: ids } });
+    const found = await Order.find({ _id: { $in: ids } });
+    const orders = found.filter((o) => !deleteBlockReason(o));
+    const blocked = found.length - orders.length;
+
+    if (!orders.length && blocked) {
+      return res.status(400).json({
+        error: `${blocked} টি অর্ডার delete করা যায়নি — শুধু Cancelled বা Returned অর্ডার delete করা যায়। আগে Cancel করুন।`,
+        deletedCount: 0,
+        blocked,
+      });
+    }
+
     for (const o of orders) {
       if (o.promo?.promoId) {
         try {
@@ -461,7 +486,7 @@ router.post("/bulk/delete", async (req, res) => {
       await moveToTrash("Order", o);
     }
 
-    res.json({ deletedCount: orders.length });
+    res.json({ deletedCount: orders.length, blocked });
   } catch (err) {
     console.error("❌ Bulk delete failed:", err);
     res.status(500).json({
@@ -493,6 +518,87 @@ router.get("/:id", async (req, res) => {
 
 /**
  * ================================
+ * 🕘 ORDER HISTORY (status log + stock ledger)
+ * GET /admin/orders/:id/history
+ * ================================
+ * revert: এই admin এখন Undo/Reopen করতে পারবে কিনা, আর করলে কোন status-এ
+ * যাবে — UI বাটন দেখানো/লুকানোর জন্য (আসল চেক PATCH /revert-এ আবার হয়)।
+ */
+router.get("/:id/history", async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    const stockMovements = await StockMovement.find({ orderId: order._id })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const { allowed, target, lastEntry } = canRevert(order, req.admin);
+
+    res.json({
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      statusHistory: order.statusHistory || [],
+      returnInfo: order.returnInfo || null,
+      stockMovements,
+      revert: {
+        allowed,
+        target,
+        lastChangeAt: lastEntry?.at || null,
+        undoWindowMinutes: UNDO_WINDOW_MS / 60000,
+      },
+    });
+  } catch (err) {
+    console.error("❌ Error fetching order history:", err);
+    res.status(500).json({
+      error: "Failed to fetch order history",
+      details: err.message,
+    });
+  }
+});
+
+/**
+ * ================================
+ * ↩️ UNDO / REOPEN / REVERT
+ * PATCH /admin/orders/:id/revert   body: { reason }
+ * ================================
+ * অর্ডারকে আগের status-এ ফেরত নেয় — stock/promo আপনা-আপনি উল্টে যায়।
+ * Staff: শুধু নিজের পরিবর্তন UNDO_WINDOW_MS এর মধ্যে। Owner: যেকোনো সময়।
+ */
+router.patch("/:id/revert", async (req, res) => {
+  try {
+    const { order, warnings } = await revertOrderStatus(req.params.id, {
+      admin: req.admin,
+      reason: req.body?.reason,
+    });
+    res.json({ order, warnings });
+  } catch (err) {
+    sendOrderStatusError(res, err, "Revert failed");
+  }
+});
+
+/**
+ * ================================
+ * 📦 RETURN (delivered → returned)
+ * PATCH /admin/orders/:id/return   body: { reason, refundAmount? }
+ * ================================
+ */
+router.patch("/:id/return", async (req, res) => {
+  try {
+    const { order, warnings } = await returnOrder(req.params.id, {
+      admin: req.admin,
+      reason: req.body?.reason,
+      refundAmount: req.body?.refundAmount,
+    });
+    res.json({ order, warnings });
+  } catch (err) {
+    sendOrderStatusError(res, err, "Return failed");
+  }
+});
+
+/**
+ * ================================
  * UPDATE order (ADMIN)
  * ================================
  */
@@ -504,18 +610,43 @@ router.put("/:id", async (req, res) => {
     // 🔒 Locked order guard — এখানেই আগে চেক করা দরকার (নিচের items/stock
     // adjustment ব্লকের আগে), নাহলে delivered/cancelled অর্ডারে item qty
     // পাঠালে পুরো request পরে reject হলেও ততক্ষণে stock ইতিমধ্যে বদলে যেত।
+    // ভুল ঠিক করতে হলে PATCH /:id/revert (Undo/Reopen) বা /:id/return।
     if (
-      ["delivered", "cancelled"].includes(current.status) &&
+      LOCKED_STATUSES.includes(current.status) &&
       Object.keys(req.body).some((k) => k !== "status")
     ) {
       return res.status(400).json({
-        error: "Delivered or cancelled order cannot be edited",
+        error:
+          "Delivered/Cancelled/Returned অর্ডার এডিট করা যায় না। ভুল হলে History থেকে Undo/Reopen করুন।",
       });
     }
 
-    const updateData = {};
+    // ✅ Status পরিবর্তন থাকলে সেটা আগেই যাচাই — নাহলে নিচে qty/stock বদলে
+    // যাওয়ার পর status invalid ধরা পড়লে আধা-কাজ হয়ে থাকত।
+    const nextStatus =
+      req.body.status !== undefined && req.body.status !== current.status
+        ? req.body.status
+        : null;
 
-    if (req.body.status !== undefined) updateData.status = req.body.status;
+    if (nextStatus) {
+      // 🔒 Hold: payment not verified yet — block status advance
+      // (cancelling is still allowed since it doesn't need payment to be confirmed)
+      if (needsPaymentVerification(current) && nextStatus !== "cancelled") {
+        return res.status(400).json({
+          error: PAYMENT_HOLD_MESSAGE,
+          code: "PAYMENT_VERIFICATION_REQUIRED",
+        });
+      }
+
+      try {
+        assertTransitionAllowed(current.status, nextStatus);
+      } catch (flowErr) {
+        return sendOrderStatusError(res, flowErr);
+      }
+    }
+
+    const actor = actorFromAdmin(req.admin);
+    const updateData = {};
 
     if (req.body.trackingId !== undefined)
       updateData.trackingId = req.body.trackingId;
@@ -610,6 +741,34 @@ router.put("/:id", async (req, res) => {
         }
       }
 
+      // ✅ Stock ledger — qty বাড়লে বাড়তি টুকু বের হয়েছে, কমলে ফেরত এসেছে
+      const ledger = {
+        reason: "qty_edit",
+        order: current,
+        actor,
+        note: "অর্ডারের quantity এডিট",
+      };
+      const toLedgerItem = (c) => ({
+        productId: c.productId,
+        color: c.color,
+        name: current.items.find(
+          (it) =>
+            String(it.productId) === String(c.productId) &&
+            String(it.color || "") === String(c.color || ""),
+        )?.name,
+        qty: Math.abs(c.delta),
+      });
+      await recordStockMovements(
+        applied.filter((c) => c.delta > 0).map(toLedgerItem),
+        "decrease",
+        ledger,
+      );
+      await recordStockMovements(
+        applied.filter((c) => c.delta < 0).map(toLedgerItem),
+        "increase",
+        ledger,
+      );
+
       updateData.items = newItems;
       updateData.subtotal = newItems.reduce(
         (sum, it) => sum + Number(it.price || 0) * Number(it.qty || 0),
@@ -660,80 +819,36 @@ router.put("/:id", async (req, res) => {
       };
     }
 
-    if (
-      updateData.status !== undefined &&
-      updateData.status !== current.status
-    ) {
-      // 🔒 Hold: payment not verified yet — block status advance
-      // (cancelling is still allowed since it doesn't need payment to be confirmed)
-      if (
-        needsPaymentVerification(current) &&
-        updateData.status !== "cancelled"
-      ) {
-        return res.status(400).json({
-          error: PAYMENT_HOLD_MESSAGE,
-          code: "PAYMENT_VERIFICATION_REQUIRED",
-        });
-      }
-
-      const allowedNext = STATUS_FLOW[current.status] || [];
-      if (!allowedNext.includes(updateData.status)) {
-        return res.status(400).json({
-          error: `Invalid status change: ${current.status} → ${updateData.status}`,
-        });
-      }
-    }
-
-    if (
-      ["delivered", "cancelled"].includes(current.status) &&
-      Object.keys(updateData).some((k) => k !== "status")
-    ) {
-      return res.status(400).json({
-        error: "Delivered or cancelled order cannot be edited",
+    let updated = current;
+    if (Object.keys(updateData).length) {
+      updated = await Order.findByIdAndUpdate(req.params.id, updateData, {
+        new: true,
+        runValidators: true,
       });
     }
 
-    if (updateData.status === "cancelled") {
-      if (!updateData.cancelReason?.trim()) {
-        updateData.cancelReason = "Cancelled by admin";
-      }
-    }
-
-    const updated = await Order.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-      runValidators: true,
-    });
-
-    // ✅ Order cancelled -> free up the promo code's usage slot so
-    // "Usage X/Y" on the Promo Codes page reflects only real, kept orders.
-    if (
-      updateData.status === "cancelled" &&
-      current.status !== "cancelled" &&
-      current.promo?.promoId
-    ) {
+    // ✅ Status পরিবর্তন — stock/promo/history সব orderStatusService করে
+    let warnings = [];
+    if (nextStatus) {
       try {
-        await releasePromoUsage({
-          promoId: current.promo.promoId,
-          orderId: current._id,
+        const result = await changeOrderStatus(current._id, nextStatus, {
+          actor,
+          reason:
+            nextStatus === "cancelled"
+              ? req.body.cancelReason?.trim() || "Cancelled by admin"
+              : req.body.reason || "",
         });
-      } catch (promoReleaseErr) {
-        console.error(
-          "❌ Failed to release promo usage on cancel:",
-          promoReleaseErr,
-        );
+        updated = result.order;
+        warnings = result.warnings;
+      } catch (statusErr) {
+        return sendOrderStatusError(res, statusErr);
       }
     }
 
-    // ✅ Order cancelled -> restock (mirrors the customer-side cancel flow)
-    if (updateData.status === "cancelled" && current.status !== "cancelled") {
-      try {
-        await updateInventoryForItems(current.items, "increase");
-      } catch (restockErr) {
-        console.error("❌ Restock Error (admin cancel):", restockErr);
-      }
-    }
-
-    res.json(updated);
+    // ⚠️ Response shape আগের মতোই (order object) — warnings আলাদা field-এ
+    res.json(
+      warnings.length ? { ...updated.toObject(), warnings } : updated,
+    );
   } catch (err) {
     console.error("❌ Failed to update order:", err);
     res.status(400).json({
@@ -753,6 +868,19 @@ router.delete("/:id", async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ error: "Order not found" });
+
+    const blockReason = deleteBlockReason(order);
+    if (blockReason) {
+      return res.status(400).json({ error: blockReason, code: "DELETE_BLOCKED" });
+    }
+
+    if (order.promo?.promoId) {
+      try {
+        await releasePromoUsage({ promoId: order.promo.promoId, orderId: order._id });
+      } catch (promoReleaseErr) {
+        console.error("❌ Failed to release promo usage on delete:", promoReleaseErr);
+      }
+    }
 
     // ✅ hard-delete এর বদলে Trash এ move — 3 দিন পর auto-purge হবে,
     // এর মাঝে Trash থেকে restore করা যাবে।

@@ -336,6 +336,71 @@ export const reservePromoUsage = async ({
   }
 };
 
+/**
+ * ✅ Cancel হওয়া অর্ডার reopen হলে তার promo usage আবার গোনা হয় —
+ * releasePromoUsage এর উল্টো। অর্ডারটা আগেই এই promo-র discount নিয়ে
+ * বৈধভাবে তৈরি হয়েছিল, তাই limit শেষ হয়ে গেলেও reopen আটকানো হয় না;
+ * শুধু `overLimit: true` ফেরত দেওয়া হয় যাতে admin-কে warning দেখানো যায়।
+ * Idempotent: redemption আগে থেকেই থাকলে কিছু করে না।
+ */
+export const reclaimPromoUsage = async ({ order }) => {
+  const promoId = order?.promo?.promoId;
+  if (!promoId || !order?._id) return { reclaimed: false, overLimit: false };
+
+  const existing = await PromoRedemption.exists({
+    promo: promoId,
+    order: order._id,
+  });
+  if (existing) return { reclaimed: false, overLimit: false };
+
+  const promo = await Promo.findById(promoId);
+  if (!promo) return { reclaimed: false, overLimit: false };
+
+  const customerKey = getPromoCustomerKey({
+    userId: order.userId,
+    phone: order.billing?.phone,
+  });
+
+  try {
+    await PromoRedemption.create({
+      shopId: order.shopId,
+      promo: promo._id,
+      order: order._id,
+      code: promo.code,
+      customerKey,
+      userId: order.userId ? String(order.userId) : null,
+      customerPhone: order.billing?.phone || null,
+      eligibleSubtotal: toNumber(order.promo?.eligibleSubtotal, 0),
+      discountAmount: toNumber(order.promo?.discountAmount, 0),
+      shippingDiscount: toNumber(order.promo?.shippingDiscount, 0),
+    });
+  } catch (error) {
+    // একই সময়ে দুইবার reopen — অন্যটা ইতিমধ্যে গুনে ফেলেছে
+    if (error?.code === 11000) return { reclaimed: false, overLimit: false };
+    throw error;
+  }
+
+  const updatedPromo = await Promo.findByIdAndUpdate(
+    promo._id,
+    { $inc: { usedCount: 1 } },
+    { new: true },
+  );
+
+  if (customerKey !== "guest:unknown") {
+    await PromoCustomerUsage.findOneAndUpdate(
+      { promo: promo._id, customerKey },
+      { $inc: { count: 1 } },
+      { upsert: true },
+    );
+  }
+
+  const overLimit = Boolean(
+    updatedPromo?.totalUsageLimit &&
+      updatedPromo.usedCount > updatedPromo.totalUsageLimit,
+  );
+  return { reclaimed: true, overLimit };
+};
+
 export const releasePromoUsage = async ({ promoId, orderId }) => {
   if (!promoId || !orderId) return;
   const redemption = await PromoRedemption.findOneAndDelete({

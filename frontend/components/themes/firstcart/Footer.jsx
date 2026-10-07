@@ -107,7 +107,7 @@ export default function FirstCartFooter() {
     >
       {/* Help / CTA band */}
       <div style={{ background: "var(--theme-primary)" }}>
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-5 px-4 py-8 text-center md:flex-row md:px-10 md:text-left">
+        <div className="max-container flex flex-col items-center justify-between gap-5 py-8 text-center md:flex-row md:text-left">
           <div className="flex flex-col items-center gap-4 md:flex-row">
             <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl text-white">
               <FaHeadset />
@@ -150,7 +150,7 @@ export default function FirstCartFooter() {
       </div>
 
       {/* Main grid */}
-      <div className="mx-auto max-w-[1280px] px-4 pb-8 pt-14 md:px-10">
+      <div className="max-container pb-8 pt-14">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           {/* Brand + about */}
           <div>
@@ -343,7 +343,7 @@ export default function FirstCartFooter() {
 
       {/* Bottom bar */}
       <div className="bg-white">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-3 px-4 py-5 text-center text-xs text-[var(--theme-secondary)]/70 md:flex-row md:px-10 md:text-left">
+        <div className="max-container flex flex-col items-center justify-between gap-3 py-5 text-center text-xs text-[var(--theme-secondary)]/70 md:flex-row md:text-left">
           <p>
             © {new Date().getFullYear()} {brand.title || "Company"}. All Rights
             Reserved.

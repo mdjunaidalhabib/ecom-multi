@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
+  History,
 } from "lucide-react";
 import Badge from "../../Badge";
 import CopyButton from "../../CopyButton";
@@ -35,6 +36,7 @@ export default function OrderCard({
   onStatusChange,
   onEdit,
   onDelete,
+  onHistory,
   onSendCourier,
 
   // ✅ NEW: parent থেকে courier final sync handler পাঠাবেন
@@ -60,7 +62,7 @@ export default function OrderCard({
         return;
       }
 
-      await onStatusChange(id, { status: newStatus });
+      await onStatusChange(id, { status: newStatus }, order);
     } catch (error) {
       console.error("Status update failed", error);
     }
@@ -109,6 +111,16 @@ export default function OrderCard({
             {o.status === "cancelled" && o.cancelReason && (
               <div className="text-[11px] text-red-600 dark:text-red-400 leading-none mt-0.5">
                 <span className="font-semibold">Reason:</span> {o.cancelReason}
+              </div>
+            )}
+
+            {/* Return info */}
+            {o.status === "returned" && o.returnInfo?.reason && (
+              <div className="text-[11px] text-orange-600 dark:text-orange-400 leading-none mt-0.5">
+                <span className="font-semibold">
+                  Refund ৳{o.returnInfo.refundAmount ?? 0}:
+                </span>{" "}
+                {o.returnInfo.reason}
               </div>
             )}
 
@@ -306,6 +318,14 @@ export default function OrderCard({
                 className="bg-amber-400 hover:bg-amber-500 text-white transition"
               >
                 <Edit3 size={16} />
+              </IconBtn>
+
+              <IconBtn
+                onClick={() => onHistory?.(o)}
+                aria-label="History / Undo / Return"
+                className="bg-slate-700 hover:bg-slate-800 text-white transition"
+              >
+                <History size={16} />
               </IconBtn>
 
               <IconBtn

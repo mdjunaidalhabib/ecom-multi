@@ -141,7 +141,7 @@ export default function CategoryBrowserClient({
 
   return (
     <div className="bg-[var(--theme-bg)]">
-      <div className="container mx-auto flex flex-col md:flex-row gap-6 p-3 md:p-6">
+      <div className="max-container flex flex-col md:flex-row gap-6 py-3 md:py-6">
         {/* === Category Sidebar === */}
         <div className="md:w-64 bg-[var(--card-bg,var(--theme-surface))] ring-1 ring-[var(--card-ring,transparent)] shadow-md rounded-xl p-3 md:p-4">
           <h3 className="text-lg font-semibold mb-3 border-b pb-2">

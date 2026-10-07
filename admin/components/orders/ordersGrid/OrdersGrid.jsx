@@ -19,6 +19,8 @@ export default function OrdersGrid({
   onEdit,
   onDelete = null,
   onStatusChange,
+  onStatusSelect,
+  onHistory,
   onSendCourier,
   onBulkStatusChange,
   onBulkDelete,
@@ -65,8 +67,9 @@ export default function OrdersGrid({
         return; // ⛔ status update এখানেই থামবে
       }
 
-      // 🔁 NORMAL STATUS UPDATE
-      await onStatusChange(id, payload);
+      // 🔁 NORMAL STATUS UPDATE — Delivered/Cancelled হলে আগে confirm + কারণ
+      if (onStatusSelect && order) await onStatusSelect(order, payload.status);
+      else await onStatusChange(id, payload);
 
       manager.setSelected([]);
     } finally {
@@ -176,6 +179,7 @@ export default function OrdersGrid({
                 onStatusChange={handleChange}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onHistory={onHistory}
                 onSendCourier={onSendCourier}
                 onFinalStatusSync={handleCourierFinalStatus} // ✅ ADD
                 onDownloadInvoice={handleDownloadInvoice}

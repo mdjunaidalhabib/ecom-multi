@@ -38,7 +38,7 @@ const ICON_MAP = {
 function AboutSkeleton() {
   return (
     <div className="bg-pink-50 animate-pulse">
-      <div className="max-w-7xl mx-auto px-6 py-24 text-center space-y-6">
+      <div className="max-container py-24 text-center space-y-6">
         <div className="h-6 w-40 bg-pink-200 rounded-full mx-auto" />
         <div className="h-12 w-2/3 bg-pink-200 rounded mx-auto" />
         <div className="h-4 w-1/2 bg-pink-100 rounded mx-auto" />
@@ -93,7 +93,7 @@ export default function AboutPage() {
     <div className="bg-pink-50">
       {/* Hero */}
       <section className="relative overflow-hidden bg-pink-100">
-        <div className="relative max-w-7xl mx-auto px-6 py-8 lg:py-14">
+        <div className="max-container relative py-8 lg:py-14">
           <div className="max-w-4xl mx-auto text-center ">
             {hero.badge && (
               <span className="inline-flex items-center rounded-full border border-pink-300 px-4 py-2 text-sm text-indigo-600">
@@ -132,7 +132,7 @@ export default function AboutPage() {
       </section>
 
       {/* About / Story */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
+      <section className="max-container py-20">
         <div className="max-w-4xl mx-auto text-center">
           {story.subtitle && (
             <span className="text-indigo-600 font-semibold uppercase tracking-wider">
@@ -158,7 +158,7 @@ export default function AboutPage() {
 
       {/* Stats */}
       {stats.length > 0 && (
-        <section className="max-w-7xl mx-auto px-6 pb-20">
+        <section className="max-container pb-20">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {stats.map((item, index) => (
               <div
@@ -180,7 +180,7 @@ export default function AboutPage() {
         id="mission"
         className="bg-pink-100 py-20 border-y border-slate-100"
       >
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-container">
           <div className="grid lg:grid-cols-2 gap-8">
             <div className="p-8 rounded-3xl bg-pink-100 border">
               <div className="w-16 h-16 rounded-2xl bg-pink-300 flex items-center justify-center">
@@ -207,7 +207,7 @@ export default function AboutPage() {
 
       {/* Features */}
       {features.length > 0 && (
-        <section className="max-w-7xl mx-auto px-6 py-20">
+        <section className="max-container py-20">
           <div className="text-center">
             {featuresSection.subtitle && (
               <span className="text-indigo-600 font-semibold uppercase">
