@@ -14,7 +14,7 @@ import {
   Plus,
 } from "lucide-react";
 import Toast from "../../Toast";
-import { STATUS_LABEL } from "../shared/constants";
+import { STATUS_LABEL, LOCKED_STATUSES } from "../shared/constants";
 
 function SectionHeader({ icon: Icon, title }) {
   return (
@@ -35,6 +35,7 @@ export default function EditOrderModal({
   setForm,
   onSave,
   onClose,
+  canEditLocked = false,
 }) {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -131,13 +132,21 @@ export default function EditOrderModal({
     itemsSubtotal + Number(form.deliveryCharge || 0) - Number(form.discount || 0),
   );
 
-  const phoneValid = /^(01[3-9]\d{8})$/.test(form?.billing?.phone || "");
+  const isOffline = form.saleChannel === "offline";
+  const isLockedOrder = LOCKED_STATUSES.includes(form.status);
+  // ✅ Delivered/Cancelled/Returned অর্ডার শুধু owner/admin এডিট করতে পারবে
+  const lockedForMe = isLockedOrder && !canEditLocked;
+
+  const phoneValue = (form?.billing?.phone || "").trim();
+  const phoneValid = /^(01[3-9]\d{8})$/.test(phoneValue);
   const isCancelled = form.status === "cancelled";
 
+  // ✅ Name/Phone/Address শুধু ONLINE অর্ডারে বাধ্যতামূলক।
+  // OFFLINE অর্ডারে এডিট করা যাবে কিন্তু ফাঁকা রাখা যাবে (phone দিলে ফরম্যাট ঠিক হতে হবে)।
   const errors = {
-    name: !form?.billing?.name?.trim(),
-    phone: !form?.billing?.phone?.trim() || !phoneValid,
-    address: !form?.billing?.address?.trim(),
+    name: !isOffline && !form?.billing?.name?.trim(),
+    phone: isOffline ? !!phoneValue && !phoneValid : !phoneValue || !phoneValid,
+    address: !isOffline && !form?.billing?.address?.trim(),
     cancelReason: isCancelled && !form?.cancelReason?.trim(),
   };
 
@@ -162,6 +171,11 @@ export default function EditOrderModal({
 
   const handleSave = async () => {
     setSubmitted(true);
+
+    if (lockedForMe) {
+      showToast("🔒 এই অর্ডার এডিট করার অনুমতি নেই!", "error", 2500);
+      return;
+    }
 
     if (errors.name || errors.phone || errors.address || errors.cancelReason) {
       showToast("⚠️ সব প্রয়োজনীয় তথ্য ঠিকমতো দিন!", "error", 2500);
@@ -221,6 +235,11 @@ export default function EditOrderModal({
                 <div className="text-lg sm:text-xl font-semibold text-white truncate">
                   Edit Order
                 </div>
+                {isOffline && (
+                  <span className="inline-block mt-0.5 mr-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border bg-purple-500/30 border-white/25 text-white">
+                    🏬 Offline
+                  </span>
+                )}
                 {form.status && (
                   <span className="inline-block mt-0.5 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border bg-white/10 border-white/25 text-white">
                     {STATUS_LABEL?.[form.status] || form.status}
@@ -241,6 +260,12 @@ export default function EditOrderModal({
           {/* SCROLL BODY */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-4 sm:p-6 space-y-4">
+              {lockedForMe && (
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-xs font-semibold text-amber-800 dark:text-amber-300">
+                  🔒 {STATUS_LABEL?.[form.status] || form.status} অর্ডার শুধু শপ
+                  owner/admin এডিট করতে পারবে।
+                </div>
+              )}
               {/* ORDER DETAILS */}
               <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm space-y-3">
                 <SectionHeader icon={Wallet} title="Order Details" />
@@ -366,6 +391,19 @@ export default function EditOrderModal({
                     ))}
                   </div>
 
+                  {(form.status === "cancelled" || form.status === "returned") && (
+                    <div className="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                      ℹ️ এই অর্ডারের stock আগেই ফেরত গেছে — তাই quantity বদলালে
+                      stock আর বদলাবে না, শুধু অর্ডারের হিসাব আপডেট হবে।
+                    </div>
+                  )}
+                  {form.status === "delivered" && (
+                    <div className="rounded-2xl border border-blue-100 dark:border-blue-500/20 bg-blue-50/70 dark:bg-blue-500/10 px-3 py-2 text-[11px] font-semibold text-blue-800 dark:text-blue-300">
+                      ℹ️ Delivered অর্ডারে quantity বাড়ালে stock থেকে বাড়তি অংশ
+                      কাটা যাবে, কমালে stock-এ ফেরত আসবে।
+                    </div>
+                  )}
+
                   <div className="rounded-2xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-4 py-3 space-y-1">
                     <div className="flex justify-between text-xs font-semibold text-gray-600 dark:text-slate-400">
                       <span>Subtotal</span>
@@ -422,11 +460,11 @@ export default function EditOrderModal({
                   <label
                     className={labelClass((submitted || touched.name) && errors.name)}
                   >
-                    Name *
+                    {isOffline ? "Name (optional)" : "Name *"}
                   </label>
                   <input
                     className={fieldClass((submitted || touched.name) && errors.name)}
-                    value={form.billing.name}
+                    value={form.billing?.name || ""}
                     onBlur={() => setTouched((t) => ({ ...t, name: true }))}
                     onChange={(e) => handleBillingChange("name", e.target.value)}
                   />
@@ -438,13 +476,13 @@ export default function EditOrderModal({
                       (submitted || touched.phone) && errors.phone,
                     )}
                   >
-                    Phone *
+                    {isOffline ? "Phone (optional)" : "Phone *"}
                   </label>
                   <input
                     className={fieldClass(
                       (submitted || touched.phone) && errors.phone,
                     )}
-                    value={form.billing.phone}
+                    value={form.billing?.phone || ""}
                     onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
                     onChange={(e) => handleBillingChange("phone", e.target.value)}
                   />
@@ -461,14 +499,14 @@ export default function EditOrderModal({
                       (submitted || touched.address) && errors.address,
                     )}
                   >
-                    Address *
+                    {isOffline ? "Address (optional)" : "Address *"}
                   </label>
                   <textarea
                     rows={3}
                     className={areaClass(
                       (submitted || touched.address) && errors.address,
                     )}
-                    value={form.billing.address}
+                    value={form.billing?.address || ""}
                     onBlur={() =>
                       setTouched((t) => ({
                         ...t,
@@ -499,9 +537,9 @@ export default function EditOrderModal({
 
               <button
                 onClick={handleSave}
-                disabled={loading || !isDirty}
+                disabled={loading || !isDirty || lockedForMe}
                 className={`h-11 px-5 rounded-2xl font-black text-white transition ${
-                  loading || !isDirty
+                  loading || !isDirty || lockedForMe
                     ? "bg-gray-300 dark:bg-slate-600 cursor-not-allowed"
                     : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90"
                 }`}

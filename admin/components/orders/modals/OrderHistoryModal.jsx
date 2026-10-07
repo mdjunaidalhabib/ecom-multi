@@ -18,6 +18,7 @@ const ACTION_LABEL = {
   status_change: "Status পরিবর্তন",
   revert: "Undo / Reopen",
   return: "Return",
+  edit: "অর্ডার এডিট",
 };
 
 const ACTOR_LABEL = {
@@ -168,13 +169,21 @@ export default function OrderHistoryModal({ order, onClose, fetchHistory, onActi
                               ? "bg-amber-500"
                               : h.action === "return"
                                 ? "bg-orange-500"
-                                : "bg-blue-500"
+                                : h.action === "edit"
+                                  ? "bg-violet-500"
+                                  : "bg-blue-500"
                           }`}
                         />
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <StatusChip status={h.from} />
-                          <ArrowRight size={12} className="text-gray-400" />
-                          <StatusChip status={h.to} />
+                          {h.action === "edit" ? (
+                            <StatusChip status={h.to} />
+                          ) : (
+                            <>
+                              <StatusChip status={h.from} />
+                              <ArrowRight size={12} className="text-gray-400" />
+                              <StatusChip status={h.to} />
+                            </>
+                          )}
                           <span className="text-[11px] font-semibold text-gray-600 dark:text-slate-300">
                             {ACTION_LABEL[h.action] || h.action}
                           </span>
@@ -184,7 +193,7 @@ export default function OrderHistoryModal({ order, onClose, fetchHistory, onActi
                           {formatDateTime(h.at)}
                         </div>
                         {h.reason && (
-                          <div className="mt-1 text-xs text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50 rounded-lg px-2 py-1">
+                          <div className="mt-1 text-xs text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50 rounded-lg px-2 py-1 whitespace-pre-line break-words">
                             {h.reason}
                           </div>
                         )}

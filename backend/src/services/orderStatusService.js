@@ -85,6 +85,17 @@ export const buildHistoryEntry = ({ from, to, action, reason, actor }) => ({
   at: new Date(),
 });
 
+// ✅ Locked (Delivered/Cancelled/Returned) অর্ডারে owner/admin এডিট করলে
+// History-তে "edit" এন্ট্রি পড়ে — status বদলায় না, তাই from = to।
+export const buildEditHistoryEntry = ({ status, summary, actor }) =>
+  buildHistoryEntry({
+    from: status,
+    to: status,
+    action: "edit",
+    reason: summary,
+    actor,
+  });
+
 export function assertTransitionAllowed(from, to) {
   if (from === to) return;
   if (!ORDER_STATUSES.includes(to)) {
@@ -248,7 +259,11 @@ export async function changeOrderStatus(
  * Undo window আর "নিজের পরিবর্তন কিনা" এটা দিয়েই যাচাই হয়।
  */
 export function getRevertTarget(order) {
-  const history = Array.isArray(order?.statusHistory) ? order.statusHistory : [];
+  // ✅ "edit" এন্ট্রি status বদলায় না — Undo/Reopen-এর target ও staff-এর
+  // Undo window হিসাবে ধরা হয় না, তাই এখানে বাদ দেওয়া হলো।
+  const history = (
+    Array.isArray(order?.statusHistory) ? order.statusHistory : []
+  ).filter((e) => e?.action !== "edit");
   const lastEntry = history.length ? history[history.length - 1] : null;
 
   const stack = [];

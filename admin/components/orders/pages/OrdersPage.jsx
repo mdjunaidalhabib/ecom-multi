@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Toaster } from "react-hot-toast";
+import hotToast, { Toaster } from "react-hot-toast";
 import useOrders from "../../../hooks/useOrders";
+import useCurrentAdmin from "../../../hooks/useCurrentAdmin";
 
 import OrdersGrid from "../ordersGrid/OrdersGrid";
 import OrdersTable from "../ordersTable/OrdersTable";
@@ -92,6 +93,10 @@ export default function OrdersPage() {
   const showingCount = filtered.length;
 
   // ✅ Edit modal state
+  const currentAdmin = useCurrentAdmin();
+  // ✅ শপ owner/admin (staff না) Delivered/Cancelled অর্ডারও এডিট করতে পারবে
+  const canEditLocked = !!currentAdmin && currentAdmin.role !== "staff";
+
   const [open, setOpen] = useState(false);
   const [currentId, setCurrentId] = useState(null);
 
@@ -133,12 +138,13 @@ export default function OrdersPage() {
     setCurrentId(order._id);
     setForm({
       status: order.status,
+      saleChannel: order.saleChannel || "online",
       paymentMethod: order.paymentMethod,
       trackingId: order.trackingId || "",
       cancelReason: order.cancelReason || "",
       discount: Number(order.discount || 0), // ✅ important
       deliveryCharge: Number(order.deliveryCharge || 0),
-      billing: order.billing,
+      billing: order.billing || { name: "", phone: "", address: "" },
       items: (order.items || []).map((it) => ({ ...it })),
     });
     setOpen(true);
@@ -161,6 +167,11 @@ export default function OrdersPage() {
 
       fetchOrders();
       setToast({ message: "✅ Order updated successfully!", type: "success" });
+
+      // ✅ Stock সংক্রান্ত বার্তা (যেমন Cancelled অর্ডারে stock কেন বদলায়নি)
+      if (Array.isArray(data?.notices) && data.notices.length) {
+        hotToast(data.notices.join("\n"), { duration: 8000, icon: "ℹ️" });
+      }
 
       return { success: true };
     } catch (err) {
@@ -302,6 +313,7 @@ export default function OrdersPage() {
         form={form}
         setForm={setForm}
         onSave={() => updateOrder(form)}
+        canEditLocked={canEditLocked}
         onClose={() => setOpen(false)}
       />
 

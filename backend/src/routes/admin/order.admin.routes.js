@@ -16,7 +16,9 @@ import {
   assertTransitionAllowed,
   buildHistoryEntry,
   canRevert,
+  buildEditHistoryEntry,
   changeOrderStatus,
+  isOwnerAdmin,
   returnOrder,
   revertOrderStatus,
   sendOrderStatusError,
@@ -599,6 +601,52 @@ router.patch("/:id/return", async (req, res) => {
 
 /**
  * ================================
+ * ✏️ EDIT SUMMARY (History-র জন্য)
+ * ================================
+ * আগের অর্ডার (current) আর নতুন updateData তুলনা করে বাংলায় লাইন-বাই-লাইন
+ * সারাংশ বানায়। কিছু না বদলালে ফাঁকা array ফেরত দেয়।
+ */
+function describeOrderEdit(current, updateData) {
+  const lines = [];
+  const show = (v) => (v === undefined || v === null || v === "" ? "(ফাঁকা)" : v);
+  const diff = (label, from, to) => {
+    if (to === undefined) return;
+    if (String(from ?? "") !== String(to ?? "")) {
+      lines.push(`${label}: ${show(from)} → ${show(to)}`);
+    }
+  };
+
+  if (updateData.billing) {
+    diff("নাম", current.billing?.name, updateData.billing.name);
+    diff("ফোন", current.billing?.phone, updateData.billing.phone);
+    diff("ঠিকানা", current.billing?.address, updateData.billing.address);
+    diff("নোট", current.billing?.note, updateData.billing.note);
+  }
+  diff("Tracking ID", current.trackingId, updateData.trackingId);
+  diff("Payment Method", current.paymentMethod, updateData.paymentMethod);
+  diff("Payment Status", current.paymentStatus, updateData.paymentStatus);
+  diff("Cancel Reason", current.cancelReason, updateData.cancelReason);
+  diff("Delivery Charge", current.deliveryCharge, updateData.deliveryCharge);
+  diff("Discount", current.discount, updateData.discount);
+
+  if (Array.isArray(updateData.items)) {
+    updateData.items.forEach((it, idx) => {
+      const before = current.items?.[idx];
+      if (before && Number(before.qty) !== Number(it.qty)) {
+        lines.push(`Qty (${it.name || "Item"}): ${before.qty} → ${it.qty}`);
+      }
+    });
+  }
+
+  // total আলাদা এন্ট্রি দরকার নেই, কিন্তু কিছু বদলালে নতুন total জানা কাজে লাগে
+  if (lines.length && updateData.total !== undefined) {
+    diff("Total", current.total, updateData.total);
+  }
+  return lines;
+}
+
+/**
+ * ================================
  * UPDATE order (ADMIN)
  * ================================
  */
@@ -607,17 +655,19 @@ router.put("/:id", async (req, res) => {
     const current = await Order.findById(req.params.id);
     if (!current) return res.status(404).json({ error: "Order not found" });
 
-    // 🔒 Locked order guard — এখানেই আগে চেক করা দরকার (নিচের items/stock
-    // adjustment ব্লকের আগে), নাহলে delivered/cancelled অর্ডারে item qty
-    // পাঠালে পুরো request পরে reject হলেও ততক্ষণে stock ইতিমধ্যে বদলে যেত।
-    // ভুল ঠিক করতে হলে PATCH /:id/revert (Undo/Reopen) বা /:id/return।
+    // 🔒 Locked order guard — শুধু staff-এর জন্য। শপ owner (role: admin /
+    // superadmin) Delivered/Cancelled/Returned অর্ডারও এডিট করতে পারবে।
+    // এটা নিচের items/stock adjustment ব্লকের আগেই চেক হয়।
+    const ownerEdit = isOwnerAdmin(req.admin);
+    const isLocked = LOCKED_STATUSES.includes(current.status);
     if (
-      LOCKED_STATUSES.includes(current.status) &&
+      isLocked &&
+      !ownerEdit &&
       Object.keys(req.body).some((k) => k !== "status")
     ) {
       return res.status(400).json({
         error:
-          "Delivered/Cancelled/Returned অর্ডার এডিট করা যায় না। ভুল হলে History থেকে Undo/Reopen করুন।",
+          "Delivered/Cancelled/Returned অর্ডার শুধু শপ owner/admin এডিট করতে পারবে। ভুল হলে History থেকে Undo/Reopen করুন।",
       });
     }
 
@@ -647,6 +697,11 @@ router.put("/:id", async (req, res) => {
 
     const actor = actorFromAdmin(req.admin);
     const updateData = {};
+    // ✅ Admin-কে দেখানোর জন্য বার্তা (যেমন stock কেন বদলায়নি)
+    const notices = [];
+    const stockAlreadyReleased = STOCK_RELEASED_STATUSES.includes(
+      current.status,
+    );
 
     if (req.body.trackingId !== undefined)
       updateData.trackingId = req.body.trackingId;
@@ -696,7 +751,12 @@ router.put("/:id", async (req, res) => {
           return res.status(400).json({ error: "Quantity কমপক্ষে ১ হতে হবে।" });
         }
 
-        if (newQty !== curr.qty) {
+        // ✅ Cancelled/Returned অর্ডারের stock আগেই ফেরত গেছে — qty বদলালে
+        // আবার stock বদলানো যাবে না, শুধু অর্ডারের রেকর্ড আপডেট হবে।
+        if (
+          newQty !== curr.qty &&
+          !STOCK_RELEASED_STATUSES.includes(current.status)
+        ) {
           invChanges.push({
             productId: curr.productId,
             color: curr.color,
@@ -705,6 +765,16 @@ router.put("/:id", async (req, res) => {
         }
 
         newItems.push({ ...curr.toObject(), qty: newQty });
+      }
+
+      // ✅ Cancelled/Returned অর্ডারে qty বদলালে stock বদলায় না — স্পষ্ট করে জানানো
+      const qtyChanged = newItems.some(
+        (it, i) => Number(it.qty) !== Number(current.items[i].qty),
+      );
+      if (qtyChanged && stockAlreadyReleased) {
+        notices.push(
+          `ℹ️ এই অর্ডার ${current.status === "returned" ? "Returned" : "Cancelled"} — stock আগেই ফেরত গেছে, তাই quantity বদলালেও stock আর বদলায়নি। শুধু অর্ডারের হিসাব আপডেট হয়েছে।`,
+        );
       }
 
       // ✅ একটার stock adjust ব্যর্থ হলে আগেরগুলো revert করে দেওয়া হয়, যাতে
@@ -803,25 +873,48 @@ router.put("/:id", async (req, res) => {
     }
 
     if (req.body.billing) {
+      const isOffline = current.saleChannel === "offline";
+      // ✅ Online অর্ডারে name/phone/address বাধ্যতামূলক (খালি পাঠালে আগেরটাই থাকে)।
+      // Offline অর্ডারে ঐচ্ছিক — তাই খালি পাঠালে সত্যিই খালি করে দেওয়া হয়।
+      const pick = (field) => {
+        const incoming = req.body.billing[field];
+        if (isOffline) {
+          return incoming === undefined
+            ? current.billing?.[field]
+            : String(incoming ?? "").trim();
+        }
+        return incoming?.trim() ? incoming : current.billing?.[field];
+      };
       updateData.billing = {
-        name: req.body.billing.name?.trim()
-          ? req.body.billing.name
-          : current.billing?.name,
-        phone: req.body.billing.phone?.trim()
-          ? req.body.billing.phone
-          : current.billing?.phone,
-        address: req.body.billing.address?.trim()
-          ? req.body.billing.address
-          : current.billing?.address,
-        note: req.body.billing.note?.trim()
-          ? req.body.billing.note
-          : current.billing?.note,
+        name: pick("name"),
+        phone: pick("phone"),
+        address: pick("address"),
+        note: pick("note"),
       };
     }
 
+    // ✅ Locked অর্ডার এডিট (শুধু owner/admin পারে) — History-তে audit এন্ট্রি
+    const mongoUpdate = { ...updateData };
+    if (isLocked && ownerEdit) {
+      const changeLines = describeOrderEdit(current, updateData);
+      if (changeLines.length) {
+        if (stockAlreadyReleased && Array.isArray(updateData.items)) {
+          const qtyLine = changeLines.some((l) => l.startsWith("Qty"));
+          if (qtyLine) changeLines.push("Stock: অপরিবর্তিত (আগেই ফেরত গেছে)");
+        }
+        mongoUpdate.$push = {
+          statusHistory: buildEditHistoryEntry({
+            status: current.status,
+            summary: changeLines.join("\n"),
+            actor,
+          }),
+        };
+      }
+    }
+
     let updated = current;
-    if (Object.keys(updateData).length) {
-      updated = await Order.findByIdAndUpdate(req.params.id, updateData, {
+    if (Object.keys(mongoUpdate).length) {
+      updated = await Order.findByIdAndUpdate(req.params.id, mongoUpdate, {
         new: true,
         runValidators: true,
       });
@@ -846,8 +939,11 @@ router.put("/:id", async (req, res) => {
     }
 
     // ⚠️ Response shape আগের মতোই (order object) — warnings আলাদা field-এ
+    const extras = {};
+    if (warnings.length) extras.warnings = warnings;
+    if (notices.length) extras.notices = notices;
     res.json(
-      warnings.length ? { ...updated.toObject(), warnings } : updated,
+      Object.keys(extras).length ? { ...updated.toObject(), ...extras } : updated,
     );
   } catch (err) {
     console.error("❌ Failed to update order:", err);

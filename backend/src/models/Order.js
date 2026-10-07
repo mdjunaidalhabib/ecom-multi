@@ -165,7 +165,7 @@ const orderSchema = new mongoose.Schema(
         _id: false,
         from: { type: String, default: null },
         to: { type: String, required: true },
-        // create | status_change | revert | return
+        // create | status_change | revert | return | edit
         action: { type: String, default: "status_change" },
         reason: { type: String, default: "" },
         // admin | staff | superadmin | customer | courier | system
