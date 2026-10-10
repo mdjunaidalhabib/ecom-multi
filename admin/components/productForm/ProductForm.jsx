@@ -530,15 +530,16 @@ export default function ProductForm({
   }, [processing]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-[2px] sm:p-4">
       <form
         onSubmit={handleSubmit}
-        className={`relative bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl max-h-[98vh] shadow-xl overscroll-contain ${
+        className={`relative bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl w-full max-w-5xl max-h-[96dvh] sm:max-h-[98vh] shadow-2xl overscroll-contain animate-[sheetUp_.25s_cubic-bezier(.2,.8,.2,1)] sm:animate-none ${
           processing ? "overflow-hidden" : "overflow-y-auto"
         }`}
       >
         {/* Sticky header */}
-        <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b dark:border-slate-700">
+        <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b dark:border-slate-700 rounded-t-3xl sm:rounded-t-2xl">
+          <div className="sm:hidden flex justify-center pt-2"><span className="h-1.5 w-10 rounded-full bg-gray-300 dark:bg-slate-600" /></div>
           <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3">
             <div className="text-sm font-bold text-gray-700 dark:text-slate-300 flex flex-wrap items-center gap-2">
               {product ? "✏️ Edit Product" : "➕ Add Product"}
@@ -559,19 +560,19 @@ export default function ProductForm({
                 type="button"
                 onClick={onClose}
                 disabled={processing}
-                className={`px-4 py-2 rounded-xl font-bold text-sm border dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 active:scale-[0.99] ${
+                className={`h-10 px-4 rounded-xl font-semibold text-sm border dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 active:scale-[0.99] ${
                   processing
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:bg-gray-50 dark:hover:bg-slate-700"
                 }`}
               >
-                ✖ Cancel
+                Cancel
               </button>
 
               <button
                 type="submit"
                 disabled={processing || !filesReady || !isDirty}
-                className={`px-5 py-2 rounded-xl text-white font-bold text-sm transition-all ${
+                className={`h-10 px-5 rounded-xl text-white font-semibold text-sm transition-all ${
                   processing || !filesReady || !isDirty
                     ? "bg-gray-400 dark:bg-slate-600 cursor-not-allowed"
                     : "bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99]"

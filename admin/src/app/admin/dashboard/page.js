@@ -16,7 +16,9 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, ExternalLink, RefreshCw } from "lucide-react";
+import { useMyPlanInfo } from "../../../../hooks/useShopFeatures";
+import { getShopPublicUrl } from "../../../../lib/shopUrl";
 import DashboardSkeleton from "../../../../components/Skeleton/DashboardSkeleton.jsx";
 import {
   STATUS_LABEL,
@@ -51,6 +53,10 @@ function GrowthBadge({ value }) {
 
 export default function DashboardPage() {
   const API = "/api";
+
+  // ✅ "Visit Shop" বাটনের জন্য শপের পাবলিক URL (custom domain বা /shop/<slug>)
+  const planInfo = useMyPlanInfo();
+  const shopUrl = getShopPublicUrl(planInfo?.shop);
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -445,7 +451,7 @@ const cards = useMemo(() => {
   return (
     <div className="space-y-6 p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">
             Dashboard Overview
@@ -455,12 +461,44 @@ const cards = useMemo(() => {
           </p>
         </div>
 
-        <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg text-sm font-medium shadow hover:shadow-md hover:scale-[1.02] transition-all"
-        >
-          Refresh
-        </button>
+        <div className="grid grid-cols-2 sm:flex items-center gap-2">
+          {/* ✅ Visit Shop — Refresh-এর বামে; নতুন ট্যাবে শপের frontend খোলে */}
+          {shopUrl ? (
+            <a
+              href={shopUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold text-white
+                bg-gradient-to-r from-emerald-600 to-teal-500 shadow-sm shadow-emerald-600/25
+                hover:from-emerald-500 hover:to-teal-400 hover:shadow-md active:scale-[0.97] transition-all"
+            >
+              <ExternalLink size={14} />
+              Visit Shop
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled
+              title={planInfo ? "Shop URL পাওয়া যায়নি" : "লোড হচ্ছে..."}
+              className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold
+                bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500
+                border border-gray-200 dark:border-slate-700 cursor-not-allowed"
+            >
+              <ExternalLink size={14} />
+              Visit Shop
+            </button>
+          )}
+
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold text-white
+              bg-gradient-to-r from-indigo-600 to-blue-600 shadow-sm shadow-indigo-600/25
+              hover:shadow-md active:scale-[0.97] transition-all"
+          >
+            <RefreshCw size={14} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {loading ? (

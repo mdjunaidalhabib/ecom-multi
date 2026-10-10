@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Toast from "../components/Toast";
 import CategoriesSkeleton from "../components/Skeleton/CategoriesSkeleton";
 import CategoryModal from "./CategoryModal";
+import ListToolbar from "./ListToolbar";
 import CategoryDeleteBlockedModal from "./CategoryDeleteBlockedModal";
 
 
@@ -211,79 +212,27 @@ export default function CategoriesPage() {
   return (
     <div className="">
       {/* HEADER */}
-      <div className="flex flex-col gap-3 mb-6 md:flex-row md:flex-wrap md:items-center">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 shrink-0">
-          ✨ Categories
-        </h1>
-
-        <div className="flex flex-wrap items-center gap-1.5 md:ml-auto">
-          {["all", "active", "hidden"].map((f) => {
-            const active = filter === f;
-            const activeClass =
-              f === "all"
-                ? "bg-indigo-600 text-white border-indigo-600"
-                : f === "active"
-                  ? "bg-green-600 text-white border-green-600"
-                  : "bg-gray-700 text-white border-gray-700";
-            const hoverClass =
-              f === "all"
-                ? "hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400"
-                : f === "active"
-                  ? "hover:border-green-300 dark:hover:border-green-500/40 hover:text-green-600 dark:hover:text-green-400"
-                  : "hover:border-gray-400 dark:hover:border-slate-500 hover:text-gray-800 dark:hover:text-slate-200";
-
-            return (
-              <button
-                key={f}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold capitalize transition-all ${
-                  active
-                    ? `${activeClass} shadow`
-                    : `bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 ${hoverClass}`
-                }`}
-                onClick={() => setFilter(f)}
-              >
-                {f}
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                    active ? "bg-white/20" : "bg-gray-100 dark:bg-slate-700"
-                  }`}
-                >
-                  {counts[f]}
-                </span>
-              </button>
-            );
-          })}
-
-          {categories.length > 0 && (
-            <button
-              onClick={toggleAllCategories}
-              className={`px-2.5 py-1.5 rounded-md border text-xs font-medium leading-none text-white transition-colors ${
-                hasAnyActive
-                  ? "bg-gray-700 border-gray-700 hover:bg-gray-800"
-                  : "bg-green-600 border-green-600 hover:bg-green-700"
-              }`}
-            >
-              {hasAnyActive ? "Hide All" : "Show All"}
-            </button>
-          )}
-
-          <button
-            onClick={() => {
-              setEditId(null);
-              setName("");
-              setFile(null);
-              if (preview?.startsWith("blob:")) URL.revokeObjectURL(preview);
-              setPreview("");
-              setOrder(categories.length + 1);
-              setIsActive(true);
-              setShowModal(true);
-            }}
-            className="px-2.5 py-1.5 rounded-md text-xs font-semibold leading-none bg-indigo-600 text-white shadow hover:bg-indigo-700 active:scale-[0.98] transition-colors"
-          >
-            + Add Category
-          </button>
-        </div>
-      </div>
+      <ListToolbar
+        title="Categories"
+        subtitle={`${counts.all ?? 0} total · ${counts.active ?? 0} active`}
+        addLabel="Add Category"
+        onAdd={() => {
+          setEditId(null);
+          setName("");
+          setFile(null);
+          if (preview?.startsWith("blob:")) URL.revokeObjectURL(preview);
+          setPreview("");
+          setOrder(categories.length + 1);
+          setIsActive(true);
+          setShowModal(true);
+        }}
+        filter={filter}
+        onFilterChange={setFilter}
+        counts={counts}
+        showBulk={categories.length > 0}
+        hasAnyActive={hasAnyActive}
+        onToggleAll={toggleAllCategories}
+      />
 
       {/* GRID */}
       {pageLoading ? (

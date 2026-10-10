@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Search, X, Eye, EyeOff, Package, Trash2 } from "lucide-react";
+import AddButton from "../../../../components/AddButton";
+import ModalShell from "../../../../components/ModalShell";
 import ProductForm from "../../../../components/productForm/ProductForm";
 import ProductCard from "../../../../components/ProductCard";
 import ProductStockHistoryModal from "../../../../components/ProductStockHistoryModal";
@@ -211,168 +213,133 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6">
-      {/* ===================== HEADER ===================== */}
-      <div className="flex flex-col gap-3 mb-6 md:flex-row md:flex-wrap md:items-center">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 shrink-0">
-          ✨ Product Manager
-        </h1>
+    <div className="p-2 sm:p-4">
+      {/* ===================== HEADER (slim) ===================== */}
+      <div className="mb-3 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 truncate">
+              Products
+            </h1>
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              {counts.all} total · {counts.active} active
+            </p>
+          </div>
 
-        {/* SEARCH BAR */}
-        <div className="relative w-full md:w-48 md:mx-1 order-1 md:order-none">
-          <Search
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
-            size={14}
-          />
-          <input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search product..."
-            className="w-full rounded-lg border border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 py-1.5 pl-8 pr-7 text-xs outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20"
-          />
-          {searchInput && (
-            <button
-              type="button"
-              onClick={() => setSearchInput("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300"
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-
-        {/* Right side controls */}
-        <div className="order-2 md:order-none flex flex-wrap items-center gap-1.5 md:ml-auto">
-          {/* FILTER BUTTONS */}
-          <button
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
-              filter === "all"
-                ? "bg-indigo-600 text-white border-indigo-600 shadow"
-                : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400"
-            }`}
-            onClick={() => changeFilter("all")}
-          >
-            All
-            <span
-              className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                filter === "all" ? "bg-white/20" : "bg-gray-100 dark:bg-slate-700"
-              }`}
-            >
-              {counts.all}
-            </span>
-          </button>
-
-          <button
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
-              filter === "active"
-                ? "bg-green-600 text-white border-green-600 shadow"
-                : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:border-green-300 dark:hover:border-green-500/40 hover:text-green-600 dark:hover:text-green-400"
-            }`}
-            onClick={() => changeFilter("active")}
-          >
-            Active
-            <span
-              className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                filter === "active" ? "bg-white/20" : "bg-gray-100 dark:bg-slate-700"
-              }`}
-            >
-              {counts.active}
-            </span>
-          </button>
-
-          <button
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
-              filter === "hidden"
-                ? "bg-gray-700 text-white border-gray-700 shadow"
-                : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:border-gray-400 dark:hover:border-slate-500 hover:text-gray-800 dark:hover:text-slate-200"
-            }`}
-            onClick={() => changeFilter("hidden")}
-          >
-            Hidden
-            <span
-              className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                filter === "hidden" ? "bg-white/20" : "bg-gray-100 dark:bg-slate-700"
-              }`}
-            >
-              {counts.hidden}
-            </span>
-          </button>
-
-          {/* BULK BUTTON */}
-          {counts.all > 0 && (
-            <button
-              onClick={toggleAllProducts}
-              className={`px-2.5 py-1.5 rounded-md border text-xs font-medium leading-none text-white transition-colors ${
-                hasAnyActive
-                  ? "bg-gray-700 border-gray-700 hover:bg-gray-800"
-                  : "bg-green-600 border-green-600 hover:bg-green-700"
-              }`}
-            >
-              {hasAnyActive ? "Hide All" : "Show All"}
-            </button>
-          )}
-
-          {/* ✅ ADD PRODUCT */}
-          <button
+          <AddButton
+            label="Add Product"
             onClick={() => {
               setEditProduct(null); // ✅ IMPORTANT: must be null for Add mode
               setShowForm(true);
             }}
-            className="px-2.5 py-1.5 rounded-md text-xs font-semibold leading-none bg-blue-600 text-white shadow hover:bg-blue-700 active:scale-[0.98] transition-colors"
-          >
-            + Add Product
-          </button>
+          />
         </div>
-      </div>
 
-      {/* ===================== NEW: PRODUCTS SUB-MENU ===================== */}
-      <div className="flex flex-wrap gap-2 mb-5 border-b dark:border-slate-700 pb-3">
-        {[
-          { key: "all", label: "🗂️ All Product", color: "indigo" },
-          {
-            key: "freeDelivery",
-            label: `🚚 ${getBadgeName("freeDelivery", "Free Delivery")}`,
-            color: "orange",
-          },
-          {
-            key: "bestDiscount",
-            label: `🛍️ ${getBadgeName("bestDiscount", "Best Discount")}`,
-            color: "blue",
-          },
-          {
-            key: "cartvanBox",
-            label: `🎁 ${getBadgeName("cartvanBox", "Gift Box")}`,
-            color: "rose",
-          },
-          {
-            key: "hasVariant",
-            label: "🎨 Variant Product",
-            color: "purple",
-          },
-        ].map((tab) => {
-          const active = badgeFilter === tab.key;
-          return (
+        {/* SEARCH + BULK */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
+              size={14}
+            />
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search product..."
+              className="w-full h-9 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 pl-9 pr-8 text-base sm:text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/20 transition"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => setSearchInput("")}
+                aria-label="Clear search"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 grid place-items-center h-6 w-6 rounded-full text-gray-400 hover:bg-gray-100 dark:text-slate-500 dark:hover:bg-slate-700"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {counts.all > 0 && (
             <button
-              key={tab.key}
-              type="button"
-              onClick={() => changeBadgeFilter(tab.key)}
-              className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${
-                active
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow"
-                  : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400"
+              onClick={toggleAllProducts}
+              className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold border whitespace-nowrap transition-all active:scale-[0.97] ${
+                hasAnyActive
+                  ? "bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-700 hover:border-gray-400"
+                  : "bg-green-600 text-white border-green-600 hover:bg-green-700"
               }`}
             >
-              {tab.label}
-              <span
-                className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
-                  active ? "bg-white/20" : "bg-gray-100 dark:bg-slate-700"
+              {hasAnyActive ? <EyeOff size={14} /> : <Eye size={14} />}
+              <span className="hidden min-[400px]:inline">{hasAnyActive ? "Hide All" : "Show All"}</span>
+            </button>
+          )}
+        </div>
+
+        {/* STATUS — segmented control */}
+        <div className="grid grid-cols-3 sm:inline-flex p-0.5 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200/70 dark:border-slate-700">
+          {[
+            { key: "all", label: "All" },
+            { key: "active", label: "Active" },
+            { key: "hidden", label: "Hidden" },
+          ].map((t) => {
+            const active = filter === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => changeFilter(t.key)}
+                className={`min-w-0 inline-flex items-center justify-center gap-1 px-3 sm:px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  active
+                    ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                    : "text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200"
                 }`}
               >
-                {counts[tab.key] ?? 0}
-              </span>
-            </button>
-          );
-        })}
+                {t.label}
+                <span
+                  className={`px-1.5 rounded-full text-[10px] leading-4 ${
+                    active ? "bg-indigo-50 dark:bg-indigo-500/15" : "bg-gray-200/70 dark:bg-slate-700"
+                  }`}
+                >
+                  {counts[t.key]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* BADGE FILTERS — mobile-এ swipe, desktop-এ wrap */}
+        <div className="-mx-2 px-2 sm:mx-0 sm:px-0 flex gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar">
+          {[
+            { key: "all", label: "🗂️ All Product" },
+            { key: "freeDelivery", label: `🚚 ${getBadgeName("freeDelivery", "Free Delivery")}` },
+            { key: "bestDiscount", label: `🛍️ ${getBadgeName("bestDiscount", "Best Discount")}` },
+            { key: "cartvanBox", label: `🎁 ${getBadgeName("cartvanBox", "Gift Box")}` },
+            { key: "hasVariant", label: "🎨 Variant Product" },
+          ].map((tab) => {
+            const active = badgeFilter === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => changeBadgeFilter(tab.key)}
+                className={`shrink-0 whitespace-nowrap inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-semibold border transition-all ${
+                  active
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                    : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                }`}
+              >
+                {tab.label}
+                <span
+                  className={`px-1.5 rounded-full text-[10px] leading-4 ${
+                    active ? "bg-white/20" : "bg-gray-100 dark:bg-slate-700"
+                  }`}
+                >
+                  {counts[tab.key] ?? 0}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ===================== PRODUCT GRID ===================== */}
@@ -403,76 +370,68 @@ export default function ProductsPage() {
           />
         </>
       ) : (
-        <div className="text-center text-gray-500 dark:text-slate-400 py-10">
-          No products found.
+        <div className="flex flex-col items-center text-center py-16 text-gray-500 dark:text-slate-400">
+          <span className="grid place-items-center h-16 w-16 rounded-2xl bg-gray-100 dark:bg-slate-800 mb-3">
+            <Package size={28} />
+          </span>
+          <p className="font-semibold text-gray-700 dark:text-slate-300">No products found</p>
+          <p className="text-sm mt-1">Try a different filter, or add a new product.</p>
         </div>
       )}
 
-      {/* ===================== FORM MODAL ===================== */}
+      {/* ===================== FORM MODAL (ProductForm nijei mobile bottom-sheet) ===================== */}
       {showForm && (
-        <>
-          <div className="fixed inset-0 bg-white/50 dark:bg-black/60 backdrop-blur-sm z-40" />
-
-          <div className="fixed inset-0 z-50 flex justify-center items-center p-4">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg w-full max-w-4xl p-6 overflow-y-auto max-h-[90vh] relative animate-[zoomIn_.2s_ease-out]">
-              <ProductForm
-                product={editProduct}
-                productsLength={counts.all}
-                onClose={() => {
-                  setShowForm(false);
-                  setEditProduct(null); // ✅ reset
-                }}
-                onSaved={() => {
-                  setShowForm(false);
-                  setEditProduct(null); // ✅ reset
-                  loadProducts();
-                  setToast({
-                    message: editProduct?._id
-                      ? "✅ Product updated!"
-                      : "✅ Product added!",
-                    type: "success",
-                  });
-                }}
-              />
-            </div>
-          </div>
-        </>
+        <ProductForm
+          product={editProduct}
+          productsLength={counts.all}
+          onClose={() => {
+            setShowForm(false);
+            setEditProduct(null); // ✅ reset
+          }}
+          onSaved={() => {
+            setShowForm(false);
+            setEditProduct(null); // ✅ reset
+            loadProducts();
+            setToast({
+              message: editProduct?._id ? "✅ Product updated!" : "✅ Product added!",
+              type: "success",
+            });
+          }}
+        />
       )}
 
       {/* ===================== DELETE CONFIRM ===================== */}
       {deleteModal && (
-        <>
-          <div className="fixed inset-0 bg-white/50 dark:bg-black/60 backdrop-blur-sm z-40" />
-
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 rounded-xl p-6 w-full max-w-sm shadow-xl border dark:border-slate-700 animate-[zoomIn_.2s_ease-out]">
-              <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-3">
-                ⚠ Delete Product
-              </h2>
-
-              <p className="text-gray-700 dark:text-slate-300 mb-6">
-                Are you sure you want to delete{" "}
-                <span className="font-semibold">{deleteModal.name}</span>?
-              </p>
-
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setDeleteModal(null)}
-                  className="px-4 py-2 border dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800 rounded"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded shadow"
-                >
-                  {deleting ? "Deleting..." : "Delete"}
-                </button>
-              </div>
+        <ModalShell
+          title="Delete Product"
+          subtitle="This action can't be undone"
+          icon={<Trash2 size={20} className="text-red-600" />}
+          onClose={() => !deleting && setDeleteModal(null)}
+          maxWidth="sm:max-w-sm"
+          footer={
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+              <button
+                onClick={() => setDeleteModal(null)}
+                disabled={deleting}
+                className="h-11 sm:h-10 px-5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="h-11 sm:h-10 px-5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-sm active:scale-[0.98] transition disabled:opacity-60"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
             </div>
-          </div>
-        </>
+          }
+        >
+          <p className="text-sm text-gray-700 dark:text-slate-300">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold">{deleteModal.name}</span>?
+          </p>
+        </ModalShell>
       )}
 
       {/* STOCK HISTORY (ledger) */}

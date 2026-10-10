@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import { Images, UploadCloud } from "lucide-react";
+import ModalShell, { fieldLabel, fieldInput } from "./ModalShell";
 
 /* ================== ✅ SLIDER IMAGE RULE ================== */
 const SLIDER_IMAGE_RULE = {
@@ -186,159 +188,106 @@ export default function AddSlideModal({
     await onSubmit?.(slideObj);
   };
 
+  const submitDisabled = loading || !filesReady || !!imageError;
+
   return (
-    <>
-      <div className="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-40" />
-
-      <div className="fixed inset-0 flex items-end justify-center z-50 sm:items-center p-0 sm:p-4">
-        <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 shadow-xl max-h-[92vh] overflow-y-auto">
-          <h2 className="text-xl font-bold mb-4 text-center text-gray-900 dark:text-slate-100">
-            {editId ? "✏️ Edit Slide" : "➕ Add New Slide"}
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
-                Slide Title
-              </label>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Slide title"
-                className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
-                Slide Link (Href)
-              </label>
-              <input
-                value={href}
-                onChange={(e) => setHref(e.target.value)}
-                placeholder="Href (optional)"
-                className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">
-                  Serial No
-                </label>
-                <select
-                  value={order}
-                  onChange={(e) => setOrder(Number(e.target.value))}
-                  className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
-                >
-                  {Array.from({ length: maxSerial }, (_, i) => i + 1).map(
-                    (num) => (
-                      <option key={num} value={num}>
-                        {num}
-                      </option>
-                    ),
-                  )}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-slate-300">Status</label>
-                <select
-                  value={isActive ? "active" : "hidden"}
-                  onChange={(e) => setIsActive(e.target.value === "active")}
-                  className="border border-gray-300 dark:border-slate-600 w-full p-2 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
-                >
-                  <option value="active">Active</option>
-                  <option value="hidden">Hidden</option>
-                </select>
-              </div>
-            </div>
-
-            {/* ✅ Image uploader */}
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-slate-300">
-                Slide Image{" "}
-                <span className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
-                  (যেকোনো image format → Auto {SLIDER_IMAGE_RULE.width}×
-                  {SLIDER_IMAGE_RULE.height})
-                </span>
-              </label>
-
-              <div
-                ref={dropRef}
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-                className={`border-2 border-dashed rounded-lg overflow-hidden cursor-pointer bg-gray-50 dark:bg-slate-800 aspect-[3/1] flex items-center justify-center ${
-                  imageError ? "border-red-500 bg-red-50 dark:bg-red-500/10" : "border-gray-300 dark:border-slate-600"
-                }`}
-                onClick={() =>
-                  dropRef.current?.querySelector("input[type=file]")?.click()
-                }
-              >
-                {preview ? (
-                  <img
-                    src={preview}
-                    alt="preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-gray-500 dark:text-slate-400 text-sm">
-                    Drag & drop or click to upload
-                  </span>
-                )}
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    e.target.value = ""; // ✅ same file reselect
-                    if (!f) return;
-                    processFile(f);
-                  }}
-                />
-              </div>
-
-              {imageError && (
-                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 font-semibold">
-                  {imageError}
-                </p>
-              )}
-
-              {!filesReady && (
-                <p className="text-[11px] text-orange-600 dark:text-orange-400 mt-1 font-semibold">
-                  Processing image...
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-2">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-slate-600 rounded text-gray-700 dark:text-slate-300"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded text-white ${
-                  loading || !filesReady || !!imageError
-                    ? "bg-gray-400 dark:bg-slate-600 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
-                disabled={loading || !filesReady || !!imageError}
-              >
-                {loading ? "Saving..." : editId ? "Update" : "Save"}
-              </button>
-            </div>
-          </form>
+    <ModalShell
+      title={editId ? "Edit Slide" : "Add New Slide"}
+      subtitle="Homepage slider-er jonno banner"
+      icon={<Images size={20} />}
+      onClose={loading ? undefined : handleClose}
+      footer={
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={loading}
+            className="h-11 sm:h-10 px-5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="slide-form"
+            disabled={submitDisabled}
+            className="h-11 sm:h-10 px-6 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-blue-600 shadow-md shadow-indigo-600/25 active:scale-[0.98] transition disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? "Saving..." : editId ? "Update Slide" : "Save Slide"}
+          </button>
         </div>
-      </div>
-    </>
+      }
+    >
+      <form id="slide-form" onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className={fieldLabel}>Slide Title</label>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Slide title" className={fieldInput} required />
+        </div>
+
+        <div>
+          <label className={fieldLabel}>Slide Link (Href)</label>
+          <input value={href} onChange={(e) => setHref(e.target.value)} placeholder="Optional — e.g. /category/shoes" className={fieldInput} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={fieldLabel}>Serial No</label>
+            <select value={order} onChange={(e) => setOrder(Number(e.target.value))} className={fieldInput}>
+              {Array.from({ length: maxSerial }, (_, i) => i + 1).map((num) => (
+                <option key={num} value={num}>{num}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={fieldLabel}>Status</label>
+            <select value={isActive ? "active" : "hidden"} onChange={(e) => setIsActive(e.target.value === "active")} className={fieldInput}>
+              <option value="active">Active</option>
+              <option value="hidden">Hidden</option>
+            </select>
+          </div>
+        </div>
+
+        {/* ✅ Image uploader */}
+        <div>
+          <label className={fieldLabel}>
+            Slide Image <span className="normal-case font-medium text-gray-400">(Auto {SLIDER_IMAGE_RULE.width}×{SLIDER_IMAGE_RULE.height}, max {maxKB}KB)</span>
+          </label>
+
+          <div
+            ref={dropRef}
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+            onClick={() => dropRef.current?.querySelector("input[type=file]")?.click()}
+            className={`border-2 border-dashed rounded-2xl overflow-hidden cursor-pointer aspect-[3/1] min-h-[96px] flex items-center justify-center transition-colors ${
+              imageError
+                ? "border-red-400 bg-red-50 dark:bg-red-500/10"
+                : "border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 hover:border-indigo-400"
+            }`}
+          >
+            {preview ? (
+              <img src={preview} alt="preview" className="w-full h-full object-cover" />
+            ) : (
+              <span className="flex flex-col items-center gap-1 text-gray-500 dark:text-slate-400 text-sm">
+                <UploadCloud size={22} />
+                Tap to upload
+              </span>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = ""; // ✅ same file reselect
+                if (!f) return;
+                processFile(f);
+              }}
+            />
+          </div>
+
+          {imageError && <p className="text-[11px] text-red-600 dark:text-red-400 mt-1 font-semibold">{imageError}</p>}
+          {!filesReady && <p className="text-[11px] text-orange-600 dark:text-orange-400 mt-1 font-semibold">Processing image...</p>}
+        </div>
+      </form>
+    </ModalShell>
   );
 }

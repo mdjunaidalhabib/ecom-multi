@@ -149,3 +149,21 @@ html {
 .dark .rich-content p.is-editor-empty:first-child::before {
   color: #64748b;
 }
+
+/* ✅ Mobile bottom-sheet / modal animations */
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ✅ আনুভূমিক scroll হয় কিন্তু scrollbar দেখা যায় না (filter chip row-এর জন্য) */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
