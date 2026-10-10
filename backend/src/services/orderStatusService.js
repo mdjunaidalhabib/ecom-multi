@@ -206,6 +206,132 @@ async function transition(order, to, { action, reason, actor, extraSet = {} }) {
   return { order: updated, warnings };
 }
 
+/**
+ * ✅ ম্যানুয়াল কুরিয়ার এন্ট্রি (confirmed → shipped)
+ * অর্ডার অ্যাপের বাইরে (কুরিয়ার পোর্টাল/অফিস/ফোন দিয়ে) পাঠানো হয়ে গেলে
+ * কুরিয়ারের নাম + Tracking/Consignment ID রেকর্ড করে status shipped করে।
+ * কুরিয়ারের API কল হয় না। consignmentId ফাঁকা রাখা হয় — যাতে ভুল হলে Undo চলে।
+ */
+export async function markManualCourier(
+  orderOrId,
+  { admin, provider, trackingId, codAmount, note } = {},
+) {
+  const order = await loadOrder(orderOrId);
+  const name = String(provider || "").trim();
+  const realTid = String(trackingId || "").trim();
+
+  if (!name)
+    throw new OrderStatusError("কুরিয়ারের নাম দিন।", 400, "COURIER_REQUIRED");
+  // ✅ ID ঐচ্ছিক — না দিলে একটা রেফারেন্স বসে (Send বাটন লুকাতে ও duplicate ঠেকাতে),
+  // পরে এডিট করে আসল ID বসানো যায়
+  const idPending = !realTid;
+  const tid = realTid || `MANUAL-${order.orderNumber || String(order._id).slice(-6)}`;
+  if (order.status !== "confirmed")
+    throw new OrderStatusError(
+      "শুধু Confirmed অর্ডার ম্যানুয়ালি কুরিয়ারে এন্ট্রি করা যায়।",
+      400,
+      "NOT_CONFIRMED",
+    );
+  if (order.courier?.trackingId || order.trackingId)
+    throw new OrderStatusError(
+      "এই অর্ডারে আগেই Tracking ID আছে — দ্বিতীয়বার কুরিয়ারে পাঠানো যাবে না।",
+      400,
+      "COURIER_ALREADY_SENT",
+    );
+
+  const cod = Number(codAmount);
+  const noteText = String(note || "").trim();
+
+  return changeOrderStatus(order, "shipped", {
+    actor: actorFromAdmin(admin),
+    reason: `Manual courier: ${name} (${tid})${noteText ? ` — ${noteText}` : ""}`,
+    extraSet: {
+      trackingId: tid,
+      "courier.provider": name.toLowerCase(),
+      "courier.trackingId": tid,
+      "courier.status": "manual",
+      "courier.manual": true,
+      "courier.idPending": idPending,
+      "courier.note": noteText || null,
+      "courier.codAmountSent": Number.isFinite(cod) ? cod : null,
+      "courier.sentAt": new Date(),
+    },
+  });
+}
+
+/**
+ * ✅ ম্যানুয়াল কুরিয়ারের তথ্য পরে এডিট (আসল Tracking ID বসানো / কুরিয়ার বদলানো)
+ * status বদলায় না — History-তে "edit" এন্ট্রি পড়ে।
+ */
+export async function updateManualCourier(
+  orderOrId,
+  { admin, provider, trackingId, codAmount, note } = {},
+) {
+  const order = await loadOrder(orderOrId);
+  if (!order.courier?.manual)
+    throw new OrderStatusError(
+      "এটা ম্যানুয়াল কুরিয়ার অর্ডার নয়।",
+      400,
+      "NOT_MANUAL_COURIER",
+    );
+  if (["cancelled", "returned"].includes(order.status))
+    throw new OrderStatusError(
+      "Cancelled/Returned অর্ডারের কুরিয়ার তথ্য বদলানো যাবে না।",
+      400,
+      "ORDER_LOCKED",
+    );
+
+  const name = String(provider || "").trim();
+  const tid = String(trackingId || "").trim();
+  if (!name)
+    throw new OrderStatusError("কুরিয়ারের নাম দিন।", 400, "COURIER_REQUIRED");
+  if (!tid)
+    throw new OrderStatusError(
+      "Tracking / Consignment ID দিন।",
+      400,
+      "TRACKING_REQUIRED",
+    );
+
+  const dup = await Order.exists({
+    _id: { $ne: order._id },
+    "courier.trackingId": tid,
+  });
+  if (dup)
+    throw new OrderStatusError(
+      "এই Tracking ID অন্য একটি অর্ডারে আগেই ব্যবহার হয়েছে।",
+      409,
+      "TRACKING_DUPLICATE",
+    );
+
+  const cod = Number(codAmount);
+  const noteText = String(note || "").trim();
+  const before = `${order.courier?.provider || "-"} / ${order.courier?.trackingId || "-"}`;
+
+  const updated = await Order.findOneAndUpdate(
+    { _id: order._id },
+    {
+      $set: {
+        trackingId: tid,
+        "courier.provider": name.toLowerCase(),
+        "courier.trackingId": tid,
+        "courier.idPending": false,
+        "courier.note": noteText || null,
+        ...(Number.isFinite(cod) ? { "courier.codAmountSent": cod } : {}),
+      },
+      $push: {
+        statusHistory: buildEditHistoryEntry({
+          status: order.status,
+          summary: `Courier: ${before} → ${name.toLowerCase()} / ${tid}`,
+          actor: actorFromAdmin(admin),
+        }),
+      },
+    },
+    { new: true, runValidators: true },
+  );
+
+  return { order: updated, warnings: [] };
+}
+
 const loadOrder = async (orderOrId) => {
   const order =
     orderOrId && typeof orderOrId === "object" && orderOrId.status

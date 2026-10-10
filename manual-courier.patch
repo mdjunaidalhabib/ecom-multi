@@ -1,0 +1,738 @@
+diff --git a/admin/components/CourierStatus.jsx b/admin/components/CourierStatus.jsx
+index 7e517c8..cfe19be 100644
+--- a/admin/components/CourierStatus.jsx
++++ b/admin/components/CourierStatus.jsx
+@@ -38,6 +38,7 @@ export default function CourierStatus({
+   orderId,
+   orderStatus,
+   onFinalStatus,
++  onEditManual,
+ }) {
+   const activeTrackingId = courier?.trackingId || trackingId;
+ 
+@@ -81,7 +82,7 @@ export default function CourierStatus({
+ 
+   /* ================= FETCH STATUS ================= */
+   useEffect(() => {
+-    if (!activeTrackingId) return;
++    if (!activeTrackingId || courier?.manual) return;
+ 
+     const fetchCourierStatus = async () => {
+       setLoading(true);
+@@ -156,6 +157,28 @@ export default function CourierStatus({
+ 
+   const closeModal = () => setModalOpen(false);
+ 
++  // ✅ ম্যানুয়াল কুরিয়ার: লাইভ ট্র্যাকিং নেই — শুধু কুরিয়ারের নাম ও ID দেখাই
++  if (courier?.manual) {
++    return (
++      <div className="mt-1 flex items-center flex-wrap gap-1 text-[12px] text-gray-600 dark:text-slate-300">
++        <Badge>🚚 {String(courier.provider || "courier").toUpperCase()} (Manual)</Badge>
++        {courier.idPending ? (
++          <span className="text-amber-600 dark:text-amber-400">ID নেই</span>
++        ) : (
++          <span className="font-mono">{activeTrackingId}</span>
++        )}
++        {onEditManual && (
++          <button
++            onClick={onEditManual}
++            className="text-[11px] px-1 py-0 rounded-md border dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
++          >
++            {courier.idPending ? "ID বসান" : "Edit"}
++          </button>
++        )}
++      </div>
++    );
++  }
++
+   if (!activeTrackingId) {
+     return (
+       <div className="mt-1 text-[12px] text-gray-400 dark:text-slate-500">Courier not created</div>
+diff --git a/admin/components/orders/hooks/useOrdersManager.js b/admin/components/orders/hooks/useOrdersManager.js
+index bc499de..d91851e 100644
+--- a/admin/components/orders/hooks/useOrdersManager.js
++++ b/admin/components/orders/hooks/useOrdersManager.js
+@@ -89,7 +89,7 @@ export default function useOrdersManager({
+   const canBulkSendCourier =
+     selectedOrders.length > 0 &&
+     selectedOrders.every(
+-      (o) => o.status === "confirmed" && !o.trackingId
++      (o) => o.status === "confirmed" && !o.trackingId && !o.courier?.trackingId
+     );
+ 
+   return {
+diff --git a/admin/components/orders/modals/ManualCourierModal.jsx b/admin/components/orders/modals/ManualCourierModal.jsx
+new file mode 100644
+index 0000000..bda3f66
+--- /dev/null
++++ b/admin/components/orders/modals/ManualCourierModal.jsx
+@@ -0,0 +1,207 @@
++"use client";
++
++import { useEffect, useState } from "react";
++import { Loader2, PackageCheck } from "lucide-react";
++
++/**
++ * ✅ ম্যানুয়ালি কুরিয়ারে পাঠানো অর্ডারের এন্ট্রি।
++ * কুরিয়ারের নাম + Tracking/Consignment ID রেকর্ড হয়, অর্ডার Shipped হয়।
++ * কুরিয়ারের API কল হয় না — তাই দ্বিতীয়বার পাঠানোর ঝুঁকি নেই।
++ *
++ * Tracking ID ঐচ্ছিক — না দিলে "ID নেই" দেখায়; পরে একই বাটন/Edit থেকে আসল ID বসানো যায়।
++ * order.courier.manual থাকলে এটা এডিট মোড।
++ *
++ * props: order (null হলে বন্ধ), onClose, onSubmit({ provider, trackingId, codAmount, note })
++ */
++const COURIERS = [
++  "Steadfast",
++  "Pathao",
++  "RedX",
++  "Paperfly",
++  "eCourier",
++  "Sundarban",
++  "SA Paribahan",
++  "Other",
++];
++
++// অ্যাপ নিজেও যেভাবে COD হিসাব করে — advance paid হলে delivery charge বাদ
++const defaultCod = (o) => {
++  const total = Number(o?.total || 0);
++  const advancePaid =
++    (o?.paymentMethod || "cod") !== "cod" && o?.paymentStatus === "paid";
++  return advancePaid ? Math.max(0, total - Number(o?.deliveryCharge || 0)) : total;
++};
++
++const field =
++  "w-full h-10 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30";
++const label =
++  "block text-xs font-bold tracking-wide mb-1.5 text-gray-500 dark:text-slate-400";
++
++export default function ManualCourierModal({ order, onClose, onSubmit }) {
++  const [courier, setCourier] = useState("Steadfast");
++  const [otherName, setOtherName] = useState("");
++  const [trackingId, setTrackingId] = useState("");
++  const [cod, setCod] = useState("");
++  const [note, setNote] = useState("");
++  const [loading, setLoading] = useState(false);
++  const [error, setError] = useState("");
++
++  useEffect(() => {
++    if (!order) return;
++    const c = order.courier;
++    const known = c?.manual
++      ? COURIERS.find(
++          (x) => x !== "Other" && x.toLowerCase() === String(c.provider || "").toLowerCase(),
++        )
++      : "Steadfast";
++    setCourier(known || "Other");
++    setOtherName(known ? "" : c?.provider || "");
++    setTrackingId(c?.manual && !c.idPending ? c.trackingId || "" : "");
++    setCod(String(c?.manual && c.codAmountSent != null ? c.codAmountSent : defaultCod(order)));
++    setNote(c?.note || "");
++    setError("");
++    setLoading(false);
++  }, [order]);
++
++  if (!order) return null;
++
++  const isEdit = Boolean(order.courier?.manual);
++
++  const provider = courier === "Other" ? otherName.trim() : courier;
++
++  const handleSave = async () => {
++    if (!provider) return setError("কুরিয়ারের নাম লিখুন।");
++    // এডিট মোডে ID বসানোই উদ্দেশ্য, তাই তখন লাগবে; প্রথমবার ঐচ্ছিক
++    if (isEdit && !trackingId.trim())
++      return setError("Tracking / Consignment ID দিন।");
++    setLoading(true);
++    setError("");
++    try {
++      await onSubmit({
++        provider,
++        trackingId: trackingId.trim(),
++        codAmount: Number(cod || 0),
++        note: note.trim(),
++      });
++      onClose();
++    } catch (err) {
++      setError(err?.message || "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন।");
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  return (
++    <>
++      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]" />
++      <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
++        <div className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl shadow-2xl border border-transparent dark:border-slate-700 p-5 space-y-4 max-h-[92vh] overflow-y-auto">
++          <div className="flex items-start gap-3">
++            <div className="h-10 w-10 rounded-xl grid place-items-center shrink-0 bg-teal-100 text-teal-600 dark:bg-teal-500/15 dark:text-teal-400">
++              <PackageCheck size={18} />
++            </div>
++            <div className="min-w-0">
++              <h2 className="text-base font-bold text-gray-900 dark:text-slate-100">
++                {isEdit ? "কুরিয়ারের তথ্য এডিট" : "ম্যানুয়ালি কুরিয়ারে পাঠানো হয়েছে"}
++              </h2>
++              <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
++                {order.billing?.name} · {order.billing?.phone}
++                <br />
++                {isEdit
++                  ? "আসল Tracking ID বা কুরিয়ার বদলাতে পারবেন। অর্ডারের status বদলাবে না।"
++                  : "সেভ করলে অর্ডার Shipped হবে। কুরিয়ারে নতুন করে কিছু যাবে না।"}
++              </p>
++            </div>
++          </div>
++
++          <div>
++            <label className={label}>কুরিয়ার</label>
++            <select
++              className={field}
++              value={courier}
++              onChange={(e) => setCourier(e.target.value)}
++            >
++              {COURIERS.map((c) => (
++                <option key={c} value={c}>
++                  {c}
++                </option>
++              ))}
++            </select>
++          </div>
++
++          {courier === "Other" && (
++            <div>
++              <label className={label}>কুরিয়ারের নাম</label>
++              <input
++                className={field}
++                value={otherName}
++                onChange={(e) => setOtherName(e.target.value)}
++                placeholder="যেমন: Janani Express"
++              />
++            </div>
++          )}
++
++          <div>
++            <label className={label}>
++              Tracking / Consignment ID{isEdit ? "" : " (ঐচ্ছিক — পরে বসানো যাবে)"}
++            </label>
++            <input
++              className={field}
++              autoFocus
++              value={trackingId}
++              onChange={(e) => setTrackingId(e.target.value)}
++              placeholder={isEdit ? "কুরিয়ারের দেওয়া ID" : "ID জানা না থাকলে ফাঁকা রাখুন"}
++            />
++          </div>
++
++          <div>
++            <label className={label}>COD amount (৳)</label>
++            <input
++              type="number"
++              min={0}
++              className={field}
++              value={cod}
++              onWheel={(e) => e.target.blur()}
++              onChange={(e) => setCod(e.target.value)}
++            />
++          </div>
++
++          <div>
++            <label className={label}>নোট (ঐচ্ছিক)</label>
++            <textarea
++              rows={2}
++              className="w-full rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30 resize-y"
++              value={note}
++              onChange={(e) => setNote(e.target.value)}
++              placeholder="যেমন: অফিস থেকে হাতে দিয়ে পাঠানো"
++            />
++          </div>
++
++          {error && (
++            <div className="text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg px-3 py-2">
++              {error}
++            </div>
++          )}
++
++          <div className="flex justify-end gap-2 pt-1">
++            <button
++              onClick={onClose}
++              disabled={loading}
++              className="h-10 px-4 rounded-xl border border-gray-300 dark:border-slate-600 text-sm font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50"
++            >
++              বাতিল
++            </button>
++            <button
++              onClick={handleSave}
++              disabled={loading}
++              className="h-10 px-4 rounded-xl text-sm font-bold text-white inline-flex items-center gap-2 disabled:opacity-50 bg-teal-600 hover:bg-teal-700"
++            >
++              {loading && <Loader2 size={15} className="animate-spin" />}
++              সেভ করুন
++            </button>
++          </div>
++        </div>
++      </div>
++    </>
++  );
++}
+diff --git a/admin/components/orders/ordersGrid/OrderCard.jsx b/admin/components/orders/ordersGrid/OrderCard.jsx
+index 6f5369a..a9bcecf 100644
+--- a/admin/components/orders/ordersGrid/OrderCard.jsx
++++ b/admin/components/orders/ordersGrid/OrderCard.jsx
+@@ -4,6 +4,7 @@ import {
+   Edit3,
+   Trash2,
+   Send,
++  PackageCheck,
+   ChevronDown,
+   ChevronUp,
+   FileText,
+@@ -38,6 +39,7 @@ export default function OrderCard({
+   onDelete,
+   onHistory,
+   onSendCourier,
++  onManualCourier,
+ 
+   // ✅ NEW: parent থেকে courier final sync handler পাঠাবেন
+   onFinalStatusSync,
+@@ -347,6 +349,15 @@ export default function OrderCard({
+                 </IconBtn>
+               )}
+ 
++              {o.status === READY_STATUS && !o.courier?.trackingId && (
++                <IconBtn
++                  onClick={() => onManualCourier?.(o)}
++                  className="bg-teal-600 hover:bg-teal-700 text-white transition"
++                >
++                  <PackageCheck size={16} />
++                </IconBtn>
++              )}
++
+               <button
+                 type="button"
+                 onClick={() => onDownloadInvoice?.(o)}
+@@ -362,6 +373,7 @@ export default function OrderCard({
+           <CourierStatus
+             trackingId={o.courier?.trackingId}
+             courier={o.courier}
++            onEditManual={() => onManualCourier?.(o)}
+             orderId={o._id}
+             orderStatus={o.status}
+             onFinalStatus={(orderId, finalStatus) => {
+diff --git a/admin/components/orders/ordersGrid/OrdersGrid.jsx b/admin/components/orders/ordersGrid/OrdersGrid.jsx
+index 441f499..fc5297a 100644
+--- a/admin/components/orders/ordersGrid/OrdersGrid.jsx
++++ b/admin/components/orders/ordersGrid/OrdersGrid.jsx
+@@ -22,6 +22,7 @@ export default function OrdersGrid({
+   onStatusSelect,
+   onHistory,
+   onSendCourier,
++  onManualCourier,
+   onBulkStatusChange,
+   onBulkDelete,
+   onBulkSendCourier,
+@@ -181,6 +182,7 @@ export default function OrdersGrid({
+                 onDelete={onDelete}
+                 onHistory={onHistory}
+                 onSendCourier={onSendCourier}
++                onManualCourier={onManualCourier}
+                 onFinalStatusSync={handleCourierFinalStatus} // ✅ ADD
+                 onDownloadInvoice={handleDownloadInvoice}
+                 invoiceReady={!!invoiceTemplate}
+diff --git a/admin/components/orders/ordersTable/OrdersTable.jsx b/admin/components/orders/ordersTable/OrdersTable.jsx
+index db13400..b20dd72 100644
+--- a/admin/components/orders/ordersTable/OrdersTable.jsx
++++ b/admin/components/orders/ordersTable/OrdersTable.jsx
+@@ -2,6 +2,7 @@
+ import { useState } from "react";
+ import {
+   Send,
++  PackageCheck,
+   FileText,
+   Edit2,
+   Trash2,
+@@ -48,6 +49,7 @@ export default function OrdersTable({
+   onStatusSelect,
+   onHistory,
+   onSendCourier,
++  onManualCourier,
+   onBulkStatusChange,
+   onBulkDelete,
+   onBulkSendCourier,
+@@ -381,6 +383,7 @@ export default function OrdersTable({
+                       <CourierStatus
+                         trackingId={o.courier?.trackingId}
+                         courier={o.courier}
++                        onEditManual={() => onManualCourier?.(o)}
+                         orderId={o._id}
+                         orderStatus={o.status}
+                         onFinalStatus={(orderId, finalStatus) => {
+@@ -501,6 +504,19 @@ export default function OrdersTable({
+                             </button>
+                           )}
+ 
++                        {/* Manual courier (অ্যাপের বাইরে পাঠানো) */}
++                        {o.status === READY_STATUS &&
++                          !o.courier?.trackingId && (
++                            <button
++                              onClick={() => onManualCourier?.(o)}
++                              title="ম্যানুয়ালি কুরিয়ারে পাঠানো হয়েছে"
++                              aria-label="Manual courier"
++                              className="bg-teal-600 hover:bg-teal-700 text-white p-2 rounded-lg transition"
++                            >
++                              <PackageCheck size={15} />
++                            </button>
++                          )}
++
+                         {/* Invoice */}
+                         <button
+                           type="button"
+diff --git a/admin/components/orders/pages/OrdersPage.jsx b/admin/components/orders/pages/OrdersPage.jsx
+index cefef97..64ecf82 100644
+--- a/admin/components/orders/pages/OrdersPage.jsx
++++ b/admin/components/orders/pages/OrdersPage.jsx
+@@ -18,6 +18,7 @@ import AlertModal from "../modals/AlertModal";
+ import StatusActionModal from "../modals/StatusActionModal";
+ import OrderHistoryModal from "../modals/OrderHistoryModal";
+ import UndoSnackbar from "../modals/UndoSnackbar";
++import ManualCourierModal from "../modals/ManualCourierModal";
+ 
+ export default function OrdersPage() {
+   const API = "/api";
+@@ -58,6 +59,7 @@ export default function OrdersPage() {
+     deleteMany,
+     sendCourierDirect,
+     sendCourierMany,
++    sendManualCourier,
+ 
+     createOrder,
+     creating,
+@@ -78,6 +80,7 @@ export default function OrdersPage() {
+ 
+   // ✅ History মডাল (status timeline + stock ledger + Undo/Reopen/Return)
+   const [historyOrder, setHistoryOrder] = useState(null);
++  const [manualOrder, setManualOrder] = useState(null);
+ 
+   const handleHistoryAction = (type, order, history) => {
+     const done = () => setHistoryOrder(null);
+@@ -264,6 +267,7 @@ export default function OrdersPage() {
+               onStatusSelect={requestStatusChange}
+               onHistory={setHistoryOrder}
+               onSendCourier={sendCourierDirect}
++              onManualCourier={setManualOrder}
+               onBulkStatusChange={updateManyStatus}
+               onBulkDelete={deleteMany}
+               onBulkSendCourier={sendCourierMany}
+@@ -283,6 +287,7 @@ export default function OrdersPage() {
+               onStatusSelect={requestStatusChange}
+               onHistory={setHistoryOrder}
+               onSendCourier={sendCourierDirect}
++              onManualCourier={setManualOrder}
+               onBulkStatusChange={updateManyStatus}
+               onBulkDelete={deleteMany}
+               onBulkSendCourier={sendCourierMany}
+@@ -317,6 +322,13 @@ export default function OrdersPage() {
+         onClose={() => setOpen(false)}
+       />
+ 
++      {/* MANUAL COURIER MODAL (অ্যাপের বাইরে পাঠানো অর্ডার এন্ট্রি) */}
++      <ManualCourierModal
++        order={manualOrder}
++        onClose={() => setManualOrder(null)}
++        onSubmit={(payload) => sendManualCourier(manualOrder._id, payload)}
++      />
++
+       {/* HISTORY MODAL (timeline + stock ledger + Undo/Reopen/Return) */}
+       <OrderHistoryModal
+         order={historyOrder}
+diff --git a/admin/hooks/useOrders.jsx b/admin/hooks/useOrders.jsx
+index f5d5f01..e35116f 100644
+--- a/admin/hooks/useOrders.jsx
++++ b/admin/hooks/useOrders.jsx
+@@ -405,6 +405,22 @@ export default function useOrders(API) {
+       return data;
+     });
+ 
++  /* ===============================
++     🚚 MANUAL COURIER (কুরিয়ার API ছাড়া — নাম + Tracking ID রেকর্ড, status shipped)
++     =============================== */
++  const sendManualCourier = (orderId, payload) =>
++    enqueue(async () => {
++      const res = await fetch(`${API}/admin/orders/${orderId}/manual-courier`, {
++        method: "PATCH",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify(payload),
++      });
++      const data = await res.json().catch(() => ({}));
++      if (!res.ok) throw new Error(data?.error || "ম্যানুয়াল কুরিয়ার এন্ট্রি করা যায়নি");
++      applyOrderUpdate(data, "🚚 ম্যানুয়াল কুরিয়ার তথ্য সেভ হয়েছে");
++      return data;
++    });
++
+   /* ===============================
+      📦 RETURN (delivered → returned, stock ফেরত + refund রেকর্ড)
+      =============================== */
+@@ -732,6 +748,7 @@ const sendCourierDirect = (order) =>
+     // courier
+     sendCourierDirect,
+     sendCourierMany,
++    sendManualCourier,
+ 
+     // delete
+     handleDelete,
+diff --git a/backend/src/models/Order.js b/backend/src/models/Order.js
+index 6567a4a..d0d2bc7 100644
+--- a/backend/src/models/Order.js
++++ b/backend/src/models/Order.js
+@@ -197,6 +197,11 @@ const orderSchema = new mongoose.Schema(
+       consignmentId: { type: String, default: null },
+       status: { type: String, default: null },
+       codAmountSent: { type: Number, default: null },
++      // ✅ ম্যানুয়ালি (অ্যাপের বাইরে) কুরিয়ারে পাঠানো অর্ডার — API sync/live tracking হবে না
++      manual: { type: Boolean, default: false },
++      // ✅ ম্যানুয়াল অর্ডারে আসল Tracking ID এখনো বসানো হয়নি (পরে এডিট করে বসানো যাবে)
++      idPending: { type: Boolean, default: false },
++      note: { type: String, default: null },
+       rawResponse: { type: mongoose.Schema.Types.Mixed, default: null },
+       sentAt: { type: Date, default: null },
+     },
+diff --git a/backend/src/routes/admin/courierStatus.js b/backend/src/routes/admin/courierStatus.js
+index 49e871d..b0f0804 100644
+--- a/backend/src/routes/admin/courierStatus.js
++++ b/backend/src/routes/admin/courierStatus.js
+@@ -94,6 +94,15 @@ router.get("/status", async (req, res) => {
+     if (!order)
+       return res.status(404).json({ ok: false, error: "Order not found" });
+ 
++    // ✅ ম্যানুয়াল কুরিয়ার — কোনো API sync নেই, লোকাল ডাটাই ফেরত
++    if (order.courier?.manual) {
++      return res.json({
++        ok: true,
++        status: order.courier?.status || "manual",
++        courier: order.courier,
++      });
++    }
++
+     // If not steadfast, just return local
+     if (order.courier?.provider !== "steadfast") {
+       return res.json({
+diff --git a/backend/src/routes/admin/order.admin.routes.js b/backend/src/routes/admin/order.admin.routes.js
+index 2669847..cd6b317 100644
+--- a/backend/src/routes/admin/order.admin.routes.js
++++ b/backend/src/routes/admin/order.admin.routes.js
+@@ -19,6 +19,8 @@ import {
+   buildEditHistoryEntry,
+   changeOrderStatus,
+   isOwnerAdmin,
++  markManualCourier,
++  updateManualCourier,
+   returnOrder,
+   revertOrderStatus,
+   sendOrderStatusError,
+@@ -599,6 +601,41 @@ router.patch("/:id/return", async (req, res) => {
+   }
+ });
+ 
++/**
++ * ================================
++ * 🚚 MANUAL COURIER (confirmed → shipped, কুরিয়ার API ছাড়া)
++ * PATCH /admin/orders/:id/manual-courier  (প্রথমবার = এন্ট্রি, পরে = এডিট)
++ * body: { provider, trackingId, codAmount?, note? }
++ * ================================
++ */
++router.patch("/:id/manual-courier", async (req, res) => {
++  try {
++    const current = await Order.findById(req.params.id);
++    if (!current) return res.status(404).json({ error: "Order not found" });
++
++    // ✅ আগেই ম্যানুয়াল এন্ট্রি হয়ে থাকলে এটা এডিট (আসল ID বসানো/কুরিয়ার বদল)
++    const isEdit = Boolean(current.courier?.manual);
++
++    if (!isEdit && needsPaymentVerification(current)) {
++      return res
++        .status(400)
++        .json({ error: PAYMENT_HOLD_MESSAGE, code: "PAYMENT_VERIFICATION_REQUIRED" });
++    }
++
++    const run = isEdit ? updateManualCourier : markManualCourier;
++    const { order, warnings } = await run(current, {
++      admin: req.admin,
++      provider: req.body?.provider,
++      trackingId: req.body?.trackingId,
++      codAmount: req.body?.codAmount,
++      note: req.body?.note,
++    });
++    res.json({ order, warnings });
++  } catch (err) {
++    sendOrderStatusError(res, err, "Manual courier entry failed");
++  }
++});
++
+ /**
+  * ================================
+  * ✏️ EDIT SUMMARY (History-র জন্য)
+@@ -912,6 +949,28 @@ router.put("/:id", async (req, res) => {
+       }
+     }
+ 
++    // ✅ ম্যানুয়াল কুরিয়ার অর্ডারে Tracking ID বদলালে courier.trackingId-ও একসাথে বদলাবে
++    // (নইলে দুই জায়গায় ID আলাদা হয়ে যায়)। ফাঁকা দিলে আগের ID-ই থাকবে।
++    if (current.courier?.manual && mongoUpdate.trackingId !== undefined) {
++      const tid = String(mongoUpdate.trackingId || "").trim();
++      if (!tid || tid === current.courier.trackingId) {
++        delete mongoUpdate.trackingId;
++      } else {
++        const dup = await Order.exists({
++          _id: { $ne: current._id },
++          "courier.trackingId": tid,
++        });
++        if (dup) {
++          return res.status(409).json({
++            error: "এই Tracking ID অন্য একটি অর্ডারে আগেই ব্যবহার হয়েছে।",
++          });
++        }
++        mongoUpdate.trackingId = tid;
++        mongoUpdate["courier.trackingId"] = tid;
++        mongoUpdate["courier.idPending"] = false;
++      }
++    }
++
+     let updated = current;
+     if (Object.keys(mongoUpdate).length) {
+       updated = await Order.findByIdAndUpdate(req.params.id, mongoUpdate, {
+diff --git a/backend/src/services/orderStatusService.js b/backend/src/services/orderStatusService.js
+index d96653d..6fa01a1 100644
+--- a/backend/src/services/orderStatusService.js
++++ b/backend/src/services/orderStatusService.js
+@@ -206,6 +206,132 @@ async function transition(order, to, { action, reason, actor, extraSet = {} }) {
+   return { order: updated, warnings };
+ }
+ 
++/**
++ * ✅ ম্যানুয়াল কুরিয়ার এন্ট্রি (confirmed → shipped)
++ * অর্ডার অ্যাপের বাইরে (কুরিয়ার পোর্টাল/অফিস/ফোন দিয়ে) পাঠানো হয়ে গেলে
++ * কুরিয়ারের নাম + Tracking/Consignment ID রেকর্ড করে status shipped করে।
++ * কুরিয়ারের API কল হয় না। consignmentId ফাঁকা রাখা হয় — যাতে ভুল হলে Undo চলে।
++ */
++export async function markManualCourier(
++  orderOrId,
++  { admin, provider, trackingId, codAmount, note } = {},
++) {
++  const order = await loadOrder(orderOrId);
++  const name = String(provider || "").trim();
++  const realTid = String(trackingId || "").trim();
++
++  if (!name)
++    throw new OrderStatusError("কুরিয়ারের নাম দিন।", 400, "COURIER_REQUIRED");
++  // ✅ ID ঐচ্ছিক — না দিলে একটা রেফারেন্স বসে (Send বাটন লুকাতে ও duplicate ঠেকাতে),
++  // পরে এডিট করে আসল ID বসানো যায়
++  const idPending = !realTid;
++  const tid = realTid || `MANUAL-${order.orderNumber || String(order._id).slice(-6)}`;
++  if (order.status !== "confirmed")
++    throw new OrderStatusError(
++      "শুধু Confirmed অর্ডার ম্যানুয়ালি কুরিয়ারে এন্ট্রি করা যায়।",
++      400,
++      "NOT_CONFIRMED",
++    );
++  if (order.courier?.trackingId || order.trackingId)
++    throw new OrderStatusError(
++      "এই অর্ডারে আগেই Tracking ID আছে — দ্বিতীয়বার কুরিয়ারে পাঠানো যাবে না।",
++      400,
++      "COURIER_ALREADY_SENT",
++    );
++
++  const cod = Number(codAmount);
++  const noteText = String(note || "").trim();
++
++  return changeOrderStatus(order, "shipped", {
++    actor: actorFromAdmin(admin),
++    reason: `Manual courier: ${name} (${tid})${noteText ? ` — ${noteText}` : ""}`,
++    extraSet: {
++      trackingId: tid,
++      "courier.provider": name.toLowerCase(),
++      "courier.trackingId": tid,
++      "courier.status": "manual",
++      "courier.manual": true,
++      "courier.idPending": idPending,
++      "courier.note": noteText || null,
++      "courier.codAmountSent": Number.isFinite(cod) ? cod : null,
++      "courier.sentAt": new Date(),
++    },
++  });
++}
++
++/**
++ * ✅ ম্যানুয়াল কুরিয়ারের তথ্য পরে এডিট (আসল Tracking ID বসানো / কুরিয়ার বদলানো)
++ * status বদলায় না — History-তে "edit" এন্ট্রি পড়ে।
++ */
++export async function updateManualCourier(
++  orderOrId,
++  { admin, provider, trackingId, codAmount, note } = {},
++) {
++  const order = await loadOrder(orderOrId);
++  if (!order.courier?.manual)
++    throw new OrderStatusError(
++      "এটা ম্যানুয়াল কুরিয়ার অর্ডার নয়।",
++      400,
++      "NOT_MANUAL_COURIER",
++    );
++  if (["cancelled", "returned"].includes(order.status))
++    throw new OrderStatusError(
++      "Cancelled/Returned অর্ডারের কুরিয়ার তথ্য বদলানো যাবে না।",
++      400,
++      "ORDER_LOCKED",
++    );
++
++  const name = String(provider || "").trim();
++  const tid = String(trackingId || "").trim();
++  if (!name)
++    throw new OrderStatusError("কুরিয়ারের নাম দিন।", 400, "COURIER_REQUIRED");
++  if (!tid)
++    throw new OrderStatusError(
++      "Tracking / Consignment ID দিন।",
++      400,
++      "TRACKING_REQUIRED",
++    );
++
++  const dup = await Order.exists({
++    _id: { $ne: order._id },
++    "courier.trackingId": tid,
++  });
++  if (dup)
++    throw new OrderStatusError(
++      "এই Tracking ID অন্য একটি অর্ডারে আগেই ব্যবহার হয়েছে।",
++      409,
++      "TRACKING_DUPLICATE",
++    );
++
++  const cod = Number(codAmount);
++  const noteText = String(note || "").trim();
++  const before = `${order.courier?.provider || "-"} / ${order.courier?.trackingId || "-"}`;
++
++  const updated = await Order.findOneAndUpdate(
++    { _id: order._id },
++    {
++      $set: {
++        trackingId: tid,
++        "courier.provider": name.toLowerCase(),
++        "courier.trackingId": tid,
++        "courier.idPending": false,
++        "courier.note": noteText || null,
++        ...(Number.isFinite(cod) ? { "courier.codAmountSent": cod } : {}),
++      },
++      $push: {
++        statusHistory: buildEditHistoryEntry({
++          status: order.status,
++          summary: `Courier: ${before} → ${name.toLowerCase()} / ${tid}`,
++          actor: actorFromAdmin(admin),
++        }),
++      },
++    },
++    { new: true, runValidators: true },
++  );
++
++  return { order: updated, warnings: [] };
++}
++
+ const loadOrder = async (orderOrId) => {
+   const order =
+     orderOrId && typeof orderOrId === "object" && orderOrId.status

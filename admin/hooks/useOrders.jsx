@@ -406,6 +406,22 @@ export default function useOrders(API) {
     });
 
   /* ===============================
+     🚚 MANUAL COURIER (কুরিয়ার API ছাড়া — নাম + Tracking ID রেকর্ড, status shipped)
+     =============================== */
+  const sendManualCourier = (orderId, payload) =>
+    enqueue(async () => {
+      const res = await fetch(`${API}/admin/orders/${orderId}/manual-courier`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "ম্যানুয়াল কুরিয়ার এন্ট্রি করা যায়নি");
+      applyOrderUpdate(data, "🚚 ম্যানুয়াল কুরিয়ার তথ্য সেভ হয়েছে");
+      return data;
+    });
+
+  /* ===============================
      📦 RETURN (delivered → returned, stock ফেরত + refund রেকর্ড)
      =============================== */
   const returnOrder = (orderId, { reason, refundAmount }) =>
@@ -732,6 +748,7 @@ const sendCourierDirect = (order) =>
     // courier
     sendCourierDirect,
     sendCourierMany,
+    sendManualCourier,
 
     // delete
     handleDelete,

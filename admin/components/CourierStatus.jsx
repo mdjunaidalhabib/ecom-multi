@@ -38,6 +38,7 @@ export default function CourierStatus({
   orderId,
   orderStatus,
   onFinalStatus,
+  onEditManual,
 }) {
   const activeTrackingId = courier?.trackingId || trackingId;
 
@@ -81,7 +82,7 @@ export default function CourierStatus({
 
   /* ================= FETCH STATUS ================= */
   useEffect(() => {
-    if (!activeTrackingId) return;
+    if (!activeTrackingId || courier?.manual) return;
 
     const fetchCourierStatus = async () => {
       setLoading(true);
@@ -155,6 +156,28 @@ export default function CourierStatus({
   };
 
   const closeModal = () => setModalOpen(false);
+
+  // ✅ ম্যানুয়াল কুরিয়ার: লাইভ ট্র্যাকিং নেই — শুধু কুরিয়ারের নাম ও ID দেখাই
+  if (courier?.manual) {
+    return (
+      <div className="mt-1 flex items-center flex-wrap gap-1 text-[12px] text-gray-600 dark:text-slate-300">
+        <Badge>🚚 {String(courier.provider || "courier").toUpperCase()} (Manual)</Badge>
+        {courier.idPending ? (
+          <span className="text-amber-600 dark:text-amber-400">ID নেই</span>
+        ) : (
+          <span className="font-mono">{activeTrackingId}</span>
+        )}
+        {onEditManual && (
+          <button
+            onClick={onEditManual}
+            className="text-[11px] px-1 py-0 rounded-md border dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+          >
+            {courier.idPending ? "ID বসান" : "Edit"}
+          </button>
+        )}
+      </div>
+    );
+  }
 
   if (!activeTrackingId) {
     return (

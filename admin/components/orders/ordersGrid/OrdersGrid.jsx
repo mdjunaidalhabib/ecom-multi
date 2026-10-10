@@ -22,6 +22,7 @@ export default function OrdersGrid({
   onStatusSelect,
   onHistory,
   onSendCourier,
+  onManualCourier,
   onBulkStatusChange,
   onBulkDelete,
   onBulkSendCourier,
@@ -181,6 +182,7 @@ export default function OrdersGrid({
                 onDelete={onDelete}
                 onHistory={onHistory}
                 onSendCourier={onSendCourier}
+                onManualCourier={onManualCourier}
                 onFinalStatusSync={handleCourierFinalStatus} // ✅ ADD
                 onDownloadInvoice={handleDownloadInvoice}
                 invoiceReady={!!invoiceTemplate}

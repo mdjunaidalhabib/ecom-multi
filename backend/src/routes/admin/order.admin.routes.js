@@ -19,6 +19,8 @@ import {
   buildEditHistoryEntry,
   changeOrderStatus,
   isOwnerAdmin,
+  markManualCourier,
+  updateManualCourier,
   returnOrder,
   revertOrderStatus,
   sendOrderStatusError,
@@ -601,6 +603,41 @@ router.patch("/:id/return", async (req, res) => {
 
 /**
  * ================================
+ * 🚚 MANUAL COURIER (confirmed → shipped, কুরিয়ার API ছাড়া)
+ * PATCH /admin/orders/:id/manual-courier  (প্রথমবার = এন্ট্রি, পরে = এডিট)
+ * body: { provider, trackingId, codAmount?, note? }
+ * ================================
+ */
+router.patch("/:id/manual-courier", async (req, res) => {
+  try {
+    const current = await Order.findById(req.params.id);
+    if (!current) return res.status(404).json({ error: "Order not found" });
+
+    // ✅ আগেই ম্যানুয়াল এন্ট্রি হয়ে থাকলে এটা এডিট (আসল ID বসানো/কুরিয়ার বদল)
+    const isEdit = Boolean(current.courier?.manual);
+
+    if (!isEdit && needsPaymentVerification(current)) {
+      return res
+        .status(400)
+        .json({ error: PAYMENT_HOLD_MESSAGE, code: "PAYMENT_VERIFICATION_REQUIRED" });
+    }
+
+    const run = isEdit ? updateManualCourier : markManualCourier;
+    const { order, warnings } = await run(current, {
+      admin: req.admin,
+      provider: req.body?.provider,
+      trackingId: req.body?.trackingId,
+      codAmount: req.body?.codAmount,
+      note: req.body?.note,
+    });
+    res.json({ order, warnings });
+  } catch (err) {
+    sendOrderStatusError(res, err, "Manual courier entry failed");
+  }
+});
+
+/**
+ * ================================
  * ✏️ EDIT SUMMARY (History-র জন্য)
  * ================================
  * আগের অর্ডার (current) আর নতুন updateData তুলনা করে বাংলায় লাইন-বাই-লাইন
@@ -909,6 +946,28 @@ router.put("/:id", async (req, res) => {
             actor,
           }),
         };
+      }
+    }
+
+    // ✅ ম্যানুয়াল কুরিয়ার অর্ডারে Tracking ID বদলালে courier.trackingId-ও একসাথে বদলাবে
+    // (নইলে দুই জায়গায় ID আলাদা হয়ে যায়)। ফাঁকা দিলে আগের ID-ই থাকবে।
+    if (current.courier?.manual && mongoUpdate.trackingId !== undefined) {
+      const tid = String(mongoUpdate.trackingId || "").trim();
+      if (!tid || tid === current.courier.trackingId) {
+        delete mongoUpdate.trackingId;
+      } else {
+        const dup = await Order.exists({
+          _id: { $ne: current._id },
+          "courier.trackingId": tid,
+        });
+        if (dup) {
+          return res.status(409).json({
+            error: "এই Tracking ID অন্য একটি অর্ডারে আগেই ব্যবহার হয়েছে।",
+          });
+        }
+        mongoUpdate.trackingId = tid;
+        mongoUpdate["courier.trackingId"] = tid;
+        mongoUpdate["courier.idPending"] = false;
       }
     }
 

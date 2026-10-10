@@ -18,6 +18,7 @@ import AlertModal from "../modals/AlertModal";
 import StatusActionModal from "../modals/StatusActionModal";
 import OrderHistoryModal from "../modals/OrderHistoryModal";
 import UndoSnackbar from "../modals/UndoSnackbar";
+import ManualCourierModal from "../modals/ManualCourierModal";
 
 export default function OrdersPage() {
   const API = "/api";
@@ -58,6 +59,7 @@ export default function OrdersPage() {
     deleteMany,
     sendCourierDirect,
     sendCourierMany,
+    sendManualCourier,
 
     createOrder,
     creating,
@@ -78,6 +80,7 @@ export default function OrdersPage() {
 
   // ✅ History মডাল (status timeline + stock ledger + Undo/Reopen/Return)
   const [historyOrder, setHistoryOrder] = useState(null);
+  const [manualOrder, setManualOrder] = useState(null);
 
   const handleHistoryAction = (type, order, history) => {
     const done = () => setHistoryOrder(null);
@@ -264,6 +267,7 @@ export default function OrdersPage() {
               onStatusSelect={requestStatusChange}
               onHistory={setHistoryOrder}
               onSendCourier={sendCourierDirect}
+              onManualCourier={setManualOrder}
               onBulkStatusChange={updateManyStatus}
               onBulkDelete={deleteMany}
               onBulkSendCourier={sendCourierMany}
@@ -283,6 +287,7 @@ export default function OrdersPage() {
               onStatusSelect={requestStatusChange}
               onHistory={setHistoryOrder}
               onSendCourier={sendCourierDirect}
+              onManualCourier={setManualOrder}
               onBulkStatusChange={updateManyStatus}
               onBulkDelete={deleteMany}
               onBulkSendCourier={sendCourierMany}
@@ -315,6 +320,13 @@ export default function OrdersPage() {
         onSave={() => updateOrder(form)}
         canEditLocked={canEditLocked}
         onClose={() => setOpen(false)}
+      />
+
+      {/* MANUAL COURIER MODAL (অ্যাপের বাইরে পাঠানো অর্ডার এন্ট্রি) */}
+      <ManualCourierModal
+        order={manualOrder}
+        onClose={() => setManualOrder(null)}
+        onSubmit={(payload) => sendManualCourier(manualOrder._id, payload)}
       />
 
       {/* HISTORY MODAL (timeline + stock ledger + Undo/Reopen/Return) */}

@@ -94,6 +94,15 @@ router.get("/status", async (req, res) => {
     if (!order)
       return res.status(404).json({ ok: false, error: "Order not found" });
 
+    // ✅ ম্যানুয়াল কুরিয়ার — কোনো API sync নেই, লোকাল ডাটাই ফেরত
+    if (order.courier?.manual) {
+      return res.json({
+        ok: true,
+        status: order.courier?.status || "manual",
+        courier: order.courier,
+      });
+    }
+
     // If not steadfast, just return local
     if (order.courier?.provider !== "steadfast") {
       return res.json({

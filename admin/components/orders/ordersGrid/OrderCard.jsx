@@ -4,6 +4,7 @@ import {
   Edit3,
   Trash2,
   Send,
+  PackageCheck,
   ChevronDown,
   ChevronUp,
   FileText,
@@ -38,6 +39,7 @@ export default function OrderCard({
   onDelete,
   onHistory,
   onSendCourier,
+  onManualCourier,
 
   // ✅ NEW: parent থেকে courier final sync handler পাঠাবেন
   onFinalStatusSync,
@@ -347,6 +349,15 @@ export default function OrderCard({
                 </IconBtn>
               )}
 
+              {o.status === READY_STATUS && !o.courier?.trackingId && (
+                <IconBtn
+                  onClick={() => onManualCourier?.(o)}
+                  className="bg-teal-600 hover:bg-teal-700 text-white transition"
+                >
+                  <PackageCheck size={16} />
+                </IconBtn>
+              )}
+
               <button
                 type="button"
                 onClick={() => onDownloadInvoice?.(o)}
@@ -362,6 +373,7 @@ export default function OrderCard({
           <CourierStatus
             trackingId={o.courier?.trackingId}
             courier={o.courier}
+            onEditManual={() => onManualCourier?.(o)}
             orderId={o._id}
             orderStatus={o.status}
             onFinalStatus={(orderId, finalStatus) => {

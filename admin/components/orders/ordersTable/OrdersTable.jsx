@@ -2,6 +2,7 @@
 import { useState } from "react";
 import {
   Send,
+  PackageCheck,
   FileText,
   Edit2,
   Trash2,
@@ -48,6 +49,7 @@ export default function OrdersTable({
   onStatusSelect,
   onHistory,
   onSendCourier,
+  onManualCourier,
   onBulkStatusChange,
   onBulkDelete,
   onBulkSendCourier,
@@ -381,6 +383,7 @@ export default function OrdersTable({
                       <CourierStatus
                         trackingId={o.courier?.trackingId}
                         courier={o.courier}
+                        onEditManual={() => onManualCourier?.(o)}
                         orderId={o._id}
                         orderStatus={o.status}
                         onFinalStatus={(orderId, finalStatus) => {
@@ -498,6 +501,19 @@ export default function OrdersTable({
                               className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg transition disabled:opacity-50"
                             >
                               <Send size={15} />
+                            </button>
+                          )}
+
+                        {/* Manual courier (অ্যাপের বাইরে পাঠানো) */}
+                        {o.status === READY_STATUS &&
+                          !o.courier?.trackingId && (
+                            <button
+                              onClick={() => onManualCourier?.(o)}
+                              title="ম্যানুয়ালি কুরিয়ারে পাঠানো হয়েছে"
+                              aria-label="Manual courier"
+                              className="bg-teal-600 hover:bg-teal-700 text-white p-2 rounded-lg transition"
+                            >
+                              <PackageCheck size={15} />
                             </button>
                           )}
 

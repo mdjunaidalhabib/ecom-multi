@@ -197,6 +197,11 @@ const orderSchema = new mongoose.Schema(
       consignmentId: { type: String, default: null },
       status: { type: String, default: null },
       codAmountSent: { type: Number, default: null },
+      // ✅ ম্যানুয়ালি (অ্যাপের বাইরে) কুরিয়ারে পাঠানো অর্ডার — API sync/live tracking হবে না
+      manual: { type: Boolean, default: false },
+      // ✅ ম্যানুয়াল অর্ডারে আসল Tracking ID এখনো বসানো হয়নি (পরে এডিট করে বসানো যাবে)
+      idPending: { type: Boolean, default: false },
+      note: { type: String, default: null },
       rawResponse: { type: mongoose.Schema.Types.Mixed, default: null },
       sentAt: { type: Date, default: null },
     },
