@@ -1,0 +1,45 @@
+diff --git a/admin/src/app/admin/homepagePopup/page.jsx b/admin/src/app/admin/homepagePopup/page.jsx
+--- a/admin/src/app/admin/homepagePopup/page.jsx
++++ b/admin/src/app/admin/homepagePopup/page.jsx
+@@ -86,21 +86,24 @@
+   const toggleEnabled = () => {
+     const nextEnabled = !config.enabled;
+     setConfig({ ...config, enabled: nextEnabled });
+-    handleSave({ enabled: nextEnabled });
++    handleSave({
++      enabled: nextEnabled,
++      successMessage: nextEnabled ? "Popup enabled" : "Popup disabled",
++    });
+   };
+ 
+   // ✅ image file ready হলে auto save
+   const handleImageFileReady = (file) => {
+     setImageFile(file);
+     if (!file) return;
+-    handleSave({ file });
++    handleSave({ file, successMessage: "Popup image updated" });
+   };
+ 
+   // ✅ image remove
+   const handleImageRemove = () => {
+     setPreview("");
+     setImageFile(null);
+-    handleSave({ removeImage: true });
++    handleSave({ removeImage: true, successMessage: "Popup image removed" });
+   };
+ 
+   // ✅ popup link save
+@@ -192,9 +195,10 @@
+             preview={preview}
+             onFileReady={handleImageFileReady}
+             onPreviewChange={setPreview}
+-            onToast={({ message, type }) =>
+-              type === "error" ? toast.error(message) : toast(message)
+-            }
++            onToast={({ message, type }) => {
++              // শুধু error দেখাবে; "processing" / "convert সফল" টাইপ toast দেখাবে না
++              if (type === "error") toast.error(message);
++            }}
+             rule={POPUP_IMAGE_RULE}
+             shape="square"
+             label="Popup Image"
