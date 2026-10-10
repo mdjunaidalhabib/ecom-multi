@@ -10,7 +10,8 @@ import CategorySidebar from "../../home/CategorySidebar";
 export default function ClassicHomeLayout({ products, categories, badges, slides }) {
   return (
     <section className="bg-[var(--theme-bg)]">
-      <div className="max-container md:mt-2">
+      {/* মোবাইলে navbar আর slider-এর মাঝে একটু gap (আগে mt ছিল না, লেগে থাকত) */}
+      <div className="max-container mt-3 md:mt-2">
         {/*
           ✅ lg:aspect-[4/1] + overflow-hidden — এই row-এর height সবসময়
           slider-এর নিজের aspect-[3/1] অনুযায়ীই fix থাকবে (sidebar-এর

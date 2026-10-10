@@ -255,7 +255,7 @@ export default function FirstCartNavbar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.55 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black md:hidden"
+              className="fixed inset-0 z-[10000] bg-black md:hidden"
               onClick={() => setMenuOpen(false)}
             />
             <motion.aside
@@ -263,7 +263,7 @@ export default function FirstCartNavbar() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="fixed inset-y-0 left-0 z-[70] flex w-[300px] max-w-[88vw] flex-col bg-[var(--theme-surface)] md:hidden"
+              className="fixed inset-y-0 left-0 z-[10001] flex w-[300px] max-w-[88vw] flex-col bg-[var(--theme-surface)] md:hidden"
             >
               {/* Drawer header: brand + greeting */}
               <div className="relative bg-[var(--theme-primary)] px-5 pb-5 pt-5 text-white">
@@ -489,7 +489,7 @@ export default function FirstCartNavbar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.55 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[80] bg-black md:hidden"
+              className="fixed inset-0 z-[10000] bg-black md:hidden"
               onClick={() => setAccountOpen(false)}
             />
             <motion.div
@@ -497,7 +497,7 @@ export default function FirstCartNavbar() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ duration: 0.28, ease: "easeOut" }}
-              className="fixed inset-x-0 bottom-0 z-[90] overflow-hidden rounded-t-3xl bg-[var(--theme-surface)] shadow-2xl md:hidden"
+              className="fixed inset-x-0 bottom-0 z-[10001] overflow-hidden rounded-t-3xl bg-[var(--theme-surface)] shadow-2xl md:hidden"
             >
               <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-[var(--theme-text)]/15" />
               <button

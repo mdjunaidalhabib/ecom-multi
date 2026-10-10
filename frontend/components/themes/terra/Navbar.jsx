@@ -189,7 +189,7 @@ export default function TerraNavbar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black md:hidden"
+              className="fixed inset-0 z-[10000] bg-black md:hidden"
               onClick={() => setMenuOpen(false)}
             />
             <motion.aside
@@ -197,7 +197,7 @@ export default function TerraNavbar() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="fixed inset-y-0 left-0 z-[70] flex w-72 max-w-[85vw] flex-col bg-white md:hidden"
+              className="fixed inset-y-0 left-0 z-[10001] flex w-72 max-w-[85vw] flex-col bg-white md:hidden"
             >
               <div className="flex items-center justify-between bg-[var(--theme-primary)] px-5 py-4 text-white">
                 <span className="truncate text-sm font-semibold uppercase tracking-[0.16em]">
@@ -351,7 +351,7 @@ export default function TerraNavbar() {
         </div>
       </div>
 
-      {/* Mobile account sheet */}
+      {/* Mobile account sheet — z-index ContactFab (z-[9999])-এর ওপরে, নাহলে FAB ✕ বাটনের ওপর বসে ক্লিক আটকে দিত */}
       <AnimatePresence>
         {accountOpen && (
           <>
@@ -359,7 +359,7 @@ export default function TerraNavbar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[80] bg-black md:hidden"
+              className="fixed inset-0 z-[10000] bg-black md:hidden"
               onClick={() => setAccountOpen(false)}
             />
             <motion.div
@@ -367,7 +367,7 @@ export default function TerraNavbar() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ duration: 0.28, ease: "easeOut" }}
-              className="fixed inset-x-0 bottom-0 z-[90] overflow-hidden rounded-t-3xl bg-white shadow-2xl md:hidden"
+              className="fixed inset-x-0 bottom-0 z-[10001] overflow-hidden rounded-t-3xl bg-white shadow-2xl md:hidden"
             >
               <div className="relative bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-dark)] px-6 pb-6 pt-7 text-white">
                 <button

@@ -36,7 +36,7 @@ export default function WishlistPage() {
   // 🌀 Skeleton loader (✅ container-এর মধ্যে)
   if (loading) {
     return (
-      <div className="bg-pink-50">
+      <div className="bg-[var(--page-bg,#fdf2f8)]">
         <div className="max-container py-3 sm:py-6 space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <CartSkeleton key={i} />
@@ -49,8 +49,8 @@ export default function WishlistPage() {
   // 🔹 Empty state
   if (wishlistProducts.length === 0) {
     return (
-      <div className="bg-pink-50 py-6 ">
-        <div className="bg-pink-100 rounded-xl shadow p-6 text-center mx-3 sm:mx-auto sm:w-96">
+      <div className="bg-[var(--page-bg,#fdf2f8)] py-6">
+        <div className="bg-[var(--page-card-bg,#fce7f3)] border border-[var(--page-card-border,transparent)] rounded-xl shadow p-6 text-center mx-3 sm:mx-auto sm:w-96">
           <p className="text-gray-500 text-lg">তোমার উইশলিস্ট খালি 😢</p>
           <Link
             href={`${base}/products`}
@@ -65,10 +65,13 @@ export default function WishlistPage() {
 
   // ✅ Wishlist view
   return (
-    <div className="bg-pink-50">
+    <div className="bg-[var(--page-bg,#fdf2f8)]">
       <div className="max-container py-3 md:py-6">
         <div className="text-xl sm:text-2xl font-semibold text-center relative inline-block w-full mb-8">
-          <span className="bg-gradient-to-r p-4 from-pink-500 via-purple-500 to-blue-600 text-transparent bg-clip-text">
+          <span
+            className="p-4 text-transparent bg-clip-text"
+            style={{ backgroundImage: "var(--page-heading-gradient, linear-gradient(to right, #ec4899, #a855f7, #2563eb))" }}
+          >
             ❤️ আপনার উইশলিস্ট
           </span>
         </div>

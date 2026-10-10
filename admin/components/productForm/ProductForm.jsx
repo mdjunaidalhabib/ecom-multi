@@ -518,11 +518,24 @@ export default function ProductForm({
     }
   };
 
+  // ✅ Save চলাকালীন পেছনের পেজ (body) আর form-এর scroll বন্ধ — আগে loader
+  // form-এর পুরো কন্টেন্টের মাঝখানে বসত, scroll করলে দেখাই যেত না।
+  useEffect(() => {
+    if (!processing) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [processing]);
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
       <form
         onSubmit={handleSubmit}
-        className="relative bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl max-h-[98vh] overflow-y-auto shadow-xl"
+        className={`relative bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl max-h-[98vh] shadow-xl overscroll-contain ${
+          processing ? "overflow-hidden" : "overflow-y-auto"
+        }`}
       >
         {/* Sticky header */}
         <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b dark:border-slate-700">
@@ -580,11 +593,19 @@ export default function ProductForm({
 
         <div className="relative">
           {processing && (
-            <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/60 dark:bg-slate-900/70 backdrop-blur-[2px] rounded-b-2xl cursor-not-allowed">
-              <div className="flex flex-col items-center gap-2">
-                <div className="h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm font-bold text-indigo-700 dark:text-indigo-400">
-                  প্রসেসিং হচ্ছে... অপেক্ষা করুন
+            <div
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-[2px] cursor-wait"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <div className="flex flex-col items-center gap-3 rounded-2xl bg-white dark:bg-slate-900 px-8 py-6 shadow-2xl border dark:border-slate-700">
+                <div className="h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm font-bold text-gray-800 dark:text-slate-100">
+                  {product ? "আপডেট হচ্ছে..." : "সংরক্ষণ হচ্ছে..."}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">
+                  অনুগ্রহ করে অপেক্ষা করুন, পেজ বন্ধ করবেন না
                 </span>
               </div>
             </div>
@@ -592,7 +613,7 @@ export default function ProductForm({
 
           <div
             className={`p-4 sm:p-6 space-y-6 transition-all ${
-              processing ? "blur-sm pointer-events-none select-none" : ""
+              processing ? "pointer-events-none select-none" : ""
             }`}
           >
           <HeaderSerialStatus

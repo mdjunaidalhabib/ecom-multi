@@ -21,23 +21,32 @@ export function buildThemeVars(theme) {
   const colors = theme?.colors || {};
   const fonts = theme?.fonts || {};
 
-  // Shop Start ("terra" layout) reuses the shared product card but with a white
-  // body and the theme primary as its accent. Other layouts leave these unset,
-  // so the card falls back to its own built-in colors.
-  const cardVars =
-    theme?.baseLayout === "terra"
-      ? {
-          "--card-bg": "#ffffff",
-          "--card-ring": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 15%, transparent)",
-          "--card-accent": colors.primary || "#ea580c",
-          "--card-accent-hover": colors.primaryDark || "#c2410c",
-          "--card-border": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 45%, white)",
-          "--card-sel-bg": colors.primary || "#ea580c",
-          "--card-sel-text": "#ffffff",
-          "--card-sel-hover": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 12%, white)",
-          "--card-soft": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 10%, white)",
-        }
-      : {};
+  // Terra ("Shop Start") আর FirstCart থিমে shared ProductCard-এর body সাদা +
+  // theme primary accent হিসেবে ব্যবহার হয়। Classic (OpenCart) থিম এগুলো unset
+  // রাখে, তাই card/পেজ নিজের built-in pink fallback-এ থাকে।
+  const isWhiteLayout = theme?.baseLayout === "terra" || theme?.baseLayout === "firstcart";
+  const primary = colors.primary || "#ea580c";
+  const primaryDark = colors.primaryDark || "#c2410c";
+  const cardVars = isWhiteLayout
+    ? {
+        "--card-bg": "#ffffff",
+        "--card-ring": "color-mix(in srgb, " + primary + " 15%, transparent)",
+        "--card-accent": primary,
+        "--card-accent-hover": primaryDark,
+        "--card-border": "color-mix(in srgb, " + primary + " 45%, white)",
+        "--card-sel-bg": primary,
+        "--card-sel-text": "#ffffff",
+        "--card-sel-hover": "color-mix(in srgb, " + primary + " 12%, white)",
+        "--card-soft": "color-mix(in srgb, " + primary + " 10%, white)",
+        // Cart / Wishlist পেজ: সাদা background + সাদা card (pink নয়)
+        "--page-bg": "#ffffff",
+        "--page-card-bg": "#ffffff",
+        "--page-card-border": "#e5e7eb",
+        "--page-accent": primary,
+        "--page-accent-hover": primaryDark,
+        "--page-heading-gradient": "linear-gradient(to right, " + primary + ", " + primary + ")",
+      }
+    : {};
 
   return {
     ...cardVars,

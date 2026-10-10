@@ -43,13 +43,13 @@ const CartItem = memo(
     const { base } = useShopPath();
 
     return (
-      <div className="bg-pink-100 rounded-md shadow-sm p-2 flex items-center gap-2 hover:shadow transition-all duration-300">
+      <div className="bg-[var(--page-card-bg,#fce7f3)] border border-[var(--page-card-border,transparent)] rounded-md shadow-sm p-2 flex items-center gap-2 hover:shadow transition-all duration-300">
         {/* ✅ Select Checkbox */}
         <input
           type="checkbox"
           checked={selected}
           onChange={() => toggleSelect(p.cartKey)}
-          className="w-4 h-4 accent-pink-600 cursor-pointer"
+          className="w-4 h-4 accent-[var(--page-accent,#db2777)] cursor-pointer"
         />
 
         {/* ✅ Image Left */}
@@ -79,7 +79,7 @@ const CartItem = memo(
 
             {/* ✅ Show selected variant */}
             {p.selectedColor && (
-              <p className="text-[10px] font-bold text-pink-600 mt-0.5">
+              <p className="text-[10px] font-bold text-[color:var(--page-accent,#db2777)] mt-0.5">
                 Variant: {p.selectedColor}
               </p>
             )}
@@ -317,11 +317,14 @@ export default function CartPage() {
   }, [selectedItems]);
 
   return (
-    <main className="bg-pink-50">
+    <main className="bg-[var(--page-bg,#fdf2f8)]">
       <div className="max-container py-5">
         {/* ✅ Header */}
         <div className="mb-2">
-          <h2 className="text-center text-lg sm:text-xl font-semibold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-600 text-transparent bg-clip-text mb-2">
+          <h2
+            className="text-center text-lg sm:text-xl font-semibold text-transparent bg-clip-text mb-2"
+            style={{ backgroundImage: "var(--page-heading-gradient, linear-gradient(to right, #ec4899, #a855f7, #2563eb))" }}
+          >
             🛒 আপনার কার্ট
           </h2>
 
@@ -331,7 +334,7 @@ export default function CartPage() {
                 <button
                   type="button"
                   onClick={handleSelectAll}
-                  className="bg-pink-500 text-white px-3 py-1 rounded text-xs hover:bg-pink-600"
+                  className="bg-[var(--page-accent,#ec4899)] text-white px-3 py-1 rounded text-xs hover:bg-[var(--page-accent-hover,#db2777)]"
                 >
                   সব সিলেক্ট
                 </button>
@@ -362,7 +365,7 @@ export default function CartPage() {
             ))}
           </div>
         ) : !items.length ? (
-          <div className="bg-pink-100 rounded-xl shadow p-6 text-center">
+          <div className="bg-[var(--page-card-bg,#fce7f3)] border border-[var(--page-card-border,transparent)] rounded-xl shadow p-6 text-center">
             <p className="text-gray-500 text-lg">আপনার কার্ট খালি 😢</p>
             <Link
               href={`${base}/products`}

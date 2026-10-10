@@ -29,6 +29,8 @@ export default function BasicInfoCategory({
       ? selectedIds.filter((v) => v !== id)
       : [...selectedIds, id];
     handleChange("categories", next);
+    // ✅ ক্যাটাগরি বেছে নেওয়ার সাথে সাথে dropdown বন্ধ হবে (আগে খোলা থেকে যেত)
+    setOpen(false);
   };
 
   // ✅ বাইরে ক্লিক করলে dropdown বন্ধ হবে
@@ -38,8 +40,15 @@ export default function BasicInfoCategory({
         setOpen(false);
       }
     };
+    const onEsc = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onOutside);
-    return () => document.removeEventListener("mousedown", onOutside);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onOutside);
+      document.removeEventListener("keydown", onEsc);
+    };
   }, []);
 
   const inputBase =

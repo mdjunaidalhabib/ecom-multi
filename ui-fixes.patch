@@ -1,0 +1,355 @@
+diff --git a/admin/components/productForm/BasicInfoCategory.jsx b/admin/components/productForm/BasicInfoCategory.jsx
+index c66e1f9..2471f25 100644
+--- a/admin/components/productForm/BasicInfoCategory.jsx
++++ b/admin/components/productForm/BasicInfoCategory.jsx
+@@ -29,6 +29,8 @@ export default function BasicInfoCategory({
+       ? selectedIds.filter((v) => v !== id)
+       : [...selectedIds, id];
+     handleChange("categories", next);
++    // ✅ ক্যাটাগরি বেছে নেওয়ার সাথে সাথে dropdown বন্ধ হবে (আগে খোলা থেকে যেত)
++    setOpen(false);
+   };
+ 
+   // ✅ বাইরে ক্লিক করলে dropdown বন্ধ হবে
+@@ -38,8 +40,15 @@ export default function BasicInfoCategory({
+         setOpen(false);
+       }
+     };
++    const onEsc = (e) => {
++      if (e.key === "Escape") setOpen(false);
++    };
+     document.addEventListener("mousedown", onOutside);
+-    return () => document.removeEventListener("mousedown", onOutside);
++    document.addEventListener("keydown", onEsc);
++    return () => {
++      document.removeEventListener("mousedown", onOutside);
++      document.removeEventListener("keydown", onEsc);
++    };
+   }, []);
+ 
+   const inputBase =
+diff --git a/admin/components/productForm/ProductForm.jsx b/admin/components/productForm/ProductForm.jsx
+index 75fab26..3ae2261 100644
+--- a/admin/components/productForm/ProductForm.jsx
++++ b/admin/components/productForm/ProductForm.jsx
+@@ -518,11 +518,24 @@ export default function ProductForm({
+     }
+   };
+ 
++  // ✅ Save চলাকালীন পেছনের পেজ (body) আর form-এর scroll বন্ধ — আগে loader
++  // form-এর পুরো কন্টেন্টের মাঝখানে বসত, scroll করলে দেখাই যেত না।
++  useEffect(() => {
++    if (!processing) return;
++    const prevOverflow = document.body.style.overflow;
++    document.body.style.overflow = "hidden";
++    return () => {
++      document.body.style.overflow = prevOverflow;
++    };
++  }, [processing]);
++
+   return (
+     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
+       <form
+         onSubmit={handleSubmit}
+-        className="relative bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl max-h-[98vh] overflow-y-auto shadow-xl"
++        className={`relative bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl max-h-[98vh] shadow-xl overscroll-contain ${
++          processing ? "overflow-hidden" : "overflow-y-auto"
++        }`}
+       >
+         {/* Sticky header */}
+         <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b dark:border-slate-700">
+@@ -580,11 +593,19 @@ export default function ProductForm({
+ 
+         <div className="relative">
+           {processing && (
+-            <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/60 dark:bg-slate-900/70 backdrop-blur-[2px] rounded-b-2xl cursor-not-allowed">
+-              <div className="flex flex-col items-center gap-2">
+-                <div className="h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+-                <span className="text-sm font-bold text-indigo-700 dark:text-indigo-400">
+-                  প্রসেসিং হচ্ছে... অপেক্ষা করুন
++            <div
++              className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-[2px] cursor-wait"
++              role="status"
++              aria-live="polite"
++              aria-busy="true"
++            >
++              <div className="flex flex-col items-center gap-3 rounded-2xl bg-white dark:bg-slate-900 px-8 py-6 shadow-2xl border dark:border-slate-700">
++                <div className="h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
++                <span className="text-sm font-bold text-gray-800 dark:text-slate-100">
++                  {product ? "আপডেট হচ্ছে..." : "সংরক্ষণ হচ্ছে..."}
++                </span>
++                <span className="text-xs text-gray-500 dark:text-slate-400">
++                  অনুগ্রহ করে অপেক্ষা করুন, পেজ বন্ধ করবেন না
+                 </span>
+               </div>
+             </div>
+@@ -592,7 +613,7 @@ export default function ProductForm({
+ 
+           <div
+             className={`p-4 sm:p-6 space-y-6 transition-all ${
+-              processing ? "blur-sm pointer-events-none select-none" : ""
++              processing ? "pointer-events-none select-none" : ""
+             }`}
+           >
+           <HeaderSerialStatus
+diff --git a/frontend/components/themes/classic/HomeLayout.jsx b/frontend/components/themes/classic/HomeLayout.jsx
+index b194431..aa5a592 100644
+--- a/frontend/components/themes/classic/HomeLayout.jsx
++++ b/frontend/components/themes/classic/HomeLayout.jsx
+@@ -10,7 +10,8 @@ import CategorySidebar from "../../home/CategorySidebar";
+ export default function ClassicHomeLayout({ products, categories, badges, slides }) {
+   return (
+     <section className="bg-[var(--theme-bg)]">
+-      <div className="max-container md:mt-2">
++      {/* মোবাইলে navbar আর slider-এর মাঝে একটু gap (আগে mt ছিল না, লেগে থাকত) */}
++      <div className="max-container mt-3 md:mt-2">
+         {/*
+           ✅ lg:aspect-[4/1] + overflow-hidden — এই row-এর height সবসময়
+           slider-এর নিজের aspect-[3/1] অনুযায়ীই fix থাকবে (sidebar-এর
+diff --git a/frontend/components/themes/firstcart/Navbar.jsx b/frontend/components/themes/firstcart/Navbar.jsx
+index 4376cc4..843f3ca 100644
+--- a/frontend/components/themes/firstcart/Navbar.jsx
++++ b/frontend/components/themes/firstcart/Navbar.jsx
+@@ -255,7 +255,7 @@ export default function FirstCartNavbar() {
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 0.55 }}
+               exit={{ opacity: 0 }}
+-              className="fixed inset-0 z-[60] bg-black md:hidden"
++              className="fixed inset-0 z-[10000] bg-black md:hidden"
+               onClick={() => setMenuOpen(false)}
+             />
+             <motion.aside
+@@ -263,7 +263,7 @@ export default function FirstCartNavbar() {
+               animate={{ x: 0 }}
+               exit={{ x: "-100%" }}
+               transition={{ duration: 0.25, ease: "easeOut" }}
+-              className="fixed inset-y-0 left-0 z-[70] flex w-[300px] max-w-[88vw] flex-col bg-[var(--theme-surface)] md:hidden"
++              className="fixed inset-y-0 left-0 z-[10001] flex w-[300px] max-w-[88vw] flex-col bg-[var(--theme-surface)] md:hidden"
+             >
+               {/* Drawer header: brand + greeting */}
+               <div className="relative bg-[var(--theme-primary)] px-5 pb-5 pt-5 text-white">
+@@ -489,7 +489,7 @@ export default function FirstCartNavbar() {
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 0.55 }}
+               exit={{ opacity: 0 }}
+-              className="fixed inset-0 z-[80] bg-black md:hidden"
++              className="fixed inset-0 z-[10000] bg-black md:hidden"
+               onClick={() => setAccountOpen(false)}
+             />
+             <motion.div
+@@ -497,7 +497,7 @@ export default function FirstCartNavbar() {
+               animate={{ y: 0 }}
+               exit={{ y: "100%" }}
+               transition={{ duration: 0.28, ease: "easeOut" }}
+-              className="fixed inset-x-0 bottom-0 z-[90] overflow-hidden rounded-t-3xl bg-[var(--theme-surface)] shadow-2xl md:hidden"
++              className="fixed inset-x-0 bottom-0 z-[10001] overflow-hidden rounded-t-3xl bg-[var(--theme-surface)] shadow-2xl md:hidden"
+             >
+               <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-[var(--theme-text)]/15" />
+               <button
+diff --git a/frontend/components/themes/terra/Navbar.jsx b/frontend/components/themes/terra/Navbar.jsx
+index 4356505..bf1209b 100644
+--- a/frontend/components/themes/terra/Navbar.jsx
++++ b/frontend/components/themes/terra/Navbar.jsx
+@@ -189,7 +189,7 @@ export default function TerraNavbar() {
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 0.5 }}
+               exit={{ opacity: 0 }}
+-              className="fixed inset-0 z-[60] bg-black md:hidden"
++              className="fixed inset-0 z-[10000] bg-black md:hidden"
+               onClick={() => setMenuOpen(false)}
+             />
+             <motion.aside
+@@ -197,7 +197,7 @@ export default function TerraNavbar() {
+               animate={{ x: 0 }}
+               exit={{ x: "-100%" }}
+               transition={{ duration: 0.25, ease: "easeOut" }}
+-              className="fixed inset-y-0 left-0 z-[70] flex w-72 max-w-[85vw] flex-col bg-white md:hidden"
++              className="fixed inset-y-0 left-0 z-[10001] flex w-72 max-w-[85vw] flex-col bg-white md:hidden"
+             >
+               <div className="flex items-center justify-between bg-[var(--theme-primary)] px-5 py-4 text-white">
+                 <span className="truncate text-sm font-semibold uppercase tracking-[0.16em]">
+@@ -351,7 +351,7 @@ export default function TerraNavbar() {
+         </div>
+       </div>
+ 
+-      {/* Mobile account sheet */}
++      {/* Mobile account sheet — z-index ContactFab (z-[9999])-এর ওপরে, নাহলে FAB ✕ বাটনের ওপর বসে ক্লিক আটকে দিত */}
+       <AnimatePresence>
+         {accountOpen && (
+           <>
+@@ -359,7 +359,7 @@ export default function TerraNavbar() {
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 0.5 }}
+               exit={{ opacity: 0 }}
+-              className="fixed inset-0 z-[80] bg-black md:hidden"
++              className="fixed inset-0 z-[10000] bg-black md:hidden"
+               onClick={() => setAccountOpen(false)}
+             />
+             <motion.div
+@@ -367,7 +367,7 @@ export default function TerraNavbar() {
+               animate={{ y: 0 }}
+               exit={{ y: "100%" }}
+               transition={{ duration: 0.28, ease: "easeOut" }}
+-              className="fixed inset-x-0 bottom-0 z-[90] overflow-hidden rounded-t-3xl bg-white shadow-2xl md:hidden"
++              className="fixed inset-x-0 bottom-0 z-[10001] overflow-hidden rounded-t-3xl bg-white shadow-2xl md:hidden"
+             >
+               <div className="relative bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-dark)] px-6 pb-6 pt-7 text-white">
+                 <button
+diff --git a/frontend/lib/themeVars.js b/frontend/lib/themeVars.js
+index f210861..cfd0805 100644
+--- a/frontend/lib/themeVars.js
++++ b/frontend/lib/themeVars.js
+@@ -21,23 +21,32 @@ export function buildThemeVars(theme) {
+   const colors = theme?.colors || {};
+   const fonts = theme?.fonts || {};
+ 
+-  // Shop Start ("terra" layout) reuses the shared product card but with a white
+-  // body and the theme primary as its accent. Other layouts leave these unset,
+-  // so the card falls back to its own built-in colors.
+-  const cardVars =
+-    theme?.baseLayout === "terra"
+-      ? {
+-          "--card-bg": "#ffffff",
+-          "--card-ring": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 15%, transparent)",
+-          "--card-accent": colors.primary || "#ea580c",
+-          "--card-accent-hover": colors.primaryDark || "#c2410c",
+-          "--card-border": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 45%, white)",
+-          "--card-sel-bg": colors.primary || "#ea580c",
+-          "--card-sel-text": "#ffffff",
+-          "--card-sel-hover": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 12%, white)",
+-          "--card-soft": "color-mix(in srgb, " + (colors.primary || "#ea580c") + " 10%, white)",
+-        }
+-      : {};
++  // Terra ("Shop Start") আর FirstCart থিমে shared ProductCard-এর body সাদা +
++  // theme primary accent হিসেবে ব্যবহার হয়। Classic (OpenCart) থিম এগুলো unset
++  // রাখে, তাই card/পেজ নিজের built-in pink fallback-এ থাকে।
++  const isWhiteLayout = theme?.baseLayout === "terra" || theme?.baseLayout === "firstcart";
++  const primary = colors.primary || "#ea580c";
++  const primaryDark = colors.primaryDark || "#c2410c";
++  const cardVars = isWhiteLayout
++    ? {
++        "--card-bg": "#ffffff",
++        "--card-ring": "color-mix(in srgb, " + primary + " 15%, transparent)",
++        "--card-accent": primary,
++        "--card-accent-hover": primaryDark,
++        "--card-border": "color-mix(in srgb, " + primary + " 45%, white)",
++        "--card-sel-bg": primary,
++        "--card-sel-text": "#ffffff",
++        "--card-sel-hover": "color-mix(in srgb, " + primary + " 12%, white)",
++        "--card-soft": "color-mix(in srgb, " + primary + " 10%, white)",
++        // Cart / Wishlist পেজ: সাদা background + সাদা card (pink নয়)
++        "--page-bg": "#ffffff",
++        "--page-card-bg": "#ffffff",
++        "--page-card-border": "#e5e7eb",
++        "--page-accent": primary,
++        "--page-accent-hover": primaryDark,
++        "--page-heading-gradient": "linear-gradient(to right, " + primary + ", " + primary + ")",
++      }
++    : {};
+ 
+   return {
+     ...cardVars,
+diff --git a/frontend/src/app/shop/[shopSlug]/cart/page.jsx b/frontend/src/app/shop/[shopSlug]/cart/page.jsx
+index 84478bb..e3cd084 100644
+--- a/frontend/src/app/shop/[shopSlug]/cart/page.jsx
++++ b/frontend/src/app/shop/[shopSlug]/cart/page.jsx
+@@ -43,13 +43,13 @@ const CartItem = memo(
+     const { base } = useShopPath();
+ 
+     return (
+-      <div className="bg-pink-100 rounded-md shadow-sm p-2 flex items-center gap-2 hover:shadow transition-all duration-300">
++      <div className="bg-[var(--page-card-bg,#fce7f3)] border border-[var(--page-card-border,transparent)] rounded-md shadow-sm p-2 flex items-center gap-2 hover:shadow transition-all duration-300">
+         {/* ✅ Select Checkbox */}
+         <input
+           type="checkbox"
+           checked={selected}
+           onChange={() => toggleSelect(p.cartKey)}
+-          className="w-4 h-4 accent-pink-600 cursor-pointer"
++          className="w-4 h-4 accent-[var(--page-accent,#db2777)] cursor-pointer"
+         />
+ 
+         {/* ✅ Image Left */}
+@@ -79,7 +79,7 @@ const CartItem = memo(
+ 
+             {/* ✅ Show selected variant */}
+             {p.selectedColor && (
+-              <p className="text-[10px] font-bold text-pink-600 mt-0.5">
++              <p className="text-[10px] font-bold text-[color:var(--page-accent,#db2777)] mt-0.5">
+                 Variant: {p.selectedColor}
+               </p>
+             )}
+@@ -317,11 +317,14 @@ export default function CartPage() {
+   }, [selectedItems]);
+ 
+   return (
+-    <main className="bg-pink-50">
++    <main className="bg-[var(--page-bg,#fdf2f8)]">
+       <div className="max-container py-5">
+         {/* ✅ Header */}
+         <div className="mb-2">
+-          <h2 className="text-center text-lg sm:text-xl font-semibold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-600 text-transparent bg-clip-text mb-2">
++          <h2
++            className="text-center text-lg sm:text-xl font-semibold text-transparent bg-clip-text mb-2"
++            style={{ backgroundImage: "var(--page-heading-gradient, linear-gradient(to right, #ec4899, #a855f7, #2563eb))" }}
++          >
+             🛒 আপনার কার্ট
+           </h2>
+ 
+@@ -331,7 +334,7 @@ export default function CartPage() {
+                 <button
+                   type="button"
+                   onClick={handleSelectAll}
+-                  className="bg-pink-500 text-white px-3 py-1 rounded text-xs hover:bg-pink-600"
++                  className="bg-[var(--page-accent,#ec4899)] text-white px-3 py-1 rounded text-xs hover:bg-[var(--page-accent-hover,#db2777)]"
+                 >
+                   সব সিলেক্ট
+                 </button>
+@@ -362,7 +365,7 @@ export default function CartPage() {
+             ))}
+           </div>
+         ) : !items.length ? (
+-          <div className="bg-pink-100 rounded-xl shadow p-6 text-center">
++          <div className="bg-[var(--page-card-bg,#fce7f3)] border border-[var(--page-card-border,transparent)] rounded-xl shadow p-6 text-center">
+             <p className="text-gray-500 text-lg">আপনার কার্ট খালি 😢</p>
+             <Link
+               href={`${base}/products`}
+diff --git a/frontend/src/app/shop/[shopSlug]/wishlist/page.jsx b/frontend/src/app/shop/[shopSlug]/wishlist/page.jsx
+index 17683ae..3a2225a 100644
+--- a/frontend/src/app/shop/[shopSlug]/wishlist/page.jsx
++++ b/frontend/src/app/shop/[shopSlug]/wishlist/page.jsx
+@@ -36,7 +36,7 @@ export default function WishlistPage() {
+   // 🌀 Skeleton loader (✅ container-এর মধ্যে)
+   if (loading) {
+     return (
+-      <div className="bg-pink-50">
++      <div className="bg-[var(--page-bg,#fdf2f8)]">
+         <div className="max-container py-3 sm:py-6 space-y-3">
+           {Array.from({ length: 3 }).map((_, i) => (
+             <CartSkeleton key={i} />
+@@ -49,8 +49,8 @@ export default function WishlistPage() {
+   // 🔹 Empty state
+   if (wishlistProducts.length === 0) {
+     return (
+-      <div className="bg-pink-50 py-6 ">
+-        <div className="bg-pink-100 rounded-xl shadow p-6 text-center mx-3 sm:mx-auto sm:w-96">
++      <div className="bg-[var(--page-bg,#fdf2f8)] py-6">
++        <div className="bg-[var(--page-card-bg,#fce7f3)] border border-[var(--page-card-border,transparent)] rounded-xl shadow p-6 text-center mx-3 sm:mx-auto sm:w-96">
+           <p className="text-gray-500 text-lg">তোমার উইশলিস্ট খালি 😢</p>
+           <Link
+             href={`${base}/products`}
+@@ -65,10 +65,13 @@ export default function WishlistPage() {
+ 
+   // ✅ Wishlist view
+   return (
+-    <div className="bg-pink-50">
++    <div className="bg-[var(--page-bg,#fdf2f8)]">
+       <div className="max-container py-3 md:py-6">
+         <div className="text-xl sm:text-2xl font-semibold text-center relative inline-block w-full mb-8">
+-          <span className="bg-gradient-to-r p-4 from-pink-500 via-purple-500 to-blue-600 text-transparent bg-clip-text">
++          <span
++            className="p-4 text-transparent bg-clip-text"
++            style={{ backgroundImage: "var(--page-heading-gradient, linear-gradient(to right, #ec4899, #a855f7, #2563eb))" }}
++          >
+             ❤️ আপনার উইশলিস্ট
+           </span>
+         </div>
