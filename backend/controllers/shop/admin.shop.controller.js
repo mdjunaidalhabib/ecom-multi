@@ -61,7 +61,7 @@ function normalizeSlug(value = "") {
    Helper: name -> url-safe slug (+ auto-unique suffix)
    শুধু তখনই ব্যবহার হয় যখন ইউজার নিজে কোনো slug দেয়নি
 ------------------------------------------------------- */
-async function generateUniqueSlug(name, { excludeId } = {}) {
+export async function generateUniqueSlug(name, { excludeId } = {}) {
   const base = normalizeSlug(name) || "shop";
 
   let slug = RESERVED_SLUGS.has(base) ? `${base}-shop` : base;

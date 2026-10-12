@@ -1,0 +1,950 @@
+diff -ruN a/backend/controllers/shop/admin.shop.controller.js b/backend/controllers/shop/admin.shop.controller.js
+--- a/backend/controllers/shop/admin.shop.controller.js	2026-10-12 02:21:21.747208749 +0000
++++ b/backend/controllers/shop/admin.shop.controller.js	2026-10-12 02:27:25.814161174 +0000
+@@ -61,7 +61,7 @@
+    Helper: name -> url-safe slug (+ auto-unique suffix)
+    শুধু তখনই ব্যবহার হয় যখন ইউজার নিজে কোনো slug দেয়নি
+ ------------------------------------------------------- */
+-async function generateUniqueSlug(name, { excludeId } = {}) {
++export async function generateUniqueSlug(name, { excludeId } = {}) {
+   const base = normalizeSlug(name) || "shop";
+ 
+   let slug = RESERVED_SLUGS.has(base) ? `${base}-shop` : base;
+diff -ruN a/backend/controllers/shop/integration.provision.controller.js b/backend/controllers/shop/integration.provision.controller.js
+--- a/backend/controllers/shop/integration.provision.controller.js	1970-01-01 00:00:00.000000000 +0000
++++ b/backend/controllers/shop/integration.provision.controller.js	2026-10-12 08:43:46.516306394 +0000
+@@ -0,0 +1,59 @@
++import { provisionShop, revokeProvision, summarizeShop, ProvisionError } from "../../src/services/shopProvisionService.js";
++
++// POST /integration/provision-shop  (header: x-integration-key)
++// Body: { externalRef, planKey, customerName, customerEmail, customerPhone?, shopName?, passwordHash? }
++//
++// নতুন শপের জন্য passwordHash (bcrypt) আবশ্যক — কাস্টমারের নিজের পাসওয়ার্ডই বসে।
++// সিস্টেম কখনো পাসওয়ার্ড বানায় না, আর কোনো রেসপন্সে পাসওয়ার্ড ফেরতও যায় না।
++export const provisionShopController = async (req, res) => {
++  try {
++    const out = await provisionShop(req.body || {});
++
++    const platformUrl = (
++      process.env.PLATFORM_PUBLIC_URL ||
++      (process.env.PLATFORM_DOMAIN ? `https://${process.env.PLATFORM_DOMAIN}` : "")
++    ).replace(/\/$/, "");
++
++    // never cache — password থাকতে পারে
++    res.set("Cache-Control", "no-store");
++    return res.status(out.result === "created" ? 201 : 200).json({
++      result: out.result, // created | renewed | already_processed
++      shop: summarizeShop(out.shop),
++      storeUrl: platformUrl ? `${platformUrl}/shop/${out.shop.slug}` : "",
++      adminUrl: process.env.SHOP_ADMIN_URL || "",
++      admin: {
++        email: out.adminEmail,
++        // customer = চেকআউটে কাস্টমারের নিজের দেওয়া | existing = আগের অ্যাকাউন্ট (পাসওয়ার্ড বদলায়নি)
++        passwordMode: out.passwordMode,
++      },
++      notes: out.notes,
++    });
++  } catch (err) {
++    if (err instanceof ProvisionError) {
++      return res.status(err.status).json({ message: err.message });
++    }
++    console.error("❌ provisionShop error:", err);
++    return res.status(500).json({ message: "Server error provisioning shop" });
++  }
++};
++
++// POST /integration/revoke-shop  (header: x-integration-key)
++// Body: { externalRef }
++// অর্ডার পরে reject হলে: নতুন শপ → সাসপেন্ড, নবায়ন/আপগ্রেড → আগের অবস্থায় ফেরানো।
++export const revokeShopController = async (req, res) => {
++  try {
++    const out = await revokeProvision(req.body || {});
++    res.set("Cache-Control", "no-store");
++    return res.json({
++      result: out.result, // suspended | reverted | already_revoked | not_applied
++      shop: out.shop ? summarizeShop(out.shop) : null,
++      notes: out.notes,
++    });
++  } catch (err) {
++    if (err instanceof ProvisionError) {
++      return res.status(err.status).json({ message: err.message });
++    }
++    console.error("❌ revokeProvision error:", err);
++    return res.status(500).json({ message: "Server error revoking provision" });
++  }
++};
+diff -ruN a/backend/controllers/shop/plans.admin.controller.js b/backend/controllers/shop/plans.admin.controller.js
+--- a/backend/controllers/shop/plans.admin.controller.js	2026-10-12 02:21:21.747345928 +0000
++++ b/backend/controllers/shop/plans.admin.controller.js	2026-10-12 02:21:40.291380975 +0000
+@@ -58,6 +58,27 @@
+   return limits;
+ }
+ 
++// ✅ দাম/পপুলার/CTA ফিল্ড parse — create ও update দুটোতেই ব্যবহার হয়
++function parsePricing(input = {}) {
++  const out = {};
++  for (const key of ["price", "originalPrice", "billingDays"]) {
++    if (input[key] === undefined || input[key] === "") continue;
++    const num = Number(input[key]);
++    if (!Number.isFinite(num) || num < 0) {
++      throw new Error(`${key}-এর জন্য অবৈধ মান`);
++    }
++    out[key] = Math.floor(num);
++  }
++  if (input.isPopular !== undefined) out.isPopular = !!input.isPopular;
++  if (input.ctaType !== undefined) {
++    if (!["buy", "contact"].includes(input.ctaType)) {
++      throw new Error("ctaType অবশ্যই buy বা contact হতে হবে");
++    }
++    out.ctaType = input.ctaType;
++  }
++  return out;
++}
++
+ /* -------------------------------------------------------
+    GET /admin/plans — সব plan (super-admin এবং shop-admin/staff দুজনেই
+    দেখতে পারে — shop-admin এর নিজের "My Plan" পেজে upgrade dropdown এবং
+@@ -107,8 +128,10 @@
+     }
+ 
+     let parsedLimits;
++    let parsedPricing;
+     try {
+       parsedLimits = parseLimits(limits);
++      parsedPricing = parsePricing(req.body);
+     } catch (err) {
+       return res.status(400).json({ message: err.message });
+     }
+@@ -123,6 +146,7 @@
+       order: (lastPlan?.order ?? -1) + 1,
+       theme: theme || "classic",
+       isVisible: isVisible !== false,
++      ...parsedPricing,
+       features: { fullStorefront: true, ...parseFeatures(features) },
+       limits: { maxProducts: 50, maxAdmins: 1, ...parsedLimits },
+     });
+@@ -173,6 +197,12 @@
+       if (Number.isFinite(num)) plan.order = num;
+     }
+ 
++    try {
++      Object.assign(plan, parsePricing(req.body));
++    } catch (err) {
++      return res.status(400).json({ message: err.message });
++    }
++
+     if (features && typeof features === "object") {
+       Object.assign(plan.features, parseFeatures(features));
+     }
+diff -ruN a/backend/controllers/shop/public.plans.controller.js b/backend/controllers/shop/public.plans.controller.js
+--- a/backend/controllers/shop/public.plans.controller.js	1970-01-01 00:00:00.000000000 +0000
++++ b/backend/controllers/shop/public.plans.controller.js	2026-10-12 02:21:40.295115246 +0000
+@@ -0,0 +1,69 @@
++import { listActivePlans } from "../../src/models/Plan.js";
++
++// ✅ পাবলিক (লগইন ছাড়া) plan catalog — ECMS ল্যান্ডিং পেজ এবং Hikmah IT সাইট
++// দুজনেই এটা থেকে প্ল্যান পড়ে। সুপার-অ্যাডমিনে প্ল্যান বদলালে এখানেও বদলায়,
++// তাই দাম/ফিচার আর কোথাও হাতে লিখে রাখতে হয় না।
++//
++// শুধু isVisible !== false প্ল্যান যায়। ভেতরের তথ্য (theme, _id) বের করা হয় না।
++
++const BN = (n) => Number(n || 0).toLocaleString("bn-BD");
++
++function buildHighlights(plan) {
++  const f = plan.features || {};
++  const l = plan.limits || {};
++  const out = [];
++  out.push(`${BN(l.maxProducts)}টি পর্যন্ত প্রোডাক্ট`);
++  out.push(`${BN(l.maxAdmins)} জন অ্যাডমিন`);
++  if (f.fullStorefront) out.push("সম্পূর্ণ স্টোরফ্রন্ট");
++  if (f.analytics && f.promo) out.push("অ্যানালিটিক্স ও প্রোমো কোড");
++  else if (f.analytics) out.push("অ্যানালিটিক্স");
++  else if (f.promo) out.push("প্রোমো কোড");
++  if (f.payment) out.push("পেমেন্ট ইন্টিগ্রেশন");
++  if (f.customDomain) out.push("কাস্টম ডোমেইন");
++  if (f.landingPages) out.push("ল্যান্ডিং পেজ বিল্ডার");
++  if (f.invoiceCustomization) out.push("ইনভয়েস কাস্টমাইজেশন");
++  return out;
++}
++
++function toPublicPlan(plan) {
++  const p = plan.toObject ? plan.toObject() : plan;
++  return {
++    key: p.key,
++    name: p.name,
++    tagline: p.tagline || "",
++    order: p.order ?? 0,
++    price: p.price ?? 0,
++    originalPrice: p.originalPrice ?? 0,
++    billingDays: p.billingDays ?? 30,
++    isPopular: !!p.isPopular,
++    ctaType: p.ctaType || "buy",
++    features: p.features || {},
++    limits: p.limits || {},
++    highlights: buildHighlights(p),
++  };
++}
++
++export const listPublicPlans = async (req, res) => {
++  try {
++    const plans = await listActivePlans();
++    const visible = plans.filter((p) => p.isVisible !== false).map(toPublicPlan);
++    res.set("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
++    return res.json(visible);
++  } catch (err) {
++    console.error("listPublicPlans error:", err);
++    return res.status(500).json({ message: "Server error" });
++  }
++};
++
++export const getPublicPlan = async (req, res) => {
++  try {
++    const plans = await listActivePlans();
++    const plan = plans.find((p) => p.key === req.params.key && p.isVisible !== false);
++    if (!plan) return res.status(404).json({ message: "Plan not found" });
++    res.set("Cache-Control", "public, max-age=30");
++    return res.json(toPublicPlan(plan));
++  } catch (err) {
++    console.error("getPublicPlan error:", err);
++    return res.status(500).json({ message: "Server error" });
++  }
++};
+diff -ruN a/backend/src/middlewares/integrationAuth.js b/backend/src/middlewares/integrationAuth.js
+--- a/backend/src/middlewares/integrationAuth.js	1970-01-01 00:00:00.000000000 +0000
++++ b/backend/src/middlewares/integrationAuth.js	2026-10-12 02:27:25.814763366 +0000
+@@ -0,0 +1,23 @@
++import crypto from "crypto";
++
++// ✅ সার্ভার-টু-সার্ভার ইন্টিগ্রেশন auth (Hikmah IT → ECMS)।
++// Header: x-integration-key — ECMS backend-এর env HIKMAH_INTEGRATION_KEY-এর সাথে মিলতে হবে।
++// key সেট না থাকলে বা ২৪ ক্যারেক্টারের কম হলে ফিচার পুরোপুরি বন্ধ (503) — ভুল করে
++// খোলা রয়ে যাওয়ার সুযোগ নেই।
++const MIN_KEY_LENGTH = 24;
++
++const digest = (value) => crypto.createHash("sha256").update(String(value)).digest();
++
++export function requireIntegrationKey(req, res, next) {
++  const expected = process.env.HIKMAH_INTEGRATION_KEY || "";
++  if (expected.length < MIN_KEY_LENGTH) {
++    return res.status(503).json({ message: "Integration is not configured" });
++  }
++
++  const provided = req.get("x-integration-key") || "";
++  // sha256 করে তুলনা — দৈর্ঘ্য আলাদা হলেও timingSafeEqual নিরাপদে চলে
++  if (!provided || !crypto.timingSafeEqual(digest(provided), digest(expected))) {
++    return res.status(401).json({ message: "Invalid integration key" });
++  }
++  next();
++}
+diff -ruN a/backend/src/models/Plan.js b/backend/src/models/Plan.js
+--- a/backend/src/models/Plan.js	2026-10-12 02:21:21.749675231 +0000
++++ b/backend/src/models/Plan.js	2026-10-12 02:21:40.291157399 +0000
+@@ -38,6 +38,15 @@
+       default: "classic",
+     },
+ 
++    // ✅ Public pricing (ল্যান্ডিং পেজ ও Hikmah IT সাইটে দেখানোর জন্য)।
++    // price = 0 মানে বিনামূল্যে। billingDays = কত দিনের জন্য এই দাম (৩০/৯০/৩৬৫)।
++    // ctaType: "buy" = কিনুন বাটন, "contact" = যোগাযোগ করুন (Custom/Reseller-এর জন্য)।
++    price: { type: Number, default: 0, min: 0 },
++    originalPrice: { type: Number, default: 0, min: 0 },
++    billingDays: { type: Number, default: 30, min: 0 },
++    isPopular: { type: Boolean, default: false },
++    ctaType: { type: String, enum: ["buy", "contact"], default: "buy" },
++
+     features: {
+       customDomain: { type: Boolean, default: false },
+       analytics: { type: Boolean, default: false },
+diff -ruN a/backend/src/models/Shop.js b/backend/src/models/Shop.js
+--- a/backend/src/models/Shop.js	2026-10-12 02:21:21.750176994 +0000
++++ b/backend/src/models/Shop.js	2026-10-12 02:38:11.900945199 +0000
+@@ -123,6 +123,30 @@
+       maxAdmins: { type: Number, default: 2 },
+     },
+ 
++    // ✅ বাইরের সিস্টেম (Hikmah IT) থেকে অটো-প্রভিশন/নবায়নের idempotency —
++    // যে purchase id গুলো এই শপে ইতিমধ্যে প্রয়োগ হয়েছে (একই রিকোয়েস্ট দুইবার
++    // এলে মেয়াদ দুইবার বাড়ে না বা ডুপ্লিকেট শপ হয় না)। সর্বোচ্চ ৫০টি রাখা হয়।
++    externalRefs: { type: [String], default: [], index: true },
++
++    // ✅ প্রতিটা প্রয়োগের ইতিহাস + প্রয়োগের আগের অবস্থার snapshot — অর্ডার পরে reject
++    // হলে (revoke) নিরাপদে আগের অবস্থায় ফেরাতে বা শপ বন্ধ করতে লাগে।
++    // revokedAt থাকলে সেই প্রয়োগ বাতিল ধরা হয়।
++    provisionHistory: {
++      type: [
++        new mongoose.Schema(
++          {
++            ref: { type: String, required: true },
++            result: { type: String, enum: ["created", "renewed"], required: true },
++            appliedAt: { type: Date, default: Date.now },
++            revokedAt: { type: Date, default: null },
++            prev: { type: mongoose.Schema.Types.Mixed, default: null },
++          },
++          { _id: false },
++        ),
++      ],
++      default: [],
++    },
++
+     contactEmail: { type: String, default: "" },
+     contactPhone: { type: String, default: "" },
+   },
+diff -ruN a/backend/src/routes/public/index.js b/backend/src/routes/public/index.js
+--- a/backend/src/routes/public/index.js	2026-10-12 02:21:21.751491298 +0000
++++ b/backend/src/routes/public/index.js	2026-10-12 02:27:25.831823607 +0000
+@@ -26,6 +26,8 @@
+ import shopInfoRoutes from "./shopInfo.routes.js";
+ import landingPageRoutes from "./landingPage.routes.js";
+ import invoiceExportRoutes from "./invoiceExport.routes.js";
++import plansRoutes from "./plans.routes.js";
++import integrationRoutes from "./integration.routes.js";
+ import { resolveShopByDomain } from "../../tenancy/publicShopResolver.js";
+ 
+ const router = express.Router();
+@@ -44,6 +46,13 @@
+ router.use("/print/invoice", invoiceRoute);
+ router.use("/invoices", invoiceExportRoutes);
+ 
++// ✅ প্ল্যাটফর্মের নিজস্ব plan catalog — কোনো শপের ডেটা না, তাই শপ-resolver এর
++// আগে বসানো (ECMS ল্যান্ডিং পেজ ও Hikmah IT সার্ভার শপ-হেডার ছাড়াই কল করে)
++router.use("/plans", plansRoutes);
++
++// ✅ Hikmah IT → ECMS অটো-প্রভিশনিং (x-integration-key দিয়ে সুরক্ষিত, শপ-resolver এর আগে)
++router.use("/integration", integrationRoutes);
++
+ // ✅ এর নিচের সব রুট কাস্টমার যে ডোমেইন থেকে হিট করছে সেটা দিয়ে শপ resolve করবে
+ router.use(resolveShopByDomain);
+ 
+diff -ruN a/backend/src/routes/public/integration.routes.js b/backend/src/routes/public/integration.routes.js
+--- a/backend/src/routes/public/integration.routes.js	1970-01-01 00:00:00.000000000 +0000
++++ b/backend/src/routes/public/integration.routes.js	2026-10-12 02:38:11.922413054 +0000
+@@ -0,0 +1,11 @@
++import express from "express";
++import { requireIntegrationKey } from "../../middlewares/integrationAuth.js";
++import { provisionShopController, revokeShopController } from "../../../controllers/shop/integration.provision.controller.js";
++
++const router = express.Router();
++
++// শুধু সার্ভার-টু-সার্ভার (Hikmah IT backend) — ব্রাউজার থেকে কল করার জন্য না
++router.post("/provision-shop", requireIntegrationKey, provisionShopController);
++router.post("/revoke-shop", requireIntegrationKey, revokeShopController);
++
++export default router;
+diff -ruN a/backend/src/routes/public/plans.routes.js b/backend/src/routes/public/plans.routes.js
+--- a/backend/src/routes/public/plans.routes.js	1970-01-01 00:00:00.000000000 +0000
++++ b/backend/src/routes/public/plans.routes.js	2026-10-12 02:21:40.296328639 +0000
+@@ -0,0 +1,14 @@
++import express from "express";
++import {
++  listPublicPlans,
++  getPublicPlan,
++} from "../../../controllers/shop/public.plans.controller.js";
++
++const router = express.Router();
++
++// GET /plans        → দৃশ্যমান সব প্ল্যান (দাম, লিমিট, ফিচারসহ)
++// GET /plans/:key   → একটি প্ল্যান
++router.get("/", listPublicPlans);
++router.get("/:key", getPublicPlan);
++
++export default router;
+diff -ruN a/backend/src/services/shopProvisionService.js b/backend/src/services/shopProvisionService.js
+--- a/backend/src/services/shopProvisionService.js	1970-01-01 00:00:00.000000000 +0000
++++ b/backend/src/services/shopProvisionService.js	2026-10-12 08:43:46.515572659 +0000
+@@ -0,0 +1,359 @@
++import crypto from "crypto";
++import Shop from "../models/Shop.js";
++import Admin from "../models/Admin.js";
++import Plan from "../models/Plan.js";
++import Counter from "../models/Counter.js";
++import { invalidateShopCache } from "../tenancy/publicShopResolver.js";
++import { computePlanExpiresAt, PLAN_EXPIRED_SUSPEND_REASON } from "../utils/planExpiry.js";
++import { generateUniqueSlug } from "../../controllers/shop/admin.shop.controller.js";
++
++// ✅ Hikmah IT-তে অর্ডার approve হলে provisionShop(), পরে reject হলে revokeProvision() চলে।
++//
++//   provisionShop:
++//     • নতুন কাস্টমার (ইমেইল দিয়ে কোনো শপ নেই) → শপ + shop-admin অ্যাকাউন্ট তৈরি।
++//       কাস্টমার চেকআউটে যে পাসওয়ার্ড দিয়েছে (bcrypt hash হিসেবে আসে) সেটাই বসে।
++//       পাসওয়ার্ড (passwordHash) বাধ্যতামূলক — না থাকলে শপ তৈরিই হয় না, সিস্টেম নিজে
++//       কোনো পাসওয়ার্ড বানায় না।
++//     • আগের কাস্টমার (ওই ইমেইলের শপ আছে) → প্ল্যান বদল/মেয়াদ নবায়ন
++//   revokeProvision:
++//     • তৈরি হওয়া শপ → সাসপেন্ড (ডেটা মোছা হয় না)
++//     • নবায়ন/আপগ্রেড → প্রয়োগের আগের অবস্থায় ফেরানো
++//
++// externalRef (Hikmah purchase id) দিয়ে দুটোই idempotent।
++
++export class ProvisionError extends Error {
++  constructor(status, message) {
++    super(message);
++    this.status = status;
++  }
++}
++
++// অর্ডার বাতিলের কারণে সাসপেন্ড — নবায়নে (re-approve) এই কারণে সাসপেন্ড শপ আবার চালু হয়
++export const ORDER_REVOKED_SUSPEND_REASON =
++  "অর্ডার বাতিল হওয়ায় শপ সাময়িকভাবে বন্ধ আছে — বিস্তারিত জানতে Hikmah IT-এর সাথে যোগাযোগ করুন।";
++
++const MAX_HISTORY = 50;
++const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
++const BCRYPT_HASH_RE = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
++
++// Admin মডেলে password আবশ্যক, তাই অ্যাকাউন্ট তৈরির মুহূর্তে একটা অজানা অভ্যন্তরীণ মান বসে —
++// সাথে সাথেই কাস্টমারের hash দিয়ে বদলে দেওয়া হয়। এটা কোথাও ফেরত যায় না, কারো জানার উপায়ও নেই।
++const internalPlaceholderSecret = () => crypto.randomBytes(24).toString("base64url");
++
++const plain = (e) => (e?.toObject ? e.toObject() : e);
++
++// প্রয়োগের আগের অবস্থা — revoke-এ এখান থেকেই ফেরানো হয়
++function snapshot(shop) {
++  return {
++    plan: shop.plan,
++    limits: {
++      maxProducts: shop.limits?.maxProducts,
++      maxAdmins: shop.limits?.maxAdmins,
++    },
++    subscriptionStartDate: shop.subscriptionStartDate,
++    subscriptionDays: shop.subscriptionDays,
++    planExpiresAt: shop.planExpiresAt,
++    status: shop.status,
++    suspendedReason: shop.suspendedReason || "",
++  };
++}
++
++// idempotency ref + ইতিহাসে একসাথে যোগ (সর্বোচ্চ MAX_HISTORY)
++function recordApplied(shop, ref, result, prev) {
++  shop.externalRefs = [...(shop.externalRefs || []), ref].slice(-MAX_HISTORY);
++  shop.provisionHistory = [
++    ...(shop.provisionHistory || []).map(plain),
++    { ref, result, appliedAt: new Date(), revokedAt: null, prev },
++  ].slice(-MAX_HISTORY);
++}
++
++function summarize(shop) {
++  return {
++    id: String(shop._id),
++    name: shop.name,
++    slug: shop.slug,
++    plan: shop.plan,
++    status: shop.status,
++    planExpiresAt: shop.planExpiresAt,
++  };
++}
++
++// নবায়ন/আপগ্রেডে নতুন মেয়াদ কীভাবে হবে — pure function, সহজে টেস্টযোগ্য
++export function computeRenewal({ shop, planKey, days, now = new Date() }) {
++  if (!days) {
++    return { start: now, subscriptionDays: null, expiresAt: null, note: "প্ল্যানে মেয়াদ নেই (billingDays=0), শপের মেয়াদ সীমাহীন করা হয়েছে" };
++  }
++  const samePlan = shop.plan === planKey;
++  const expiry = shop.planExpiresAt ? new Date(shop.planExpiresAt) : null;
++
++  // একই প্ল্যান + মেয়াদ এখনো আছে → বাকি মেয়াদের সাথে যোগ হবে (টাকা নষ্ট হবে না)
++  if (samePlan && expiry && expiry.getTime() > now.getTime()) {
++    const start = shop.subscriptionStartDate ? new Date(shop.subscriptionStartDate) : now;
++    const expiresAt = new Date(expiry);
++    expiresAt.setDate(expiresAt.getDate() + days);
++    const subscriptionDays = Math.max(1, Math.round((expiresAt - start) / 86400000));
++    return { start, subscriptionDays, expiresAt, note: `বর্তমান মেয়াদের সাথে ${days} দিন যোগ হয়েছে` };
++  }
++
++  // একই প্ল্যান কিন্তু শপের কোনো মেয়াদই নেই (সুপার-অ্যাডমিন সীমাহীন রেখেছিল) → যেমন আছে তেমন
++  if (samePlan && !expiry) {
++    return { keep: true, note: "শপের মেয়াদ সীমাহীন ছিল, তাই বদলানো হয়নি" };
++  }
++
++  // প্ল্যান বদল বা মেয়াদ শেষ → আজ থেকে নতুন মেয়াদ
++  const expiresAt = computePlanExpiresAt(now, days);
++  return { start: now, subscriptionDays: days, expiresAt, note: `আজ থেকে ${days} দিনের নতুন মেয়াদ` };
++}
++
++export async function provisionShop(input = {}) {
++  const externalRef = String(input.externalRef || "").trim();
++  const planKey = String(input.planKey || "").trim().toLowerCase();
++  const email = String(input.customerEmail || "").trim().toLowerCase();
++  const customerName = String(input.customerName || "").trim();
++  const customerPhone = String(input.customerPhone || "").trim();
++  const shopName = String(input.shopName || "").trim() || customerName;
++  const passwordHash = input.passwordHash ? String(input.passwordHash) : "";
++
++  if (!externalRef) throw new ProvisionError(400, "externalRef আবশ্যক");
++  if (!planKey) throw new ProvisionError(400, "planKey আবশ্যক");
++  if (!EMAIL_RE.test(email)) throw new ProvisionError(400, "সঠিক customerEmail আবশ্যক");
++  if (!customerName) throw new ProvisionError(400, "customerName আবশ্যক");
++  if (shopName.length < 2 || shopName.length > 60) {
++    throw new ProvisionError(400, "শপের নাম ২ থেকে ৬০ অক্ষরের মধ্যে হতে হবে");
++  }
++  if (passwordHash && !BCRYPT_HASH_RE.test(passwordHash)) {
++    throw new ProvisionError(400, "passwordHash বৈধ bcrypt hash নয়");
++  }
++
++  const plan = await Plan.findOne({ key: planKey });
++  if (!plan) throw new ProvisionError(400, `অজানা প্ল্যান: ${planKey}`);
++
++  // ১) Idempotency — এই অর্ডার আগেই প্রয়োগ হয়ে থাকলে আবার কিছু করা হবে না
++  const processed = await Shop.findOne({ externalRefs: externalRef });
++  if (processed) {
++    return { result: "already_processed", shop: processed, adminEmail: email, passwordMode: "existing", notes: [] };
++  }
++
++  const platformSuperAdminEmail = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
++  if (platformSuperAdminEmail && email === platformSuperAdminEmail) {
++    throw new ProvisionError(409, "এই ইমেইল Platform Super Admin-এর — শপ প্রভিশন করা যাবে না");
++  }
++
++  const days = plan.billingDays > 0 ? plan.billingDays : null;
++  const limits = {
++    maxProducts: plan.limits?.maxProducts ?? 200,
++    maxAdmins: plan.limits?.maxAdmins ?? 2,
++  };
++
++  const existingAdmin = await Admin.findOne({ email });
++  if (existingAdmin?.role === "superadmin") {
++    throw new ProvisionError(409, "এই ইমেইল Platform Super Admin-এর — শপ প্রভিশন করা যাবে না");
++  }
++
++  // ২) নবায়ন / আপগ্রেড — এই ইমেইলের admin-এর শপ আগে থেকেই আছে
++  if (existingAdmin && existingAdmin.shops.length > 0) {
++    if (existingAdmin.role !== "admin") {
++      throw new ProvisionError(409, "এই ইমেইল একটি শপের staff — শপ-মালিকের (admin) ইমেইল দিয়ে কিনতে হবে");
++    }
++    const shop = await Shop.findById(existingAdmin.shops[0]);
++    if (!shop) throw new ProvisionError(409, "এই ইমেইলের শপ খুঁজে পাওয়া যায়নি");
++
++    const prev = snapshot(shop);
++    const renewal = computeRenewal({ shop, planKey: plan.key, days });
++    const notes = [renewal.note, "এই ইমেইলের শপ আগে থেকেই আছে — শপের নাম ও পাসওয়ার্ড বদলানো হয়নি"];
++
++    shop.plan = plan.key;
++    shop.limits = limits;
++    if (!renewal.keep) {
++      shop.subscriptionStartDate = renewal.start;
++      shop.subscriptionDays = renewal.subscriptionDays;
++      shop.planExpiresAt = renewal.expiresAt;
++    }
++
++    // মেয়াদ-শেষে বা অর্ডার-বাতিলে সাসপেন্ড হওয়া শপ নবায়নে আবার চালু হবে; হাতে সাসপেন্ড করা শপ নয়
++    if (shop.status === "suspended") {
++      if (
++        shop.suspendedReason === PLAN_EXPIRED_SUSPEND_REASON ||
++        shop.suspendedReason === ORDER_REVOKED_SUSPEND_REASON
++      ) {
++        shop.status = "active";
++        shop.suspendedReason = "";
++        notes.push("সাসপেন্ড হওয়া শপ আবার চালু করা হয়েছে");
++      } else {
++        notes.push("⚠️ শপটি হাতে সাসপেন্ড করা — তাই চালু করা হয়নি, সুপার-অ্যাডমিন দেখুন");
++      }
++    } else if (shop.status === "trial") {
++      shop.status = "active";
++    }
++
++    recordApplied(shop, externalRef, "renewed", prev);
++    await shop.save();
++    invalidateShopCache({ domain: shop.domain, slug: shop.slug });
++    return { result: "renewed", shop, adminEmail: email, passwordMode: "existing", notes };
++  }
++
++  // ৩) নতুন শপ + নতুন admin — এখানে কাস্টমারের পাসওয়ার্ড আবশ্যক
++  if (!passwordHash) {
++    throw new ProvisionError(
++      400,
++      "নতুন শপ খুলতে কাস্টমারের পাসওয়ার্ড (passwordHash) আবশ্যক — অর্ডারে পাসওয়ার্ড নেই",
++    );
++  }
++
++  let slug;
++  try {
++    const slugBase = /[a-z0-9]/i.test(shopName) ? shopName : email.split("@")[0];
++    slug = await generateUniqueSlug(slugBase);
++  } catch {
++    throw new ProvisionError(500, "Slug তৈরি করা যায়নি");
++  }
++
++  const storageCounter = await Counter.findOneAndUpdate(
++    { name: "shopStorageNumber" },
++    { $inc: { seq: 1 } },
++    { new: true, upsert: true },
++  );
++
++  const now = new Date();
++  let shop;
++  try {
++    shop = await Shop.create({
++      name: shopName,
++      slug,
++      storageNumber: storageCounter.seq,
++      status: "active",
++      plan: plan.key,
++      subscriptionStartDate: now,
++      subscriptionDays: days,
++      planExpiresAt: computePlanExpiresAt(now, days),
++      limits,
++      contactEmail: email,
++      contactPhone: customerPhone,
++      externalRefs: [externalRef],
++      provisionHistory: [{ ref: externalRef, result: "created", appliedAt: now, revokedAt: null, prev: null }],
++    });
++  } catch (err) {
++    if (err?.code === 11000) throw new ProvisionError(409, "শপ তৈরিতে ডুপ্লিকেট (নাম/slug) — আবার চেষ্টা করুন");
++    throw err;
++  }
++
++  const initialPassword = internalPlaceholderSecret(); // hook এটাকে হ্যাশ করবে, নিচে সাথে সাথে বদলে যায়
++
++  let createdAdminId = null;
++  let reusedAdminId = null;
++  try {
++    let admin = existingAdmin; // shops খালি থাকা পুরোনো অ্যাকাউন্ট — নতুন করে ওভাররাইট (inviteShopAdmin-এর নিয়মেই)
++    if (admin) {
++      reusedAdminId = admin._id;
++      admin.name = customerName;
++      admin.password = initialPassword;
++      admin.role = "admin";
++      admin.shops = [shop._id];
++      if (customerPhone) admin.phone = customerPhone;
++      await admin.save();
++    } else {
++      admin = await Admin.create({
++        name: customerName,
++        email,
++        phone: customerPhone || undefined,
++        password: initialPassword,
++        role: "admin",
++        shops: [shop._id],
++      });
++      createdAdminId = admin._id;
++    }
++
++    // pre-save hook আবার হ্যাশ করবে বলে কাস্টমারের hash সরাসরি updateOne-এ বসানো হয় (hook ঘোরে না)
++    await Admin.updateOne({ _id: admin._id }, { $set: { password: passwordHash } });
++
++    shop.ownerAdminId = admin._id;
++    await shop.save();
++  } catch (err) {
++    // আধা-তৈরি অবস্থা রেখে দেওয়া যাবে না — নাহলে পরের রিট্রাইতে "শপ খুঁজে পাওয়া যায়নি" এ আটকে যেত
++    await Shop.deleteOne({ _id: shop._id }).catch(() => {});
++    if (createdAdminId) await Admin.deleteOne({ _id: createdAdminId }).catch(() => {});
++    else if (reusedAdminId) await Admin.updateOne({ _id: reusedAdminId }, { $set: { shops: [] } }).catch(() => {});
++    if (err?.code === 11000) throw new ProvisionError(409, "এই ইমেইল দিয়ে ইতিমধ্যে একটা admin আছে");
++    throw err;
++  }
++
++  invalidateShopCache({ domain: shop.domain, slug: shop.slug });
++  return {
++    result: "created",
++    shop,
++    adminEmail: email,
++    passwordMode: "customer", // কাস্টমারের নিজের দেওয়া পাসওয়ার্ড — রেসপন্সে কোনো পাসওয়ার্ড যায় না
++    notes: [],
++  };
++}
++
++// অর্ডার পরে reject হলে — নিরাপদে ফেরানো/বন্ধ করা
++export async function revokeProvision(input = {}) {
++  const externalRef = String(input.externalRef || "").trim();
++  if (!externalRef) throw new ProvisionError(400, "externalRef আবশ্যক");
++
++  const shop = await Shop.findOne({ "provisionHistory.ref": externalRef });
++  if (!shop) {
++    return { result: "not_applied", shop: null, notes: ["এই অর্ডার ECMS-এ প্রয়োগ হয়নি, তাই কিছু বদলানো হয়নি"] };
++  }
++
++  const history = (shop.provisionHistory || []).map(plain);
++
++  // একই অর্ডার revoke → re-approve হলে ইতিহাসে একই ref দুইবার থাকে — তাই সবসময়
++  // সর্বশেষ এন্ট্রি (index দিয়ে) ধরা হয়, প্রথম মিল নয়
++  let entryIndex = -1;
++  history.forEach((e, i) => {
++    if (e.ref === externalRef) entryIndex = i;
++  });
++  const entry = history[entryIndex];
++  if (entry.revokedAt) {
++    return { result: "already_revoked", shop, notes: [] };
++  }
++
++  // শুধু সর্বশেষ সক্রিয় প্রয়োগ ফেরানো যায় — পরে আরও অর্ডার প্রয়োগ হয়ে থাকলে
++  // নিজে থেকে ফেরানো ভুল ডেটা তৈরি করতে পারে, তাই হাতে দেখার জন্য আটকে দেওয়া হয়
++  let lastActiveIndex = -1;
++  history.forEach((e, i) => {
++    if (!e.revokedAt) lastActiveIndex = i;
++  });
++  if (lastActiveIndex !== entryIndex) {
++    throw new ProvisionError(
++      409,
++      "এই অর্ডারের পরে এই শপে আরও অর্ডার প্রয়োগ হয়েছে — নিজে থেকে ফেরানো নিরাপদ নয়, সুপার-অ্যাডমিন হাতে দেখুন",
++    );
++  }
++
++  const notes = [];
++  let result;
++  if (entry.result === "created") {
++    // নতুন তৈরি শপ — ডেটা মোছা হয় না, শুধু সাসপেন্ড; মেয়াদ এখনই শেষ ধরা হয়
++    // (যাতে re-approve করলে বাকি মেয়াদের সাথে দ্বিগুণ হয়ে না যায়)
++    if (shop.status !== "suspended") {
++      shop.status = "suspended";
++      shop.suspendedReason = ORDER_REVOKED_SUSPEND_REASON;
++    }
++    shop.planExpiresAt = new Date();
++    result = "suspended";
++    notes.push("শপ সাসপেন্ড করা হয়েছে (ডেটা অক্ষত আছে)");
++  } else {
++    const prev = entry.prev || {};
++    shop.plan = prev.plan ?? shop.plan;
++    shop.limits = prev.limits ?? shop.limits;
++    shop.subscriptionStartDate = prev.subscriptionStartDate ?? shop.subscriptionStartDate;
++    shop.subscriptionDays = prev.subscriptionDays ?? null;
++    shop.planExpiresAt = prev.planExpiresAt ?? null;
++    shop.status = prev.status ?? shop.status;
++    shop.suspendedReason = prev.suspendedReason ?? "";
++    result = "reverted";
++    notes.push("প্ল্যান ও মেয়াদ প্রয়োগের আগের অবস্থায় ফিরিয়ে দেওয়া হয়েছে");
++  }
++
++  shop.provisionHistory = history.map((e, i) => (i === entryIndex ? { ...e, revokedAt: new Date() } : e));
++  shop.externalRefs = (shop.externalRefs || []).filter((r) => r !== externalRef);
++  await shop.save();
++  invalidateShopCache({ domain: shop.domain, slug: shop.slug });
++
++  return { result, shop, notes };
++}
++
++export { summarize as summarizeShop };
+diff -ruN a/frontend/components/platform/PlatformLanding.jsx b/frontend/components/platform/PlatformLanding.jsx
+--- a/frontend/components/platform/PlatformLanding.jsx	2026-10-12 02:21:21.756337822 +0000
++++ b/frontend/components/platform/PlatformLanding.jsx	2026-10-12 02:22:04.730851480 +0000
+@@ -93,6 +93,34 @@
+   },
+ ];
+ 
++const ACCENT_CYCLE = ["teal", "emerald", "orange", "amber", "rose"];
++
++function periodLabel(days) {
++  const d = Number(days) || 0;
++  if (d === 30) return "/মাস";
++  if (d === 90) return "/৩ মাস";
++  if (d === 180) return "/৬ মাস";
++  if (d === 365) return "/বছর";
++  if (!d) return "";
++  return `/${d.toLocaleString("bn-BD")} দিন`;
++}
++
++// ✅ API থেকে আসা প্ল্যানকে কার্ডের আকারে সাজায়। API না এলে নিচের হার্ডকোড PLANS
++// (ফলব্যাক) ব্যবহার হয়।
++function mapApiPlans(apiPlans) {
++  return apiPlans.map((p, i) => ({
++    name: p.name,
++    tagline: p.tagline,
++    highlights: p.highlights || [],
++    popular: !!p.isPopular,
++    accent: ACCENT_CYCLE[i % ACCENT_CYCLE.length],
++    price: p.price,
++    originalPrice: p.originalPrice,
++    period: periodLabel(p.billingDays),
++    ctaType: p.ctaType,
++  }));
++}
++
+ const ACCENTS = {
+   orange: {
+     icon: "bg-gradient-to-br from-orange-500 to-rose-500",
+@@ -548,7 +576,8 @@
+   );
+ }
+ 
+-export default function PlatformLanding({ adminUrl, whatsappNumber }) {
++export default function PlatformLanding({ adminUrl, whatsappNumber, plans: apiPlans = [] }) {
++  const displayPlans = apiPlans.length ? mapApiPlans(apiPlans) : PLANS;
+   const [openFaq, setOpenFaq] = useState(0);
+ 
+   return (
+@@ -746,7 +775,7 @@
+           </motion.div>
+ 
+           <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+-            {PLANS.map((plan, i) => {
++            {displayPlans.map((plan, i) => {
+               const a = ACCENTS[plan.accent];
+               return (
+                 <motion.div
+@@ -774,6 +803,29 @@
+                   <h3 className="mt-3 text-lg font-semibold text-gray-900">{plan.name}</h3>
+                   <p className="mt-1 text-xs leading-relaxed text-gray-500">{plan.tagline}</p>
+ 
++                  {plan.ctaType !== "contact" && plan.price !== undefined && (
++                    <div className="mt-4">
++                      {plan.price > 0 ? (
++                        <>
++                          <p className="text-2xl font-extrabold text-gray-900">
++                            ৳{Number(plan.price).toLocaleString("bn-BD")}
++                            <span className="ml-1 text-xs font-medium text-gray-500">{plan.period}</span>
++                          </p>
++                          {plan.originalPrice > plan.price && (
++                            <p className="text-xs text-gray-400 line-through">
++                              ৳{Number(plan.originalPrice).toLocaleString("bn-BD")}
++                            </p>
++                          )}
++                        </>
++                      ) : (
++                        <p className="text-2xl font-extrabold text-emerald-600">বিনামূল্যে</p>
++                      )}
++                    </div>
++                  )}
++                  {plan.ctaType === "contact" && (
++                    <p className="mt-4 text-sm font-bold text-gray-900">দাম আলোচনা সাপেক্ষে</p>
++                  )}
++
+                   <ul className="mt-5 flex-1 space-y-2.5">
+                     {plan.highlights.map((h) => (
+                       <li key={h} className="flex items-start gap-2 text-xs text-gray-600">
+@@ -790,7 +842,7 @@
+                     className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-200 transition-transform hover:scale-105"
+                   >
+                     <WhatsAppIcon className="h-3.5 w-3.5" />
+-                    এই প্ল্যান নিন
++                    {plan.ctaType === "contact" ? "যোগাযোগ করুন" : "এই প্ল্যান নিন"}
+                   </a>
+                 </motion.div>
+               );
+diff -ruN a/frontend/src/app/page.js b/frontend/src/app/page.js
+--- a/frontend/src/app/page.js	2026-10-12 02:21:21.762150097 +0000
++++ b/frontend/src/app/page.js	2026-10-12 02:22:04.729715605 +0000
+@@ -1,4 +1,5 @@
+ import PlatformLanding from "../../components/platform/PlatformLanding";
++import { serverFetch } from "../../lib/serverApi";
+ 
+ // Platform's own domain (PLATFORM_DOMAIN in .env) — see
+ // frontend/src/middleware.js, which leaves requests to this domain
+@@ -10,9 +11,22 @@
+     "ECMS হলো Hikmah IT এর একটি ই-কমার্স সার্ভিস — সহজেই নিজের অনলাইন শপ তৈরি করে প্রোডাক্ট, অর্ডার ও পেমেন্ট নিয়ন্ত্রণ করুন।",
+ };
+ 
+-export default function HomePage() {
++// ✅ প্ল্যান এখন ডাটাবেস (সুপার-অ্যাডমিন → Plans) থেকে আসে। ব্যাকএন্ড বন্ধ/ফেল
++// করলে খালি তালিকা যায়, আর PlatformLanding নিজের ফলব্যাক প্ল্যান দেখায়।
++async function getPlans() {
++  try {
++    const plans = await serverFetch("/plans", { revalidate: 60 });
++    return Array.isArray(plans) ? plans : [];
++  } catch {
++    return [];
++  }
++}
++
++export default async function HomePage() {
++  const plans = await getPlans();
+   return (
+     <PlatformLanding
++      plans={plans}
+       adminUrl={process.env.SHOP_ADMIN_URL}
+       whatsappNumber={process.env.SALES_WHATSAPP_NUMBER}
+     />
+diff -ruN a/super-admin/components/Plans.jsx b/super-admin/components/Plans.jsx
+--- a/super-admin/components/Plans.jsx	2026-10-12 02:21:21.767211311 +0000
++++ b/super-admin/components/Plans.jsx	2026-10-12 02:21:51.533524931 +0000
+@@ -54,6 +54,11 @@
+   tagline: "",
+   theme: "",
+   isVisible: true,
++  price: 0,
++  originalPrice: 0,
++  billingDays: 30,
++  isPopular: false,
++  ctaType: "buy",
+   customDomain: false,
+   analytics: false,
+   promo: false,
+@@ -70,6 +75,11 @@
+   tagline: plan.tagline || "",
+   theme: plan.theme || "classic",
+   isVisible: plan.isVisible !== false,
++  price: plan.price ?? 0,
++  originalPrice: plan.originalPrice ?? 0,
++  billingDays: plan.billingDays ?? 30,
++  isPopular: !!plan.isPopular,
++  ctaType: plan.ctaType || "buy",
+   customDomain: !!plan.features?.customDomain,
+   analytics: !!plan.features?.analytics,
+   promo: !!plan.features?.promo,
+@@ -175,6 +185,11 @@
+       tagline: form.tagline.trim(),
+       theme: form.theme,
+       isVisible: form.isVisible,
++      price: Number(form.price) || 0,
++      originalPrice: Number(form.originalPrice) || 0,
++      billingDays: Number(form.billingDays) || 0,
++      isPopular: form.isPopular,
++      ctaType: form.ctaType,
+       features: {
+         customDomain: form.customDomain,
+         analytics: form.analytics,
+@@ -528,6 +543,68 @@
+                 </select>
+               </div>
+ 
++              {/* ✅ পাবলিক দাম — ECMS ল্যান্ডিং পেজ ও Hikmah IT সাইটে দেখায় */}
++              <div className="rounded-lg border border-gray-200 dark:border-slate-700 p-3 space-y-3">
++                <p className="text-sm font-semibold text-gray-800 dark:text-slate-200">
++                  পাবলিক দাম (ওয়েবসাইটে দেখানোর জন্য)
++                </p>
++                <div className="grid grid-cols-3 gap-3">
++                  <div>
++                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400">দাম (৳)</label>
++                    <input
++                      type="number"
++                      min="0"
++                      value={form.price}
++                      onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
++                      className="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
++                    />
++                  </div>
++                  <div>
++                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400">আগের দাম (৳)</label>
++                    <input
++                      type="number"
++                      min="0"
++                      value={form.originalPrice}
++                      onChange={(e) => setForm((f) => ({ ...f, originalPrice: e.target.value }))}
++                      className="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
++                    />
++                  </div>
++                  <div>
++                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400">মেয়াদ (দিন)</label>
++                    <input
++                      type="number"
++                      min="0"
++                      value={form.billingDays}
++                      onChange={(e) => setForm((f) => ({ ...f, billingDays: e.target.value }))}
++                      className="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
++                    />
++                  </div>
++                </div>
++                <p className="text-xs text-gray-400 dark:text-slate-500">
++                  দাম ০ হলে "বিনামূল্যে" দেখাবে। মেয়াদ: ৩০ = মাসিক, ৩৬৫ = বার্ষিক।
++                </p>
++                <div>
++                  <label className="text-xs font-medium text-gray-600 dark:text-slate-400">বাটনের ধরন</label>
++                  <select
++                    value={form.ctaType}
++                    onChange={(e) => setForm((f) => ({ ...f, ctaType: e.target.value }))}
++                    className="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
++                  >
++                    <option value="buy">কিনুন</option>
++                    <option value="contact">যোগাযোগ করুন (Custom/Reseller)</option>
++                  </select>
++                </div>
++                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
++                  <input
++                    type="checkbox"
++                    className="h-4 w-4 accent-rose-600"
++                    checked={form.isPopular}
++                    onChange={(e) => setForm((f) => ({ ...f, isPopular: e.target.checked }))}
++                  />
++                  "সবচেয়ে জনপ্রিয়" ব্যাজ দেখান
++                </label>
++              </div>
++
+               <label className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-2.5 text-sm text-gray-700 dark:text-slate-300">
+                 <input
+                   type="checkbox"

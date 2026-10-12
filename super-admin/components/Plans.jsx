@@ -54,6 +54,11 @@ const emptyForm = () => ({
   tagline: "",
   theme: "",
   isVisible: true,
+  price: 0,
+  originalPrice: 0,
+  billingDays: 30,
+  isPopular: false,
+  ctaType: "buy",
   customDomain: false,
   analytics: false,
   promo: false,
@@ -70,6 +75,11 @@ const formFromPlan = (plan) => ({
   tagline: plan.tagline || "",
   theme: plan.theme || "classic",
   isVisible: plan.isVisible !== false,
+  price: plan.price ?? 0,
+  originalPrice: plan.originalPrice ?? 0,
+  billingDays: plan.billingDays ?? 30,
+  isPopular: !!plan.isPopular,
+  ctaType: plan.ctaType || "buy",
   customDomain: !!plan.features?.customDomain,
   analytics: !!plan.features?.analytics,
   promo: !!plan.features?.promo,
@@ -175,6 +185,11 @@ export default function Plans() {
       tagline: form.tagline.trim(),
       theme: form.theme,
       isVisible: form.isVisible,
+      price: Number(form.price) || 0,
+      originalPrice: Number(form.originalPrice) || 0,
+      billingDays: Number(form.billingDays) || 0,
+      isPopular: form.isPopular,
+      ctaType: form.ctaType,
       features: {
         customDomain: form.customDomain,
         analytics: form.analytics,
@@ -526,6 +541,68 @@ export default function Plans() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* ✅ পাবলিক দাম — ECMS ল্যান্ডিং পেজ ও Hikmah IT সাইটে দেখায় */}
+              <div className="rounded-lg border border-gray-200 dark:border-slate-700 p-3 space-y-3">
+                <p className="text-sm font-semibold text-gray-800 dark:text-slate-200">
+                  পাবলিক দাম (ওয়েবসাইটে দেখানোর জন্য)
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400">দাম (৳)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.price}
+                      onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                      className="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400">আগের দাম (৳)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.originalPrice}
+                      onChange={(e) => setForm((f) => ({ ...f, originalPrice: e.target.value }))}
+                      className="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-slate-400">মেয়াদ (দিন)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.billingDays}
+                      onChange={(e) => setForm((f) => ({ ...f, billingDays: e.target.value }))}
+                      className="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 dark:text-slate-500">
+                  দাম ০ হলে "বিনামূল্যে" দেখাবে। মেয়াদ: ৩০ = মাসিক, ৩৬৫ = বার্ষিক।
+                </p>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-slate-400">বাটনের ধরন</label>
+                  <select
+                    value={form.ctaType}
+                    onChange={(e) => setForm((f) => ({ ...f, ctaType: e.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-500/20"
+                  >
+                    <option value="buy">কিনুন</option>
+                    <option value="contact">যোগাযোগ করুন (Custom/Reseller)</option>
+                  </select>
+                </div>
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-rose-600"
+                    checked={form.isPopular}
+                    onChange={(e) => setForm((f) => ({ ...f, isPopular: e.target.checked }))}
+                  />
+                  "সবচেয়ে জনপ্রিয়" ব্যাজ দেখান
+                </label>
               </div>
 
               <label className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-2.5 text-sm text-gray-700 dark:text-slate-300">

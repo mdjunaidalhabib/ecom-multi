@@ -123,6 +123,30 @@ const shopSchema = new mongoose.Schema(
       maxAdmins: { type: Number, default: 2 },
     },
 
+    // ✅ বাইরের সিস্টেম (Hikmah IT) থেকে অটো-প্রভিশন/নবায়নের idempotency —
+    // যে purchase id গুলো এই শপে ইতিমধ্যে প্রয়োগ হয়েছে (একই রিকোয়েস্ট দুইবার
+    // এলে মেয়াদ দুইবার বাড়ে না বা ডুপ্লিকেট শপ হয় না)। সর্বোচ্চ ৫০টি রাখা হয়।
+    externalRefs: { type: [String], default: [], index: true },
+
+    // ✅ প্রতিটা প্রয়োগের ইতিহাস + প্রয়োগের আগের অবস্থার snapshot — অর্ডার পরে reject
+    // হলে (revoke) নিরাপদে আগের অবস্থায় ফেরাতে বা শপ বন্ধ করতে লাগে।
+    // revokedAt থাকলে সেই প্রয়োগ বাতিল ধরা হয়।
+    provisionHistory: {
+      type: [
+        new mongoose.Schema(
+          {
+            ref: { type: String, required: true },
+            result: { type: String, enum: ["created", "renewed"], required: true },
+            appliedAt: { type: Date, default: Date.now },
+            revokedAt: { type: Date, default: null },
+            prev: { type: mongoose.Schema.Types.Mixed, default: null },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+
     contactEmail: { type: String, default: "" },
     contactPhone: { type: String, default: "" },
   },

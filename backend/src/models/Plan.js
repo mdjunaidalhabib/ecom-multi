@@ -38,6 +38,15 @@ const planSchema = new mongoose.Schema(
       default: "classic",
     },
 
+    // ✅ Public pricing (ল্যান্ডিং পেজ ও Hikmah IT সাইটে দেখানোর জন্য)।
+    // price = 0 মানে বিনামূল্যে। billingDays = কত দিনের জন্য এই দাম (৩০/৯০/৩৬৫)।
+    // ctaType: "buy" = কিনুন বাটন, "contact" = যোগাযোগ করুন (Custom/Reseller-এর জন্য)।
+    price: { type: Number, default: 0, min: 0 },
+    originalPrice: { type: Number, default: 0, min: 0 },
+    billingDays: { type: Number, default: 30, min: 0 },
+    isPopular: { type: Boolean, default: false },
+    ctaType: { type: String, enum: ["buy", "contact"], default: "buy" },
+
     features: {
       customDomain: { type: Boolean, default: false },
       analytics: { type: Boolean, default: false },

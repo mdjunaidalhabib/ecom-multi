@@ -93,6 +93,34 @@ const PLANS = [
   },
 ];
 
+const ACCENT_CYCLE = ["teal", "emerald", "orange", "amber", "rose"];
+
+function periodLabel(days) {
+  const d = Number(days) || 0;
+  if (d === 30) return "/মাস";
+  if (d === 90) return "/৩ মাস";
+  if (d === 180) return "/৬ মাস";
+  if (d === 365) return "/বছর";
+  if (!d) return "";
+  return `/${d.toLocaleString("bn-BD")} দিন`;
+}
+
+// ✅ API থেকে আসা প্ল্যানকে কার্ডের আকারে সাজায়। API না এলে নিচের হার্ডকোড PLANS
+// (ফলব্যাক) ব্যবহার হয়।
+function mapApiPlans(apiPlans) {
+  return apiPlans.map((p, i) => ({
+    name: p.name,
+    tagline: p.tagline,
+    highlights: p.highlights || [],
+    popular: !!p.isPopular,
+    accent: ACCENT_CYCLE[i % ACCENT_CYCLE.length],
+    price: p.price,
+    originalPrice: p.originalPrice,
+    period: periodLabel(p.billingDays),
+    ctaType: p.ctaType,
+  }));
+}
+
 const ACCENTS = {
   orange: {
     icon: "bg-gradient-to-br from-orange-500 to-rose-500",
@@ -548,7 +576,8 @@ function WhatsAppIcon(props) {
   );
 }
 
-export default function PlatformLanding({ adminUrl, whatsappNumber }) {
+export default function PlatformLanding({ adminUrl, whatsappNumber, plans: apiPlans = [] }) {
+  const displayPlans = apiPlans.length ? mapApiPlans(apiPlans) : PLANS;
   const [openFaq, setOpenFaq] = useState(0);
 
   return (
@@ -746,7 +775,7 @@ export default function PlatformLanding({ adminUrl, whatsappNumber }) {
           </motion.div>
 
           <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-            {PLANS.map((plan, i) => {
+            {displayPlans.map((plan, i) => {
               const a = ACCENTS[plan.accent];
               return (
                 <motion.div
@@ -774,6 +803,29 @@ export default function PlatformLanding({ adminUrl, whatsappNumber }) {
                   <h3 className="mt-3 text-lg font-semibold text-gray-900">{plan.name}</h3>
                   <p className="mt-1 text-xs leading-relaxed text-gray-500">{plan.tagline}</p>
 
+                  {plan.ctaType !== "contact" && plan.price !== undefined && (
+                    <div className="mt-4">
+                      {plan.price > 0 ? (
+                        <>
+                          <p className="text-2xl font-extrabold text-gray-900">
+                            ৳{Number(plan.price).toLocaleString("bn-BD")}
+                            <span className="ml-1 text-xs font-medium text-gray-500">{plan.period}</span>
+                          </p>
+                          {plan.originalPrice > plan.price && (
+                            <p className="text-xs text-gray-400 line-through">
+                              ৳{Number(plan.originalPrice).toLocaleString("bn-BD")}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-2xl font-extrabold text-emerald-600">বিনামূল্যে</p>
+                      )}
+                    </div>
+                  )}
+                  {plan.ctaType === "contact" && (
+                    <p className="mt-4 text-sm font-bold text-gray-900">দাম আলোচনা সাপেক্ষে</p>
+                  )}
+
                   <ul className="mt-5 flex-1 space-y-2.5">
                     {plan.highlights.map((h) => (
                       <li key={h} className="flex items-start gap-2 text-xs text-gray-600">
@@ -790,7 +842,7 @@ export default function PlatformLanding({ adminUrl, whatsappNumber }) {
                     className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-200 transition-transform hover:scale-105"
                   >
                     <WhatsAppIcon className="h-3.5 w-3.5" />
-                    এই প্ল্যান নিন
+                    {plan.ctaType === "contact" ? "যোগাযোগ করুন" : "এই প্ল্যান নিন"}
                   </a>
                 </motion.div>
               );

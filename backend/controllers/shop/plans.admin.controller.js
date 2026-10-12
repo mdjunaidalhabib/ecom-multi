@@ -58,6 +58,27 @@ function parseLimits(input = {}) {
   return limits;
 }
 
+// ✅ দাম/পপুলার/CTA ফিল্ড parse — create ও update দুটোতেই ব্যবহার হয়
+function parsePricing(input = {}) {
+  const out = {};
+  for (const key of ["price", "originalPrice", "billingDays"]) {
+    if (input[key] === undefined || input[key] === "") continue;
+    const num = Number(input[key]);
+    if (!Number.isFinite(num) || num < 0) {
+      throw new Error(`${key}-এর জন্য অবৈধ মান`);
+    }
+    out[key] = Math.floor(num);
+  }
+  if (input.isPopular !== undefined) out.isPopular = !!input.isPopular;
+  if (input.ctaType !== undefined) {
+    if (!["buy", "contact"].includes(input.ctaType)) {
+      throw new Error("ctaType অবশ্যই buy বা contact হতে হবে");
+    }
+    out.ctaType = input.ctaType;
+  }
+  return out;
+}
+
 /* -------------------------------------------------------
    GET /admin/plans — সব plan (super-admin এবং shop-admin/staff দুজনেই
    দেখতে পারে — shop-admin এর নিজের "My Plan" পেজে upgrade dropdown এবং
@@ -107,8 +128,10 @@ export const createPlan = async (req, res) => {
     }
 
     let parsedLimits;
+    let parsedPricing;
     try {
       parsedLimits = parseLimits(limits);
+      parsedPricing = parsePricing(req.body);
     } catch (err) {
       return res.status(400).json({ message: err.message });
     }
@@ -123,6 +146,7 @@ export const createPlan = async (req, res) => {
       order: (lastPlan?.order ?? -1) + 1,
       theme: theme || "classic",
       isVisible: isVisible !== false,
+      ...parsedPricing,
       features: { fullStorefront: true, ...parseFeatures(features) },
       limits: { maxProducts: 50, maxAdmins: 1, ...parsedLimits },
     });
@@ -171,6 +195,12 @@ export const updatePlan = async (req, res) => {
     if (order !== undefined) {
       const num = Number(order);
       if (Number.isFinite(num)) plan.order = num;
+    }
+
+    try {
+      Object.assign(plan, parsePricing(req.body));
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
     }
 
     if (features && typeof features === "object") {
