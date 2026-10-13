@@ -109,6 +109,7 @@ function periodLabel(days) {
 // (ফলব্যাক) ব্যবহার হয়।
 function mapApiPlans(apiPlans) {
   return apiPlans.map((p, i) => ({
+    key: p.key,
     name: p.name,
     tagline: p.tagline,
     highlights: p.highlights || [],
@@ -532,6 +533,17 @@ function whatsappPlanLink(whatsappNumber, planName) {
   return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
 }
 
+// ✅ পেইড (buy) প্ল্যান হলে Hikmah IT-র checkout লিংক, নইলে null।
+// Free প্ল্যান (price 0), contact প্ল্যান, হার্ডকোড ফলব্যাক প্ল্যান (key নেই)
+// এবং HIKMAH_SITE_URL সেট না থাকলে null — তখন বাটন WhatsApp-এ যায়।
+// ID ফরম্যাট "ecms_<key>" Hikmah সার্ভারের ecmsPlans.js-এর সাথে মিলতে হবে।
+function checkoutPlanLink(hikmahSiteUrl, plan) {
+  if (!hikmahSiteUrl || !plan.key) return null;
+  if (plan.ctaType === "contact" || !(plan.price > 0)) return null;
+  const base = hikmahSiteUrl.replace(/\/$/, "");
+  return `${base}/checkout/ecms_${encodeURIComponent(plan.key)}?utm_source=ecms-landing&utm_medium=plan-card`;
+}
+
 function whatsappContactLink(whatsappNumber) {
   if (!whatsappNumber) return "#";
   const text = "আমি ECMS সম্পর্কে জানতে চাই।";
@@ -576,7 +588,7 @@ function WhatsAppIcon(props) {
   );
 }
 
-export default function PlatformLanding({ adminUrl, whatsappNumber, plans: apiPlans = [] }) {
+export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUrl = "", plans: apiPlans = [] }) {
   const displayPlans = apiPlans.length ? mapApiPlans(apiPlans) : PLANS;
   const [openFaq, setOpenFaq] = useState(0);
 
@@ -835,15 +847,46 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, plans: apiPl
                     ))}
                   </ul>
 
-                  <a
-                    href={whatsappPlanLink(whatsappNumber, plan.name)}
-                    target={whatsappNumber ? "_blank" : undefined}
-                    rel={whatsappNumber ? "noopener noreferrer" : undefined}
-                    className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-200 transition-transform hover:scale-105"
-                  >
-                    <WhatsAppIcon className="h-3.5 w-3.5" />
-                    {plan.ctaType === "contact" ? "যোগাযোগ করুন" : "এই প্ল্যান নিন"}
-                  </a>
+                  {(() => {
+                    const buyHref = checkoutPlanLink(hikmahSiteUrl, plan);
+                    const waHref = whatsappPlanLink(whatsappNumber, plan.name);
+                    const waExternal = whatsappNumber ? { target: "_blank", rel: "noopener noreferrer" } : {};
+
+                    if (buyHref) {
+                      return (
+                        <div className="mt-6 flex flex-col items-stretch gap-2">
+                          <a
+                            href={buyHref}
+                            data-cta="checkout"
+                            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-200 transition-transform hover:scale-105"
+                          >
+                            এখনই কিনুন
+                          </a>
+                          <a
+                            href={waHref}
+                            {...waExternal}
+                            data-cta="whatsapp"
+                            className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-gray-500 hover:text-[#128C7E]"
+                          >
+                            <WhatsAppIcon className="h-3 w-3" />
+                            প্রশ্ন আছে? WhatsApp-এ জিজ্ঞেস করুন
+                          </a>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <a
+                        href={waHref}
+                        {...waExternal}
+                        data-cta="whatsapp"
+                        className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-200 transition-transform hover:scale-105"
+                      >
+                        <WhatsAppIcon className="h-3.5 w-3.5" />
+                        {plan.ctaType === "contact" ? "যোগাযোগ করুন" : "এই প্ল্যান নিন"}
+                      </a>
+                    );
+                  })()}
                 </motion.div>
               );
             })}

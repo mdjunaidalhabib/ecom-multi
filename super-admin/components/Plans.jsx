@@ -18,6 +18,63 @@ import {
 } from "lucide-react";
 import Toast from "./Toast";
 
+// ✅ দাম দেখানোর হেল্পার — ওয়েবসাইট (ECMS ল্যান্ডিং + Hikmah IT) যেভাবে দেখায় সেভাবেই
+// এখানেও দেখানো হয়, যাতে প্ল্যান সেভ করার আগেই বোঝা যায় ক্রেতা কী দেখবে।
+const formatTaka = (n) => `৳${Number(n || 0).toLocaleString("bn-BD")}`;
+const billingText = (days) => {
+  const d = Number(days) || 0;
+  if (d === 30) return "/মাস";
+  if (d === 90) return "/৩ মাস";
+  if (d === 180) return "/৬ মাস";
+  if (d === 365) return "/বছর";
+  return d ? `/${d.toLocaleString("bn-BD")} দিন` : "";
+};
+const discountInfo = (price, originalPrice) => {
+  const p = Number(price) || 0;
+  const o = Number(originalPrice) || 0;
+  if (o > p && o > 0) {
+    return { hasDiscount: true, percent: Math.round(((o - p) / o) * 100), saved: o - p };
+  }
+  return { hasDiscount: false, percent: 0, saved: 0 };
+};
+
+// দাম + কাটা আগের দাম + ছাড়ের % — কার্ড এবং ফর্মের প্রিভিউ দুই জায়গাতেই ব্যবহার হয়
+function PriceDisplay({ price, originalPrice, billingDays, ctaType }) {
+  if (ctaType === "contact") {
+    return (
+      <p className="text-base font-extrabold text-gray-900 dark:text-slate-100">দাম আলোচনা সাপেক্ষে</p>
+    );
+  }
+  const p = Number(price) || 0;
+  if (p === 0) {
+    return <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">বিনামূল্যে</p>;
+  }
+  const { hasDiscount, percent, saved } = discountInfo(price, originalPrice);
+  return (
+    <div>
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="text-2xl font-black text-gray-900 dark:text-slate-100">{formatTaka(p)}</span>
+        <span className="text-xs font-medium text-gray-500 dark:text-slate-400">{billingText(billingDays)}</span>
+        {hasDiscount && (
+          <>
+            <span className="text-sm font-semibold text-gray-400 dark:text-slate-500 line-through decoration-rose-500 decoration-2">
+              {formatTaka(originalPrice)}
+            </span>
+            <span className="rounded-full bg-rose-100 dark:bg-rose-500/15 px-2 py-0.5 text-[11px] font-bold text-rose-700 dark:text-rose-300">
+              {percent.toLocaleString("bn-BD")}% ছাড়
+            </span>
+          </>
+        )}
+      </div>
+      {hasDiscount && (
+        <p className="mt-0.5 text-[11px] text-gray-500 dark:text-slate-400">
+          ক্রেতা {formatTaka(saved)} সাশ্রয় করছেন
+        </p>
+      )}
+    </div>
+  );
+}
+
 const PLAN_ACCENTS_BY_ORDER = [
   {
     ring: "ring-gray-200 dark:ring-slate-700",
@@ -443,6 +500,23 @@ export default function Plans() {
                   )}
                 </div>
 
+                <div className="mx-5 mt-4 rounded-xl bg-gray-50 dark:bg-slate-800/60 px-4 py-3">
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                    ওয়েবসাইটে যে দাম দেখায়
+                  </p>
+                  <PriceDisplay
+                    price={plan.price}
+                    originalPrice={plan.originalPrice}
+                    billingDays={plan.billingDays}
+                    ctaType={plan.ctaType}
+                  />
+                  {plan.isPopular && (
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                      <Sparkles size={11} /> সবচেয়ে জনপ্রিয়
+                    </span>
+                  )}
+                </div>
+
                 <div className="mx-5 my-4 border-t border-gray-100 dark:border-slate-800" />
 
                 <div className="flex-1 space-y-2 px-5">
@@ -583,6 +657,22 @@ export default function Plans() {
                 <p className="text-xs text-gray-400 dark:text-slate-500">
                   দাম ০ হলে "বিনামূল্যে" দেখাবে। মেয়াদ: ৩০ = মাসিক, ৩৬৫ = বার্ষিক।
                 </p>
+                <div className="rounded-lg border border-dashed border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800/60 px-3 py-2.5">
+                  <p className="mb-1 text-[11px] font-semibold text-gray-500 dark:text-slate-400">প্রিভিউ — ক্রেতা এভাবে দেখবে</p>
+                  <PriceDisplay
+                    price={form.price}
+                    originalPrice={form.originalPrice}
+                    billingDays={form.billingDays}
+                    ctaType={form.ctaType}
+                  />
+                  {Number(form.originalPrice) > 0 &&
+                    Number(form.price) > 0 &&
+                    Number(form.originalPrice) <= Number(form.price) && (
+                      <p className="mt-1.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                        ⚠ "আগের দাম" বর্তমান দামের চেয়ে বেশি হলে তবেই কাটা দাম ও ছাড় দেখাবে।
+                      </p>
+                    )}
+                </div>
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-slate-400">বাটনের ধরন</label>
                   <select

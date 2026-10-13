@@ -1,0 +1,61 @@
+From ad57fd2b0207d61f48bb91b8baa89a7ca2340f1d Mon Sep 17 00:00:00 2001
+From: Dev <dev@example.com>
+Date: Tue, 13 Oct 2026 01:29:10 +0000
+Subject: [PATCH] =?UTF-8?q?landing:=20plan=20CTA=20label=20=E0=A6=93=20Wha?=
+ =?UTF-8?q?tsApp=20message=20=E0=A6=86=E0=A6=B0=E0=A6=93=20professional=20?=
+ =?UTF-8?q?=E0=A6=95=E0=A6=B0=E0=A6=BE?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .../components/platform/PlatformLanding.jsx    | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/frontend/components/platform/PlatformLanding.jsx b/frontend/components/platform/PlatformLanding.jsx
+index e5dc2f6..b2cb584 100644
+--- a/frontend/components/platform/PlatformLanding.jsx
++++ b/frontend/components/platform/PlatformLanding.jsx
+@@ -526,15 +526,23 @@ function StepsPanel() {
+   );
+ }
+ 
++// ✅ প্ল্যান অনুযায়ী বাটনের টেক্সট
++function planCtaLabel(plan) {
++  if (plan.ctaType === "contact") return "সেলস টিমের সাথে কথা বলুন";
++  const isFree = plan.price === 0 || (plan.price === undefined && plan.name === "Free");
++  if (isFree) return "বিনামূল্যে শুরু করুন";
++  return "এখনই শুরু করুন";
++}
++
+ function whatsappPlanLink(whatsappNumber, planName) {
+   if (!whatsappNumber) return "#";
+-  const text = `আমি ECMS-এর "${planName}" প্ল্যানটি নিতে চাই। বিস্তারিত জানতে চাই।`;
++  const text = `আসসালামু আলাইকুম, আমি ECMS-এর ${planName} প্ল্যান সম্পর্কে বিস্তারিত জানতে চাই।`;
+   return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
+ }
+ 
+ function whatsappContactLink(whatsappNumber) {
+   if (!whatsappNumber) return "#";
+-  const text = "আমি ECMS সম্পর্কে জানতে চাই।";
++  const text = "আসসালামু আলাইকুম, আমি ECMS সম্পর্কে বিস্তারিত জানতে চাই।";
+   return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
+ }
+ 
+@@ -839,10 +847,10 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, plans: apiPl
+                     href={whatsappPlanLink(whatsappNumber, plan.name)}
+                     target={whatsappNumber ? "_blank" : undefined}
+                     rel={whatsappNumber ? "noopener noreferrer" : undefined}
+-                    className="mt-6 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-200 transition-transform hover:scale-105"
++                    className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-sm font-bold text-white shadow-md shadow-emerald-200 transition hover:bg-[#1ebe5b]"
+                   >
+-                    <WhatsAppIcon className="h-3.5 w-3.5" />
+-                    {plan.ctaType === "contact" ? "যোগাযোগ করুন" : "এই প্ল্যান নিন"}
++                    <WhatsAppIcon className="h-4 w-4" />
++                    {planCtaLabel(plan)}
+                   </a>
+                 </motion.div>
+               );
+-- 
+2.43.0
+

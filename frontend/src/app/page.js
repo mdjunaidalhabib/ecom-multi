@@ -29,6 +29,7 @@ export default async function HomePage() {
       plans={plans}
       adminUrl={process.env.SHOP_ADMIN_URL}
       whatsappNumber={process.env.SALES_WHATSAPP_NUMBER}
+      hikmahSiteUrl={process.env.HIKMAH_SITE_URL}
     />
   );
 }
