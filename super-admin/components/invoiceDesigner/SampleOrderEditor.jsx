@@ -3,6 +3,7 @@
 const SALE_CHANNELS = [
   { value: "online", label: "অনলাইন" },
   { value: "offline", label: "অফলাইন" },
+  { value: "wholesale", label: "হোলসেল" },
 ];
 
 const PAYMENT_STATUSES = [

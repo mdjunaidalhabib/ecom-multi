@@ -17,9 +17,18 @@ export default function useOrders(API) {
   const [totalPages, setTotalPages] = useState(1);
 
   /* ===============================
-     🌐 SALE CHANNEL FILTER (online/offline/"")
+     🌐 SALE CHANNEL FILTER (online/offline/wholesale/"")
      =============================== */
-  const [saleChannel, setSaleChannel] = useState("");
+  const [saleChannel, setSaleChannelState] = useState("");
+
+  // 🏭 Wholesale-এর "শুধু বাকি আছে" ফিল্টার — শুধু wholesale চ্যানেলে অর্থবহ
+  const [dueOnly, setDueOnly] = useState(false);
+
+  // চ্যানেল বদলে wholesale ছাড়া অন্য কিছু হলে due ফিল্টার আপনাআপনি বন্ধ হয়
+  const setSaleChannel = (channel) => {
+    if (channel !== "wholesale") setDueOnly(false);
+    setSaleChannelState(channel);
+  };
 
   /* ===============================
      🏷️ STATUS TAB FILTER (pending/confirmed/shipped/delivered/cancelled/"")
@@ -48,7 +57,7 @@ export default function useOrders(API) {
      =============================== */
   const [counts, setCounts] = useState({
     total: 0,
-    bySaleChannel: { online: 0, offline: 0 },
+    bySaleChannel: { online: 0, offline: 0, wholesale: 0 },
     filteredTotal: 0,
     byStatus: {},
   });
@@ -126,12 +135,13 @@ export default function useOrders(API) {
       else setLoading(true);
 
       const channelParam = saleChannel ? `&saleChannel=${saleChannel}` : "";
+      const dueParam = dueOnly && saleChannel === "wholesale" ? "&dueOnly=true" : "";
       const statusParam = tabStatus ? `&status=${tabStatus}` : "";
       const searchParam = debouncedSearch
         ? `&search=${encodeURIComponent(debouncedSearch)}`
         : "";
       const res = await fetch(
-        `${API}/admin/orders?page=${targetPage}&limit=20${channelParam}${statusParam}${searchParam}`
+        `${API}/admin/orders?page=${targetPage}&limit=20${channelParam}${dueParam}${statusParam}${searchParam}`
       );
       const data = await res.json();
       setOrders(Array.isArray(data.orders) ? data.orders : []);
@@ -167,7 +177,7 @@ export default function useOrders(API) {
 
       setCounts({
         total: data.total || 0,
-        bySaleChannel: data.bySaleChannel || { online: 0, offline: 0 },
+        bySaleChannel: data.bySaleChannel || { online: 0, offline: 0, wholesale: 0 },
         filteredTotal: data.filteredTotal || 0,
         byStatus: data.byStatus || {},
       });
@@ -195,7 +205,7 @@ export default function useOrders(API) {
     }
     fetchOrders(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saleChannel]);
+  }, [saleChannel, dueOnly]);
 
   // ✅ Status ট্যাব বদলালে ১ম পেজ থেকে আবার fetch হবে (সব পেজ মিলিয়ে সঠিক লিস্ট আসার জন্য)
   const isFirstTabStatusRun = useRef(true);
@@ -418,6 +428,34 @@ export default function useOrders(API) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "ম্যানুয়াল কুরিয়ার এন্ট্রি করা যায়নি");
       applyOrderUpdate(data, "🚚 ম্যানুয়াল কুরিয়ার তথ্য সেভ হয়েছে");
+      return data;
+    });
+
+  /* ===============================
+     🏭 WHOLESALE: বাকি আদায় / ভুল এন্ট্রি Reverse
+     =============================== */
+  const collectPayment = (orderId, payload) =>
+    enqueue(async () => {
+      const res = await fetch(`${API}/admin/orders/${orderId}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "পেমেন্ট সেভ করা যায়নি");
+      applyOrderUpdate(data, `💰 ৳${payload.amount} আদায় রেকর্ড হয়েছে`);
+      return data;
+    });
+
+  const reversePayment = (orderId, paymentId) =>
+    enqueue(async () => {
+      const res = await fetch(
+        `${API}/admin/orders/${orderId}/payments/${paymentId}`,
+        { method: "DELETE" },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Reverse করা যায়নি");
+      applyOrderUpdate(data, "↩️ পেমেন্ট এন্ট্রি Reverse করা হয়েছে");
       return data;
     });
 
@@ -716,6 +754,8 @@ const sendCourierDirect = (order) =>
     // channel filter
     saleChannel,
     setSaleChannel,
+    dueOnly,
+    setDueOnly,
 
     // status tab filter (server-side, all pages)
     tabStatus,
@@ -749,6 +789,10 @@ const sendCourierDirect = (order) =>
     sendCourierDirect,
     sendCourierMany,
     sendManualCourier,
+
+    // wholesale due
+    collectPayment,
+    reversePayment,
 
     // delete
     handleDelete,

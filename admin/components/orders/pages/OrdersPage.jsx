@@ -19,6 +19,7 @@ import StatusActionModal from "../modals/StatusActionModal";
 import OrderHistoryModal from "../modals/OrderHistoryModal";
 import UndoSnackbar from "../modals/UndoSnackbar";
 import ManualCourierModal from "../modals/ManualCourierModal";
+import CollectPaymentModal from "../modals/CollectPaymentModal";
 
 export default function OrdersPage() {
   const API = "/api";
@@ -35,6 +36,8 @@ export default function OrdersPage() {
 
     saleChannel,
     setSaleChannel,
+    dueOnly,
+    setDueOnly,
 
     tabStatus,
     setTabStatus,
@@ -61,6 +64,9 @@ export default function OrdersPage() {
     sendCourierMany,
     sendManualCourier,
 
+    collectPayment,
+    reversePayment,
+
     createOrder,
     creating,
 
@@ -81,6 +87,14 @@ export default function OrdersPage() {
   // ✅ History মডাল (status timeline + stock ledger + Undo/Reopen/Return)
   const [historyOrder, setHistoryOrder] = useState(null);
   const [manualOrder, setManualOrder] = useState(null);
+
+  // 🏭 Wholesale বাকি আদায় মডাল — id রাখা হয়, order-টা লাইভ লিস্ট থেকে নেওয়া হয়
+  // যাতে আদায়/Reverse এর পর মডালের হিসাব নিজে থেকেই আপডেট হয়
+  const [collectId, setCollectId] = useState(null);
+  const collectOrder = collectId
+    ? filtered.find((o) => o._id === collectId) || null
+    : null;
+  const openCollect = (order) => setCollectId(order._id);
 
   const handleHistoryAction = (type, order, history) => {
     const done = () => setHistoryOrder(null);
@@ -232,6 +246,7 @@ export default function OrdersPage() {
           { key: "", label: "All", count: counts.total, active: "bg-indigo-600 border-indigo-600" },
           { key: "online", label: "🌐 Online", count: counts.bySaleChannel?.online ?? 0, active: "bg-blue-600 border-blue-600" },
           { key: "offline", label: "🏬 Offline", count: counts.bySaleChannel?.offline ?? 0, active: "bg-purple-600 border-purple-600" },
+          { key: "wholesale", label: "📦 Wholesale", count: counts.bySaleChannel?.wholesale ?? 0, active: "bg-emerald-600 border-emerald-600" },
         ].map((c) => (
           <button
             key={c.key}
@@ -245,6 +260,20 @@ export default function OrdersPage() {
             {c.label} ({c.count})
           </button>
         ))}
+
+        {/* 🏭 শুধু Wholesale চ্যানেলে — যাদের কাছে বাকি আছে শুধু তাদের অর্ডার */}
+        {saleChannel === "wholesale" && (
+          <button
+            onClick={() => setDueOnly((v) => !v)}
+            className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition ${
+              dueOnly
+                ? "bg-red-600 border-red-600 text-white"
+                : "bg-white dark:bg-slate-800 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
+            }`}
+          >
+            💸 বাকি আছে
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -268,6 +297,7 @@ export default function OrdersPage() {
               onHistory={setHistoryOrder}
               onSendCourier={sendCourierDirect}
               onManualCourier={setManualOrder}
+              onCollectPayment={openCollect}
               onBulkStatusChange={updateManyStatus}
               onBulkDelete={deleteMany}
               onBulkSendCourier={sendCourierMany}
@@ -288,6 +318,7 @@ export default function OrdersPage() {
               onHistory={setHistoryOrder}
               onSendCourier={sendCourierDirect}
               onManualCourier={setManualOrder}
+              onCollectPayment={openCollect}
               onBulkStatusChange={updateManyStatus}
               onBulkDelete={deleteMany}
               onBulkSendCourier={sendCourierMany}
@@ -327,6 +358,15 @@ export default function OrdersPage() {
         order={manualOrder}
         onClose={() => setManualOrder(null)}
         onSubmit={(payload) => sendManualCourier(manualOrder._id, payload)}
+      />
+
+      {/* 🏭 WHOLESALE বাকি আদায় + পেমেন্ট হিস্টোরি */}
+      <CollectPaymentModal
+        order={collectOrder}
+        onClose={() => setCollectId(null)}
+        onSubmit={(payload) => collectPayment(collectOrder._id, payload)}
+        onReverse={(paymentId) => reversePayment(collectOrder._id, paymentId)}
+        canReverse={canEditLocked}
       />
 
       {/* HISTORY MODAL (timeline + stock ledger + Undo/Reopen/Return) */}

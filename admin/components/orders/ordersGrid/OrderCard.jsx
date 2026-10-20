@@ -25,7 +25,11 @@ import {
   formatOrderTime,
   needsPaymentVerification,
   paymentMethodLabel,
+  isWholesale,
+  isDueActive,
+  wholesaleDue,
 } from "../shared/utils";
+import { ChannelBadge, WholesalePaymentInfo } from "../shared/WholesaleBadges";
 
 export default function OrderCard({
   o,
@@ -40,6 +44,7 @@ export default function OrderCard({
   onHistory,
   onSendCourier,
   onManualCourier,
+  onCollectPayment,
 
   // ✅ NEW: parent থেকে courier final sync handler পাঠাবেন
   onFinalStatusSync,
@@ -102,11 +107,7 @@ export default function OrderCard({
                 <Badge type={o.status}>{STATUS_LABEL[o.status]}</Badge>
               </div>
 
-              {o.saleChannel === "offline" && (
-                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20 leading-none">
-                  🏬 Offline
-                </span>
-              )}
+              <ChannelBadge o={o} compact />
             </div>
 
             {/* Cancel Reason */}
@@ -147,6 +148,12 @@ export default function OrderCard({
             <div className="text-[14px] font-black text-gray-900 dark:text-slate-100 leading-tight">
               ৳{o.total}
             </div>
+            {/* 🏭 Wholesale: বাকি থাকলে কার্ডের ওপরেই লাল ট্যাগ */}
+            {isDueActive(o) && wholesaleDue(o) > 0 && (
+              <div className="text-[10px] font-black text-red-600 dark:text-red-400 leading-tight">
+                Due ৳{wholesaleDue(o)}
+              </div>
+            )}
             <div
               className={`flex items-center gap-0.5 text-[9px] font-bold uppercase leading-none ${
                 expanded ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-slate-500"
@@ -241,7 +248,8 @@ export default function OrderCard({
               <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase">
                 Payment
               </span>
-              <Badge>{paymentMethodLabel(o)}</Badge>
+              {/* 🏭 Wholesale-এ payment method badge নেই — নিচে Paid/Due দেখায় */}
+              {!isWholesale(o) && <Badge>{paymentMethodLabel(o)}</Badge>}
               {o.paymentMethod !== "cod" && (
                 <span
                   className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${
@@ -260,6 +268,8 @@ export default function OrderCard({
                 </span>
               )}
             </div>
+
+            <WholesalePaymentInfo o={o} onCollect={onCollectPayment} />
 
             {o.paymentMethod !== "cod" && o.paymentDetails?.transactionId && (
               <div className="flex items-center gap-1 text-gray-600 dark:text-slate-400">

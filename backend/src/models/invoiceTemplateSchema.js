@@ -83,7 +83,7 @@ const sampleOrderItemSchema = new mongoose.Schema(
 
 export const invoiceSampleOrderSchema = new mongoose.Schema(
   {
-    saleChannel: { type: String, enum: ["online", "offline"], default: "online" },
+    saleChannel: { type: String, enum: ["online", "offline", "wholesale"], default: "online" },
     paymentMethod: { type: String, default: "cod" },
     paymentStatus: { type: String, enum: ["pending", "paid", "failed"], default: "pending" },
     billing: {

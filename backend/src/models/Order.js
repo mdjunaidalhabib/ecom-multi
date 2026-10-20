@@ -25,10 +25,12 @@ const orderSchema = new mongoose.Schema(
        ✅ SALE CHANNEL
        - "online": ওয়েবসাইট/ডেলিভারি অর্ডার (billing info বাধ্যতামূলক)
        - "offline": দোকানে সামনাসামনি বিক্রি (billing info ঐচ্ছিক)
+       - "wholesale": পাইকারি বিক্রি — হিসাব আলাদা, বাকি (due) ট্র্যাক হয়
+         (নাম + ফোন বাধ্যতামূলক, ডেলিভারি চার্জ নেই, paidAmount/payments আছে)
     ============================ */
     saleChannel: {
       type: String,
-      enum: ["online", "offline"],
+      enum: ["online", "offline", "wholesale"],
       default: "online",
       index: true,
     },
@@ -142,6 +144,31 @@ const orderSchema = new mongoose.Schema(
     // Order (এবং তার accounting/history value) অক্ষত থাকে, Orders পেজে
     // ঠিক আগের মতোই দেখা যায়, শুধু Payments history-তে আর দেখানো হয় না।
     hiddenFromPaymentsView: { type: Boolean, default: false },
+
+    /* ===========================
+       ✅ WHOLESALE DUE TRACKING
+       - শুধু saleChannel === "wholesale" অর্ডারে ব্যবহৃত হয়
+       - বাকি (due) আলাদা করে সংরক্ষণ করা হয় না — সবসময় হিসাব হয়:
+         due = max(0, total - paidAmount)  (total এডিট হলেও ভুল হয় না)
+       - payments: প্রতিটা টাকা আদায়ের লগ (কখনো মোছা হয় না, শুধু ভুল
+         এন্ট্রি "reverse" করা যায় — তখন paidAmount থেকে বিয়োগ হয়)
+       - paymentStatus এখানে derived: due == 0 হলে "paid", নাহলে "pending"
+    ============================ */
+    paidAmount: { type: Number, default: 0, min: 0 },
+    payments: [
+      {
+        amount: { type: Number, required: true, min: 0 },
+        method: { type: String, default: "cash", trim: true },
+        note: { type: String, default: "" },
+        at: { type: Date, default: Date.now },
+        byName: { type: String, default: null },
+        byId: { type: String, default: null },
+        // ভুল এন্ট্রি হলে মোছা হয় না — reversed চিহ্নিত হয়, paidAmount থেকে বাদ যায়
+        reversed: { type: Boolean, default: false },
+        reversedAt: { type: Date, default: null },
+        reversedByName: { type: String, default: null },
+      },
+    ],
 
     /* ===========================
        ✅ ORDER STATUS

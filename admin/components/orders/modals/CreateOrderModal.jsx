@@ -74,6 +74,10 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
   ============================ */
   const [saleChannel, setSaleChannel] = useState("online");
   const isOffline = saleChannel === "offline";
+  // 🏭 Wholesale (পাইকারি): নাম+ফোন বাধ্যতামূলক, ডেলিভারি ৳0, বাকি (due) ট্র্যাক হয়
+  const isWholesale = saleChannel === "wholesale";
+  // Offline ও Wholesale — দুটোতেই ডেলিভারি চার্জ নেই
+  const noDelivery = isOffline || isWholesale;
 
   /* ===========================
      ✅ BILLING
@@ -98,6 +102,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [paymentStatus, setPaymentStatus] = useState("pending");
   const [status, setStatus] = useState("pending");
+  // 🏭 Wholesale: অর্ডারের সময়ই কত টাকা পেলেন (বাকিটা due)
+  const [paidNow, setPaidNow] = useState(0);
 
   /* ===========================
      ✅ ITEMS
@@ -240,6 +246,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
     setPaymentMethod("cod");
     setPaymentStatus("pending");
     setStatus("pending");
+    setPaidNow(0);
   }, [open]);
 
   /* ===========================
@@ -303,13 +310,19 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
     0
   );
 
-  // ✅ Offline (in-store) sale-এ ডেলিভারি চার্জ প্রযোজ্য নয়
-  const effectiveDeliveryCharge = isOffline ? 0 : toNumber(deliveryCharge, 0);
+  // ✅ Offline (in-store) ও Wholesale sale-এ ডেলিভারি চার্জ প্রযোজ্য নয়
+  const effectiveDeliveryCharge = noDelivery ? 0 : toNumber(deliveryCharge, 0);
 
   const total = Math.max(
     0,
     subtotal + effectiveDeliveryCharge - toNumber(discount, 0)
   );
+
+  // 🏭 Wholesale পেমেন্ট: পরিশোধ [0..total] এর মধ্যে বাঁধা, বাকি = total - পরিশোধ
+  const wholesalePaid = isWholesale
+    ? Math.min(total, Math.max(0, toNumber(paidNow, 0)))
+    : 0;
+  const wholesaleDueNow = isWholesale ? Math.max(0, total - wholesalePaid) : 0;
 
   /* ===========================
      ✅ VALIDATION
@@ -320,7 +333,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
     phone:
       !isOffline &&
       (!billing.phone.trim() || !phoneRegex.test(billing.phone.trim())),
-    address: !isOffline && !billing.address.trim(),
+    // Wholesale-এ address ঐচ্ছিক (নাম+ফোন লাগে — কার কাছে বাকি সেটা জানতে)
+    address: !isOffline && !isWholesale && !billing.address.trim(),
   };
 
   const hasValidItem = items.some(
@@ -349,7 +363,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
   });
 
   const canSubmit =
-    (isOffline || !deliveryLoading) &&
+    (noDelivery || !deliveryLoading) &&
     !errors.name &&
     !errors.phone &&
     !errors.address &&
@@ -360,13 +374,14 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
   // ✅ ঠিক কী কারণে বাটন disable আছে সেটা admin-কে স্পষ্টভাবে দেখানো হয়,
   // যাতে fill করে submit করেও error না খেয়ে আগে থেকেই বুঝতে পারে
   const missingReason = (() => {
-    if (!isOffline && deliveryLoading) return "Delivery charge লোড হচ্ছে...";
+    if (!noDelivery && deliveryLoading) return "Delivery charge লোড হচ্ছে...";
     if (!hasValidItem) return "অন্তত ১টি প্রোডাক্ট যোগ করুন";
     if (hasMissingVariant) return "⚠️ ভ্যারিয়েন্ট (Color) সিলেক্ট করুন";
     if (hasOutOfStockItem) return "⚠️ কিছু আইটেমে স্টক নেই";
-    if (!isOffline && errors.name) return "Customer Name দিন";
+    if (!isOffline && errors.name)
+      return isWholesale ? "পার্টির নাম দিন" : "Customer Name দিন";
     if (!isOffline && errors.phone) return "সঠিক Phone নম্বর দিন";
-    if (!isOffline && errors.address) return "Address দিন";
+    if (errors.address) return "Address দিন";
     return "Fill required fields...";
   })();
 
@@ -508,13 +523,20 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
         discount: toNumber(discount, 0),
         deliveryCharge: effectiveDeliveryCharge,
         paymentMethod,
-        paymentStatus,
+        paymentStatus: isWholesale
+          ? wholesaleDueNow <= 0
+            ? "paid"
+            : "pending"
+          : paymentStatus,
         status,
 
         createdBy: "admin",
         createdByName: "Admin",
 
         saleChannel,
+
+        // 🏭 Wholesale: এখন কত পেলেন (backend আবার [0..total] এ বেঁধে নেয়)
+        ...(isWholesale ? { paidAmount: wholesalePaid } : {}),
       });
     } catch {
       // ❗ error already toasted upstream (useOrders' createOrder) — keep
@@ -542,9 +564,11 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
           {/* ✅ STICKY HEADER */}
           <div
             className={`shrink-0 overflow-hidden px-4 sm:px-6 py-5 flex items-center justify-between sticky top-0 z-20 transition-colors ${
-              isOffline
-                ? "bg-gradient-to-r from-purple-600 via-fuchsia-600 to-purple-700"
-                : "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600"
+              isWholesale
+                ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700"
+                : isOffline
+                  ? "bg-gradient-to-r from-purple-600 via-fuchsia-600 to-purple-700"
+                  : "bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600"
             }`}
           >
             <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
@@ -559,8 +583,18 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                   Create New Order
                 </div>
                 <div className="text-[11px] text-white/80 font-semibold flex items-center gap-1.5">
-                  {isOffline ? <Store size={12} /> : <Globe size={12} />}
-                  {isOffline ? "Offline in-store sale" : "Online delivery order"}
+                  {isWholesale ? (
+                    <Package size={12} />
+                  ) : isOffline ? (
+                    <Store size={12} />
+                  ) : (
+                    <Globe size={12} />
+                  )}
+                  {isWholesale
+                    ? "Wholesale (পাইকারি) sale — বাকি ট্র্যাক হবে"
+                    : isOffline
+                      ? "Offline in-store sale"
+                      : "Online delivery order"}
                 </div>
               </div>
             </div>
@@ -582,16 +616,20 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                 {/* SALE CHANNEL CARD */}
                 <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm space-y-3">
                   <SectionHeader icon={ShoppingBag} title="Sale Channel" />
-                  <div className="grid grid-cols-2 gap-2.5 p-1 rounded-2xl bg-gray-100 dark:bg-slate-700">
+                  <div className="grid grid-cols-3 gap-2.5 p-1 rounded-2xl bg-gray-100 dark:bg-slate-700">
                     <button
                       type="button"
                       onClick={() => {
                         setSaleChannel("online");
                         setPaymentStatus("pending");
                         setStatus("pending");
+                        if (isWholesale) {
+                          setPaymentMethod("cod");
+                          setPaidNow(0);
+                        }
                       }}
                       className={`h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${
-                        !isOffline
+                        !isOffline && !isWholesale
                           ? "bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-md"
                           : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300"
                       }`}
@@ -604,6 +642,10 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                         setSaleChannel("offline");
                         setPaymentStatus("paid");
                         setStatus("delivered");
+                        if (isWholesale) {
+                          setPaymentMethod("cod");
+                          setPaidNow(0);
+                        }
                       }}
                       className={`h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${
                         isOffline
@@ -613,7 +655,30 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                     >
                       <Store size={16} /> Offline
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSaleChannel("wholesale");
+                        setPaymentStatus("pending");
+                        setStatus("delivered");
+                        setPaymentMethod("cod");
+                        setPaidNow(0);
+                      }}
+                      className={`h-12 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all ${
+                        isWholesale
+                          ? "bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-md"
+                          : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      <Package size={16} /> Wholesale
+                    </button>
                   </div>
+                  {isWholesale && (
+                    <div className="flex items-start gap-2 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-3 py-2.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                      <Package size={14} className="shrink-0 mt-0.5" />
+                      Wholesale sale — পার্টির নাম ও ফোন বাধ্যতামূলক, ডেলিভারি চার্জ ৳০। এখন যত টাকা পাবেন "Paid Now" এ লিখুন, বাকিটা due হিসেবে জমা থাকবে — পরে Orders লিস্ট থেকে আদায় করতে পারবেন।
+                    </div>
+                  )}
                   {isOffline && (
                     <div className="flex items-start gap-2 rounded-2xl bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 px-3 py-2.5 text-[11px] text-purple-700 dark:text-purple-400 font-semibold">
                       <Store size={14} className="shrink-0 mt-0.5" />
@@ -633,7 +698,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                           : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400"
                       }`}
                     >
-                      {isOffline ? "Optional" : "Required"}
+                      {isOffline ? "Optional" : isWholesale ? "Name + Phone" : "Required"}
                     </div>
                   </div>
 
@@ -644,7 +709,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                       </div>
                       <input
                         className={inputClass(touched.name && errors.name)}
-                        placeholder="Customer name"
+                        placeholder={isWholesale ? "Party / shop name" : "Customer name"}
                         value={billing.name}
                         onChange={(e) =>
                           setBilling((p) => ({ ...p, name: e.target.value }))
@@ -682,7 +747,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
 
                     <div className="space-y-1">
                       <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
-                        Address {!isOffline && <span className="text-red-600 dark:text-red-400">*</span>}
+                        Address {!isOffline && !isWholesale && <span className="text-red-600 dark:text-red-400">*</span>}
                       </div>
                       <input
                         className={inputClass(
@@ -890,26 +955,73 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                         onChange={(e) => setPaymentMethod(e.target.value)}
                       >
                         <option value="cod">
-                          {isOffline ? "Cash" : "Cash On Delivery"}
+                          {isOffline || isWholesale ? "Cash" : "Cash On Delivery"}
                         </option>
                         <option value="bkash">bKash</option>
+                        {isWholesale && (
+                          <>
+                            <option value="nagad">Nagad</option>
+                            <option value="rocket">Rocket</option>
+                            <option value="bank">Bank</option>
+                            <option value="other">Other</option>
+                          </>
+                        )}
                       </select>
                     </div>
 
-                    <div className="space-y-1">
-                      <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
-                        Payment Status
+                    {isWholesale ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
+                            Paid Now (এখন পেলেন)
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setPaidNow(total)}
+                            className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                          >
+                            পুরো ৳{total}
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 font-black">
+                            ৳
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={total}
+                            className="w-full h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 pl-10 pr-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            value={paidNow === 0 ? "" : paidNow}
+                            placeholder="0 (সবটাই বাকি)"
+                            onWheel={(e) => e.target.blur()}
+                            onChange={(e) =>
+                              setPaidNow(
+                                Math.min(
+                                  total,
+                                  Math.max(0, toNumber(e.target.value, 0))
+                                )
+                              )
+                            }
+                          />
+                        </div>
                       </div>
-                      <select
-                        className="w-full h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-slate-100 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
-                        value={paymentStatus}
-                        onChange={(e) => setPaymentStatus(e.target.value)}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="paid">Paid</option>
-                        <option value="failed">Failed</option>
-                      </select>
-                    </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
+                          Payment Status
+                        </div>
+                        <select
+                          className="w-full h-12 rounded-2xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-slate-100 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-200"
+                          value={paymentStatus}
+                          onChange={(e) => setPaymentStatus(e.target.value)}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="paid">Paid</option>
+                          <option value="failed">Failed</option>
+                        </select>
+                      </div>
+                    )}
 
                     <div className="space-y-1">
                       <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
@@ -952,34 +1064,46 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                   {/* DELIVERY CHARGE */}
                   <div
                     className={`rounded-3xl border p-4 flex items-center justify-between gap-3 ${
-                      isOffline
-                        ? "border-purple-100 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/10"
-                        : "border-blue-100 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10"
+                      isWholesale
+                        ? "border-emerald-100 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10"
+                        : isOffline
+                          ? "border-purple-100 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/10"
+                          : "border-blue-100 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                          isOffline
-                            ? "bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400"
-                            : "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                          isWholesale
+                            ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                            : isOffline
+                              ? "bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400"
+                              : "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400"
                         }`}
                       >
                         <Truck size={16} />
                       </div>
                       <div>
                         <div className="text-sm font-black text-gray-900 dark:text-slate-100">
-                          Delivery Charge {isOffline ? "" : "(DB default)"}
+                          Delivery Charge {noDelivery ? "" : "(DB default)"}
                         </div>
                         <div className="text-[11px] text-gray-500 dark:text-slate-400 font-semibold">
-                          {isOffline
-                            ? "in-store sale • no delivery"
-                            : "auto-filled • editable"}
+                          {isWholesale
+                            ? "wholesale • no delivery"
+                            : isOffline
+                              ? "in-store sale • no delivery"
+                              : "auto-filled • editable"}
                         </div>
                       </div>
                     </div>
-                    {isOffline ? (
-                      <div className="text-lg font-black text-purple-700 dark:text-purple-400">
+                    {noDelivery ? (
+                      <div
+                        className={`text-lg font-black ${
+                          isWholesale
+                            ? "text-emerald-700 dark:text-emerald-400"
+                            : "text-purple-700 dark:text-purple-400"
+                        }`}
+                      >
                         ৳0
                       </div>
                     ) : (
@@ -1060,7 +1184,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                         Delivery
                       </span>
                       <span className="font-black text-gray-900 dark:text-slate-100">
-                        {isOffline
+                        {noDelivery
                           ? "৳0"
                           : deliveryLoading
                             ? "..."
@@ -1079,14 +1203,44 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
 
                     <div
                       className={`flex justify-between items-center text-lg font-black rounded-2xl px-4 py-3 mt-1 ${
-                        isOffline
-                          ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white"
-                          : "bg-gradient-to-r from-indigo-600 to-blue-600 text-white"
+                        isWholesale
+                          ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white"
+                          : isOffline
+                            ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white"
+                            : "bg-gradient-to-r from-indigo-600 to-blue-600 text-white"
                       }`}
                     >
                       <span>Total</span>
                       <span>৳{total}</span>
                     </div>
+
+                    {/* 🏭 Wholesale: পরিশোধ ও বাকি */}
+                    {isWholesale && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-slate-400 font-semibold">
+                            Paid Now
+                          </span>
+                          <span className="font-black text-green-700 dark:text-green-400">
+                            ৳{wholesalePaid}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-slate-400 font-semibold">
+                            Due (বাকি)
+                          </span>
+                          <span
+                            className={`font-black ${
+                              wholesaleDueNow > 0
+                                ? "text-red-600 dark:text-red-400"
+                                : "text-green-700 dark:text-green-400"
+                            }`}
+                          >
+                            {wholesaleDueNow > 0 ? `৳${wholesaleDueNow}` : "Settled ✓"}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1122,9 +1276,11 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                 className={`flex-1 sm:flex-none h-11 px-5 rounded-2xl font-black text-white transition ${
                   !canSubmit || isBusy
                     ? "bg-gray-300 dark:bg-slate-600 cursor-not-allowed"
-                    : isOffline
-                      ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:opacity-90"
-                      : "bg-gradient-to-r from-indigo-600 to-blue-600 hover:opacity-90"
+                    : isWholesale
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-90"
+                      : isOffline
+                        ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:opacity-90"
+                        : "bg-gradient-to-r from-indigo-600 to-blue-600 hover:opacity-90"
                 }`}
               >
                 {isBusy ? "Creating..." : "Create Order"}

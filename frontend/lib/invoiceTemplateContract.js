@@ -182,6 +182,17 @@ export function buildSampleShop() {
 }
 
 export function buildExtraSummaryRows(order) {
+  // ✅ Wholesale: পরিশোধ ও বাকি (due) আলাদা করে দেখায়
+  if (order?.saleChannel === "wholesale") {
+    const total = Number(order.total || 0);
+    const paid = Math.min(total, Math.max(0, Number(order.paidAmount || 0)));
+    const due = Math.max(0, total - paid);
+    return [
+      { label: "Paid", value: `${formatCurrency(paid)} tk`, variant: "paid" },
+      { label: "Due", value: `${formatCurrency(due)} tk`, variant: "cod" },
+    ];
+  }
+
   const isManualPayment = (order?.paymentMethod || "cod") !== "cod";
   const isAdvancePaid = isManualPayment && order?.paymentStatus === "paid";
   if (!isAdvancePaid) return [];

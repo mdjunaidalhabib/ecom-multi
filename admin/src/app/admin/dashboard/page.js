@@ -80,10 +80,11 @@ export default function DashboardPage() {
     cancelledAmount: 0,
   });
 
-  // ✅ Online vs Offline breakdown
+  // ✅ Online vs Offline vs Wholesale breakdown
   const [channelStats, setChannelStats] = useState({
     online: { orders: 0, sales: 0 },
     offline: { orders: 0, sales: 0 },
+    wholesale: { orders: 0, sales: 0 },
   });
 
   // ✅ status stats — প্রতিটা status এ কতগুলো অর্ডার + মোট টাকার পরিমাণ (সব status থাকবে, না থাকলে 0)
@@ -163,14 +164,18 @@ export default function DashboardPage() {
           const channelMap = {
             online: { orders: 0, sales: 0 },
             offline: { orders: 0, sales: 0 },
+            wholesale: { orders: 0, sales: 0 },
           };
+          // ⚠️ অজানা/পুরনো channel মান আগের মতোই "online" ধরা হয়
+          const channelOf = (order) =>
+            order.saleChannel === "offline" || order.saleChannel === "wholesale"
+              ? order.saleChannel
+              : "online";
           data.forEach((order) => {
-            const ch = order.saleChannel === "offline" ? "offline" : "online";
-            channelMap[ch].orders += 1;
+            channelMap[channelOf(order)].orders += 1;
           });
           deliveredOrders.forEach((order) => {
-            const ch = order.saleChannel === "offline" ? "offline" : "online";
-            channelMap[ch].sales += order.total || 0;
+            channelMap[channelOf(order)].sales += order.total || 0;
           });
           setChannelStats(channelMap);
         } else {
@@ -186,6 +191,7 @@ export default function DashboardPage() {
           setChannelStats({
             online: { orders: 0, sales: 0 },
             offline: { orders: 0, sales: 0 },
+            wholesale: { orders: 0, sales: 0 },
           });
         }
       } catch (error) {
@@ -298,6 +304,49 @@ export default function DashboardPage() {
     })).filter((d) => d.value > 0);
   }, [statusStats]);
 
+  // 🏭 Wholesale বাকি (due) হিসাব — cancelled/returned অর্ডার বাদ।
+  // due = total - paidAmount (backend ও Orders পেজের একই সূত্র)
+  const wholesaleSummary = useMemo(() => {
+    const all = orders.filter((o) => o.saleChannel === "wholesale");
+    const active = all.filter(
+      (o) => o.status !== "cancelled" && o.status !== "returned"
+    );
+
+    let paid = 0;
+    let due = 0;
+    let dueOrders = 0;
+    const parties = {};
+
+    active.forEach((o) => {
+      const total = Number(o.total || 0);
+      const p = Math.min(total, Math.max(0, Number(o.paidAmount || 0)));
+      const d = Math.max(0, total - p);
+      paid += p;
+      due += d;
+      if (d > 0) {
+        dueOrders += 1;
+        const key = o.billing?.phone || o.billing?.name || "unknown";
+        if (!parties[key]) {
+          parties[key] = {
+            key,
+            name: o.billing?.name || "—",
+            phone: o.billing?.phone || "",
+            due: 0,
+            orders: 0,
+          };
+        }
+        parties[key].due += d;
+        parties[key].orders += 1;
+      }
+    });
+
+    const topParties = Object.values(parties)
+      .sort((a, b) => b.due - a.due)
+      .slice(0, 8);
+
+    return { orders: all.length, paid, due, dueOrders, topParties };
+  }, [orders]);
+
   // ✅ Avg Order Value = delivered অর্ডারে কাস্টমার গড়ে প্রকৃত কত পেমেন্ট করেছে (delivery charge সহ)
   const deliveredOrders = useMemo(
     () => orders.filter((o) => o.status === "delivered"),
@@ -398,6 +447,22 @@ const cards = useMemo(() => {
       sub: `৳${channelStats.offline.sales} delivered sales`,
     },
     {
+      key: "wholesaleOrders",
+      label: "📦 Wholesale Orders",
+      value: channelStats.wholesale.orders,
+      gradient: "from-emerald-600 via-teal-600 to-emerald-500",
+      dot: "bg-white/50",
+      sub: `৳${channelStats.wholesale.sales} delivered sales`,
+    },
+    {
+      key: "wholesaleDue",
+      label: "💸 Wholesale Due",
+      value: `৳${wholesaleSummary.due}`,
+      gradient: "from-rose-600 via-red-600 to-orange-500",
+      dot: "bg-white/50",
+      sub: `${wholesaleSummary.dueOrders} orders • ৳${wholesaleSummary.paid} collected`,
+    },
+    {
       key: "pending",
       label: "Pending",
       value: statusStats.pending?.count ?? 0,
@@ -446,7 +511,7 @@ const cards = useMemo(() => {
       sub: `৳${statusStats.returned?.amount ?? 0} value — not counted in sales`,
     },
   ];
-}, [stats, statusStats, channelStats, monthlyComparison, avgOrderValue, totalQuantitySold]);
+}, [stats, statusStats, channelStats, wholesaleSummary, monthlyComparison, avgOrderValue, totalQuantitySold]);
 
   return (
     <div className="space-y-6 p-3 sm:p-6">
@@ -554,6 +619,62 @@ const cards = useMemo(() => {
               </div>
             ))}
           </div>
+
+          {/* 🏭 Wholesale — পার্টি অনুযায়ী বাকি (শুধু wholesale অর্ডার থাকলে) */}
+          {wholesaleSummary.orders > 0 && (
+            <div className="bg-white dark:bg-slate-900 shadow rounded-2xl border border-gray-100 dark:border-slate-700/60 p-4 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-slate-100">
+                    📦 Wholesale — পার্টি অনুযায়ী বাকি
+                  </h2>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                    Cancelled/Returned অর্ডার বাদে • আদায় করতে Orders → Wholesale → 💸 বাকি আছে
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-[11px] font-semibold uppercase text-gray-400 dark:text-slate-500">
+                    মোট বাকি
+                  </div>
+                  <div className="text-xl font-black text-red-600 dark:text-red-400">
+                    ৳{wholesaleSummary.due}
+                  </div>
+                </div>
+              </div>
+
+              {wholesaleSummary.topParties.length === 0 ? (
+                <div className="text-sm font-semibold text-green-700 dark:text-green-400">
+                  ✓ কোনো বাকি নেই — সব পার্টি পরিশোধ করেছে
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-[11px] uppercase text-gray-500 dark:text-slate-400 border-b dark:border-slate-700">
+                        <th className="py-2 pr-3">পার্টি</th>
+                        <th className="py-2 pr-3">ফোন</th>
+                        <th className="py-2 pr-3 text-right">বাকি অর্ডার</th>
+                        <th className="py-2 text-right">বাকি টাকা</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {wholesaleSummary.topParties.map((p) => (
+                        <tr
+                          key={p.key}
+                          className="border-b last:border-0 dark:border-slate-800 text-gray-900 dark:text-slate-100"
+                        >
+                          <td className="py-2 pr-3 font-semibold">{p.name}</td>
+                          <td className="py-2 pr-3 text-gray-500 dark:text-slate-400">{p.phone || "—"}</td>
+                          <td className="py-2 pr-3 text-right">{p.orders}</td>
+                          <td className="py-2 text-right font-black text-red-600 dark:text-red-400">৳{p.due}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 🧾 Recent Orders + 🍩 Status Distribution */}
           <div className="grid lg:grid-cols-3 gap-4">

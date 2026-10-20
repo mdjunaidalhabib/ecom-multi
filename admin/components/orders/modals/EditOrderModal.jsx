@@ -133,6 +133,10 @@ export default function EditOrderModal({
   );
 
   const isOffline = form.saleChannel === "offline";
+  const isWholesaleOrder = form.saleChannel === "wholesale";
+  // ✅ Offline-এ name/phone/address সবই ঐচ্ছিক; Wholesale-এ শুধু address ঐচ্ছিক
+  // (নাম + ফোন লাগে — কার কাছে বাকি সেটা জানতে)
+  const addressOptional = isOffline || isWholesaleOrder;
   const isLockedOrder = LOCKED_STATUSES.includes(form.status);
   // ✅ Delivered/Cancelled/Returned অর্ডার শুধু owner/admin এডিট করতে পারবে
   const lockedForMe = isLockedOrder && !canEditLocked;
@@ -146,7 +150,7 @@ export default function EditOrderModal({
   const errors = {
     name: !isOffline && !form?.billing?.name?.trim(),
     phone: isOffline ? !!phoneValue && !phoneValid : !phoneValue || !phoneValid,
-    address: !isOffline && !form?.billing?.address?.trim(),
+    address: !addressOptional && !form?.billing?.address?.trim(),
     cancelReason: isCancelled && !form?.cancelReason?.trim(),
   };
 
@@ -240,6 +244,11 @@ export default function EditOrderModal({
                     🏬 Offline
                   </span>
                 )}
+                {isWholesaleOrder && (
+                  <span className="inline-block mt-0.5 mr-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border bg-emerald-500/30 border-white/25 text-white">
+                    📦 Wholesale
+                  </span>
+                )}
                 {form.status && (
                   <span className="inline-block mt-0.5 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border bg-white/10 border-white/25 text-white">
                     {STATUS_LABEL?.[form.status] || form.status}
@@ -271,22 +280,26 @@ export default function EditOrderModal({
                 <SectionHeader icon={Wallet} title="Order Details" />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelClass(false)}>Payment Method</label>
-                    <select
-                      className={fieldClass(false)}
-                      value={form.paymentMethod}
-                      onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          paymentMethod: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="cod">COD</option>
-                      <option value="bkash">bKash</option>
-                    </select>
-                  </div>
+                  {/* 🏭 Wholesale-এ payment method এখানে নেই — টাকা আদায় হয়
+                      Orders লিস্টের "Collect Payment" থেকে (প্রতিটার মাধ্যম আলাদা লগ হয়) */}
+                  {!isWholesaleOrder && (
+                    <div>
+                      <label className={labelClass(false)}>Payment Method</label>
+                      <select
+                        className={fieldClass(false)}
+                        value={form.paymentMethod}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            paymentMethod: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="cod">COD</option>
+                        <option value="bkash">bKash</option>
+                      </select>
+                    </div>
+                  )}
 
                   <div>
                     <label className={labelClass(false)}>Tracking ID</label>
@@ -499,7 +512,7 @@ export default function EditOrderModal({
                       (submitted || touched.address) && errors.address,
                     )}
                   >
-                    {isOffline ? "Address (optional)" : "Address *"}
+                    {addressOptional ? "Address (optional)" : "Address *"}
                   </label>
                   <textarea
                     rows={3}

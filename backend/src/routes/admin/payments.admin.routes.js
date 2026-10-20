@@ -134,6 +134,8 @@ router.get("/pending", async (req, res) => {
     const orders = await Order.find({
       paymentMethod: { $ne: "cod" },
       paymentStatus: "pending",
+      // ✅ Wholesale-এর বাকি/আদায় আলাদা (Orders পেজ থেকে) — verify queue-তে নয়
+      saleChannel: { $ne: "wholesale" },
     })
       .sort({ createdAt: -1 })
       .limit(500) // safety cap — pending queue shouldn't realistically exceed this

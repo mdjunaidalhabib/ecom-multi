@@ -100,7 +100,7 @@ function ElementContent({ element, order, shop }) {
             <strong>Date:</strong> {datePart} ; {timePart}
           </div>
           <div>
-            <strong>Order Type:</strong> {order?.saleChannel === "offline" ? "Offline" : "Online"}
+            <strong>Order Type:</strong> {{ offline: "Offline", wholesale: "Wholesale" }[order?.saleChannel] || "Online"}
           </div>
           <div>
             <strong>Payment:</strong> {String(order?.paymentMethod || "cod").toUpperCase()}

@@ -28,7 +28,9 @@ import {
   formatOrderTime,
   needsPaymentVerification,
   paymentMethodLabel,
+  isWholesale,
 } from "../shared/utils";
+import { ChannelBadge, WholesalePaymentInfo } from "../shared/WholesaleBadges";
 import useOrdersManager from "../hooks/useOrdersManager";
 import StatusTabs from "./StatusTabs";
 import BulkActions from "./BulkActions";
@@ -50,6 +52,7 @@ export default function OrdersTable({
   onHistory,
   onSendCourier,
   onManualCourier,
+  onCollectPayment,
   onBulkStatusChange,
   onBulkDelete,
   onBulkSendCourier,
@@ -241,11 +244,7 @@ export default function OrdersTable({
                     <td className="p-2">
                       <div className="font-mono text-xs text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
                         #{o.orderNumber ?? o._id}
-                        {o.saleChannel === "offline" && (
-                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20">
-                            🏬 Offline
-                          </span>
-                        )}
+                        <ChannelBadge o={o} />
                       </div>
 
                       {isAdminCreated && (
@@ -331,8 +330,10 @@ export default function OrdersTable({
                     </td>
                     {/* PAYMENT */}
                     <td className="p-2 space-y-1 min-w-[150px]">
+                      <WholesalePaymentInfo o={o} onCollect={onCollectPayment} />
                       <div className="flex items-center gap-1 flex-wrap">
-                        <Badge>{paymentMethodLabel(o)}</Badge>
+                        {/* 🏭 Wholesale-এ payment method badge নেই — উপরে Paid/Due দেখায় */}
+                        {!isWholesale(o) && <Badge>{paymentMethodLabel(o)}</Badge>}
                         {o.paymentMethod !== "cod" && (
                           <span
                             className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${

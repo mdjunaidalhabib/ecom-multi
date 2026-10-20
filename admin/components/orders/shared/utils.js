@@ -26,6 +26,28 @@ export function paymentMethodLabel(o) {
   return o?.paymentMethod?.toUpperCase() || "";
 }
 
+/* ===========================
+   🏭 WHOLESALE (পাইকারি) হিসাব
+   - বাকি (due) আলাদা সংরক্ষণ হয় না, সবসময় হিসাব হয়: total - paidAmount
+   - backend (order.admin.routes.js) এর একই সূত্র
+=========================== */
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+export const isWholesale = (o) => o?.saleChannel === "wholesale";
+
+// cancelled/returned অর্ডারের বাকি আর গণনায় ধরা হয় না
+export const isDueActive = (o) =>
+  isWholesale(o) && o.status !== "cancelled" && o.status !== "returned";
+
+export function wholesalePaid(o) {
+  const total = Number(o?.total || 0);
+  return Math.min(total, Math.max(0, round2(o?.paidAmount)));
+}
+
+export function wholesaleDue(o) {
+  return Math.max(0, round2(Number(o?.total || 0) - Number(o?.paidAmount || 0)));
+}
+
 export function formatOrderTime(o) {
   const raw = o?.createdAt || o?.orderDate || o?.date;
   return formatDateTime(raw, { year: undefined });

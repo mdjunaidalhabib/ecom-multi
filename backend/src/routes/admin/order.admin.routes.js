@@ -68,6 +68,21 @@ const PAYMENT_HOLD_MESSAGE =
 
 /**
  * ================================
+ * 🏭 WHOLESALE HELPERS
+ * ================================
+ * Wholesale অর্ডারে বাকি (due) আলাদা সংরক্ষণ হয় না, সবসময় হিসাব হয়:
+ *   due = max(0, total - paidAmount)
+ * paymentStatus এখানে derived — due == 0 হলে "paid", নাহলে "pending"।
+ */
+const SALE_CHANNELS = ["online", "offline", "wholesale"];
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+const wholesaleDue = (total, paid) =>
+  Math.max(0, round2(Number(total || 0) - Number(paid || 0)));
+const wholesalePaymentStatus = (total, paid) =>
+  wholesaleDue(total, paid) <= 0 ? "paid" : "pending";
+
+/**
+ * ================================
  * GET all orders
  * ================================
  */
@@ -98,20 +113,39 @@ router.post("/", async (req, res) => {
       createdByName = "Admin",
       createdById = null,
 
-      // ✅ NEW: sale channel — "online" (delivery order) or "offline" (in-store sale)
+      // ✅ NEW: sale channel — "online" (delivery order), "offline" (in-store sale)
+      // বা "wholesale" (পাইকারি, বাকি ট্র্যাক হয়)
       saleChannel = "online",
+
+      // ✅ Wholesale: অর্ডারের সময়ই কত টাকা নগদ/আগাম পেলেন (বাকিটা due)
+      paidAmount = 0,
     } = req.body;
 
-    // ✅ Validate billing — শুধু "online" sale-এ বাধ্যতামূলক, "offline" sale-এ ঐচ্ছিক
-    if (
-      saleChannel !== "offline" &&
-      (!billing?.name?.trim() ||
+    if (!SALE_CHANNELS.includes(saleChannel)) {
+      return res.status(400).json({ error: "Invalid sale channel" });
+    }
+    const isWholesale = saleChannel === "wholesale";
+
+    // ✅ Validate billing —
+    //  - "online": name, phone, address বাধ্যতামূলক
+    //  - "wholesale": name + phone বাধ্যতামূলক (কার কাছে বাকি সেটা জানতে), address ঐচ্ছিক
+    //  - "offline": সব ঐচ্ছিক
+    if (saleChannel === "online") {
+      if (
+        !billing?.name?.trim() ||
         !billing?.phone?.trim() ||
-        !billing?.address?.trim())
-    ) {
-      return res
-        .status(400)
-        .json({ error: "Billing name, phone & address are required" });
+        !billing?.address?.trim()
+      ) {
+        return res
+          .status(400)
+          .json({ error: "Billing name, phone & address are required" });
+      }
+    } else if (isWholesale) {
+      if (!billing?.name?.trim() || !billing?.phone?.trim()) {
+        return res.status(400).json({
+          error: "Wholesale অর্ডারে পার্টির নাম ও ফোন নম্বর বাধ্যতামূলক (বাকি ট্র্যাক করার জন্য)",
+        });
+      }
     }
 
     // ✅ Validate items basic
@@ -179,15 +213,56 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "No valid items found" });
     }
 
+    // ✅ Wholesale-এ ডেলিভারি চার্জ নেই (পাইকারি হিসাব আলাদা ও পরিষ্কার রাখতে)
+    const effectiveDelivery = isWholesale ? 0 : deliveryCharge;
+
     const total = Math.max(
       0,
-      Number(subtotal) + Number(deliveryCharge || 0) - Number(discount || 0)
+      Number(subtotal) +
+        Number(effectiveDelivery || 0) -
+        Number(discount || 0)
     );
+
+    // ✅ Wholesale পেমেন্ট হিসাব: paid [0..total] এর মধ্যে বাঁধা থাকে।
+    // অর্ডার-লেভেল paymentMethod সবসময় "cod" রাখা হয় — যাতে bKash/Nagad
+    // "Pending Verification" queue ও status hold-এ আটকে না যায়। কোন
+    // মাধ্যমে কত টাকা এল সেটা payments[] লগে থাকে।
+    let wholesaleFields = {};
+    let effectivePaymentMethod = paymentMethod;
+    let effectivePaymentStatus = paymentStatus;
+    if (isWholesale) {
+      const paid = Math.min(
+        total,
+        Math.max(0, round2(Number(paidAmount) || 0))
+      );
+      const actor = actorFromAdmin(req.admin);
+      effectivePaymentMethod = "cod";
+      effectivePaymentStatus = wholesalePaymentStatus(total, paid);
+      wholesaleFields = {
+        paidAmount: paid,
+        payments:
+          paid > 0
+            ? [
+                {
+                  amount: paid,
+                  method:
+                    !paymentMethod || paymentMethod === "cod"
+                      ? "cash"
+                      : String(paymentMethod),
+                  note: "অর্ডারের সময় পরিশোধ",
+                  at: new Date(),
+                  byName: actor.name,
+                  byId: actor.id,
+                },
+              ]
+            : [],
+      };
+    }
 
     const created = await Order.create({
       items: finalItems,
       subtotal,
-      deliveryCharge,
+      deliveryCharge: effectiveDelivery,
       discount,
       total,
 
@@ -200,8 +275,8 @@ router.post("/", async (req, res) => {
 
       promoCode,
       userId,
-      paymentMethod,
-      paymentStatus,
+      paymentMethod: effectivePaymentMethod,
+      paymentStatus: effectivePaymentStatus,
       status,
 
       // ✅ IMPORTANT: Save createdBy
@@ -210,6 +285,7 @@ router.post("/", async (req, res) => {
       createdById,
 
       saleChannel,
+      ...wholesaleFields,
 
       statusHistory: [
         buildHistoryEntry({
@@ -276,6 +352,15 @@ router.get("/", async (req, res) => {
     if (req.query.status) filter.status = req.query.status;
     if (req.query.paymentStatus) filter.paymentStatus = req.query.paymentStatus;
     if (req.query.saleChannel) filter.saleChannel = req.query.saleChannel;
+
+    // ✅ Wholesale "বাকি আছে" ফিল্টার — due > 0 এবং cancelled/returned না
+    if (req.query.dueOnly === "true") {
+      filter.saleChannel = "wholesale";
+      filter.status = filter.status || { $nin: ["cancelled", "returned"] };
+      filter.$expr = {
+        $gt: [{ $subtract: ["$total", { $ifNull: ["$paidAmount", 0] }] }, 0],
+      };
+    }
 
     // ✅ SEARCH — সব পেজ মিলিয়ে (শুধু বর্তমান পেজের ২০টার মধ্যে না) খোঁজে,
     // Admin panel এর সার্চ বক্সের একই নিয়ম মেনে:
@@ -355,9 +440,10 @@ router.get("/counts", async (req, res) => {
       if (row._id) byStatus[row._id] = row.count;
     });
 
-    const bySaleChannel = { online: 0, offline: 0 };
+    const bySaleChannel = { online: 0, offline: 0, wholesale: 0 };
     channelAgg.forEach((row) => {
-      const key = row._id === "offline" ? "offline" : "online";
+      const key =
+        row._id === "offline" || row._id === "wholesale" ? row._id : "online";
       bySaleChannel[key] += row.count;
     });
 
@@ -743,10 +829,16 @@ router.put("/:id", async (req, res) => {
     if (req.body.trackingId !== undefined)
       updateData.trackingId = req.body.trackingId;
 
-    if (req.body.paymentMethod !== undefined)
+    // ✅ Wholesale-এ paymentMethod/paymentStatus হাতে বদলানো যাবে না —
+    // টাকা আদায় "Collect Payment" (POST /:id/payments) দিয়েই হয়, আর
+    // paymentStatus সবসময় paidAmount থেকে হিসাব হয়।
+    const currentIsWholesale = current.saleChannel === "wholesale";
+
+    if (req.body.paymentMethod !== undefined && !currentIsWholesale)
       updateData.paymentMethod = req.body.paymentMethod;
 
     if (
+      !currentIsWholesale &&
       req.body.paymentStatus !== undefined &&
       ["pending", "paid", "failed"].includes(req.body.paymentStatus)
     )
@@ -907,15 +999,26 @@ router.put("/:id", async (req, res) => {
 
       updateData.discount = discount;
       updateData.total = subtotal + delivery - discount;
+
+      // ✅ Wholesale: total বদলালে paymentStatus নতুন করে হিসাব হয়
+      if (currentIsWholesale) {
+        updateData.paymentStatus = wholesalePaymentStatus(
+          updateData.total,
+          current.paidAmount,
+        );
+      }
     }
 
     if (req.body.billing) {
       const isOffline = current.saleChannel === "offline";
       // ✅ Online অর্ডারে name/phone/address বাধ্যতামূলক (খালি পাঠালে আগেরটাই থাকে)।
       // Offline অর্ডারে ঐচ্ছিক — তাই খালি পাঠালে সত্যিই খালি করে দেওয়া হয়।
+      // Wholesale-এ name/phone বাধ্যতামূলক, শুধু address ঐচ্ছিক।
       const pick = (field) => {
         const incoming = req.body.billing[field];
-        if (isOffline) {
+        const optional =
+          isOffline || (currentIsWholesale && field === "address");
+        if (optional) {
           return incoming === undefined
             ? current.billing?.[field]
             : String(incoming ?? "").trim();
@@ -1013,6 +1116,158 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+
+/**
+ * ================================
+ * 🏭 WHOLESALE: বাকি টাকা আদায় (Collect Payment)
+ * POST /admin/orders/:id/payments
+ * body: { amount, method?, note? }
+ * ================================
+ * - শুধু wholesale অর্ডারে; cancelled/returned-এ নয়
+ * - বাকির (due) বেশি নেওয়া যায় না
+ * - paidAmount-এর ওপর optimistic check — একসাথে দুইবার চাপলেও
+ *   একই টাকা দুইবার যোগ হবে না
+ */
+router.post("/:id/payments", async (req, res) => {
+  try {
+    const amount = round2(req.body.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ error: "সঠিক টাকার পরিমাণ দিন" });
+    }
+
+    const method = String(req.body.method || "cash").trim().slice(0, 40) || "cash";
+    const note = String(req.body.note || "").trim().slice(0, 200);
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    if (order.saleChannel !== "wholesale") {
+      return res
+        .status(400)
+        .json({ error: "শুধু Wholesale অর্ডারে বাকি আদায় করা যায়।" });
+    }
+    if (STOCK_RELEASED_STATUSES.includes(order.status)) {
+      return res.status(400).json({
+        error: "Cancelled/Returned অর্ডারে নতুন পেমেন্ট নেওয়া যাবে না।",
+      });
+    }
+
+    const paidNow = Number(order.paidAmount || 0);
+    const due = wholesaleDue(order.total, paidNow);
+    if (due <= 0) {
+      return res.status(400).json({ error: "এই অর্ডারে কোনো বাকি নেই।" });
+    }
+    if (amount > due) {
+      return res
+        .status(400)
+        .json({ error: `বাকি আছে ৳${due}, এর বেশি নেওয়া যাবে না।` });
+    }
+
+    const actor = actorFromAdmin(req.admin);
+    const newPaid = round2(paidNow + amount);
+
+    const updated = await Order.findOneAndUpdate(
+      { _id: order._id, saleChannel: "wholesale", paidAmount: paidNow },
+      {
+        $set: {
+          paidAmount: newPaid,
+          paymentStatus: wholesalePaymentStatus(order.total, newPaid),
+        },
+        $push: {
+          payments: {
+            amount,
+            method,
+            note,
+            at: new Date(),
+            byName: actor.name,
+            byId: actor.id,
+          },
+        },
+      },
+      { new: true },
+    );
+
+    if (!updated) {
+      return res.status(409).json({
+        error: "অর্ডারটি এইমাত্র অন্য জায়গা থেকে বদলেছে। রিফ্রেশ করে আবার চেষ্টা করুন।",
+      });
+    }
+
+    // ⚠️ { order } wrapper — manual-courier/return route-এর মতোই (admin hook-এর applyOrderUpdate)
+    res.json({ order: updated });
+  } catch (err) {
+    console.error("❌ Failed to collect wholesale payment:", err);
+    res.status(400).json({ error: err?.message || "পেমেন্ট সেভ করা যায়নি" });
+  }
+});
+
+/**
+ * ================================
+ * 🏭 WHOLESALE: ভুল পেমেন্ট এন্ট্রি Reverse
+ * DELETE /admin/orders/:id/payments/:paymentId
+ * ================================
+ * এন্ট্রি মোছা হয় না (হিসাবের ট্রেইল থাকে) — "reversed" চিহ্নিত হয় এবং
+ * paidAmount থেকে বাদ যায়। শুধু শপ owner/admin পারবে, staff নয়।
+ */
+router.delete("/:id/payments/:paymentId", async (req, res) => {
+  try {
+    if (!isOwnerAdmin(req.admin)) {
+      return res
+        .status(403)
+        .json({ error: "পেমেন্ট এন্ট্রি Reverse করতে পারবে শুধু শপ owner/admin।" });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    if (order.saleChannel !== "wholesale") {
+      return res.status(400).json({ error: "শুধু Wholesale অর্ডারের জন্য।" });
+    }
+
+    const entry = (order.payments || []).find(
+      (p) => String(p._id) === String(req.params.paymentId),
+    );
+    if (!entry) return res.status(404).json({ error: "পেমেন্ট এন্ট্রি পাওয়া যায়নি" });
+    if (entry.reversed) {
+      return res.status(400).json({ error: "এই এন্ট্রি আগেই Reverse করা হয়েছে।" });
+    }
+
+    const actor = actorFromAdmin(req.admin);
+    const paidNow = Number(order.paidAmount || 0);
+    const newPaid = Math.max(0, round2(paidNow - Number(entry.amount || 0)));
+
+    const updated = await Order.findOneAndUpdate(
+      {
+        _id: order._id,
+        paidAmount: paidNow,
+        payments: {
+          $elemMatch: { _id: entry._id, reversed: { $ne: true } },
+        },
+      },
+      {
+        $set: {
+          paidAmount: newPaid,
+          paymentStatus: wholesalePaymentStatus(order.total, newPaid),
+          "payments.$.reversed": true,
+          "payments.$.reversedAt": new Date(),
+          "payments.$.reversedByName": actor.name,
+        },
+      },
+      { new: true },
+    );
+
+    if (!updated) {
+      return res.status(409).json({
+        error: "অর্ডারটি এইমাত্র অন্য জায়গা থেকে বদলেছে। রিফ্রেশ করে আবার চেষ্টা করুন।",
+      });
+    }
+
+    res.json({ order: updated });
+  } catch (err) {
+    console.error("❌ Failed to reverse wholesale payment:", err);
+    res.status(400).json({ error: err?.message || "Reverse করা যায়নি" });
+  }
+});
 
 /**
  * ================================

@@ -322,7 +322,9 @@ export function normalizeSampleOrder(input) {
   const items = Array.isArray(input?.items) && input.items.length ? input.items : fallback.items;
 
   return {
-    saleChannel: input?.saleChannel === "offline" ? "offline" : "online",
+    saleChannel: ["offline", "wholesale"].includes(input?.saleChannel)
+      ? input.saleChannel
+      : "online",
     paymentMethod:
       String(input?.paymentMethod ?? "").trim().slice(0, 40) || fallback.paymentMethod,
     paymentStatus: ["pending", "paid", "failed"].includes(input?.paymentStatus)
