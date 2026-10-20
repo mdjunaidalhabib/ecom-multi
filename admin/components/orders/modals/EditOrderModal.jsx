@@ -148,8 +148,11 @@ export default function EditOrderModal({
   // ✅ Name/Phone/Address শুধু ONLINE অর্ডারে বাধ্যতামূলক।
   // OFFLINE অর্ডারে এডিট করা যাবে কিন্তু ফাঁকা রাখা যাবে (phone দিলে ফরম্যাট ঠিক হতে হবে)।
   const errors = {
-    name: !isOffline && !form?.billing?.name?.trim(),
-    phone: isOffline ? !!phoneValue && !phoneValid : !phoneValue || !phoneValid,
+    name: !isOffline && !isWholesaleOrder && !form?.billing?.name?.trim(),
+    phone:
+      isOffline || isWholesaleOrder
+        ? !!phoneValue && !phoneValid
+        : !phoneValue || !phoneValid,
     address: !addressOptional && !form?.billing?.address?.trim(),
     cancelReason: isCancelled && !form?.cancelReason?.trim(),
   };
@@ -473,7 +476,7 @@ export default function EditOrderModal({
                   <label
                     className={labelClass((submitted || touched.name) && errors.name)}
                   >
-                    {isOffline ? "Name (optional)" : "Name *"}
+                    {isOffline ? "Name (optional)" : isWholesaleOrder ? "Name (খালি থাকলে auto)" : "Name *"}
                   </label>
                   <input
                     className={fieldClass((submitted || touched.name) && errors.name)}
@@ -489,7 +492,7 @@ export default function EditOrderModal({
                       (submitted || touched.phone) && errors.phone,
                     )}
                   >
-                    {isOffline ? "Phone (optional)" : "Phone *"}
+                    {isOffline || isWholesaleOrder ? "Phone (optional)" : "Phone *"}
                   </label>
                   <input
                     className={fieldClass(

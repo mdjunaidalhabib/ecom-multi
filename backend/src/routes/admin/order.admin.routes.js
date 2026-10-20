@@ -128,7 +128,7 @@ router.post("/", async (req, res) => {
 
     // ✅ Validate billing —
     //  - "online": name, phone, address বাধ্যতামূলক
-    //  - "wholesale": name + phone বাধ্যতামূলক (কার কাছে বাকি সেটা জানতে), address ঐচ্ছিক
+    //  - "wholesale": name, phone, address সব ঐচ্ছিক
     //  - "offline": সব ঐচ্ছিক
     if (saleChannel === "online") {
       if (
@@ -140,13 +140,8 @@ router.post("/", async (req, res) => {
           .status(400)
           .json({ error: "Billing name, phone & address are required" });
       }
-    } else if (isWholesale) {
-      if (!billing?.name?.trim() || !billing?.phone?.trim()) {
-        return res.status(400).json({
-          error: "Wholesale অর্ডারে পার্টির নাম ও ফোন নম্বর বাধ্যতামূলক (বাকি ট্র্যাক করার জন্য)",
-        });
-      }
     }
+    // wholesale: name/phone/address সব ঐচ্ছিক
 
     // ✅ Validate items basic
     if (!Array.isArray(items) || items.length === 0) {
@@ -296,6 +291,13 @@ router.post("/", async (req, res) => {
         }),
       ],
     });
+
+    // 🏭 Wholesale-এ নাম না দিলে ডিফল্ট নাম বসে: "Wholesale <orderNumber>"
+    // (orderNumber সেভের সময় তৈরি হয়, তাই create-এর পরে বসানো হচ্ছে)
+    if (isWholesale && !created.billing?.name?.trim()) {
+      created.set("billing.name", `Wholesale ${created.orderNumber}`);
+      await created.save();
+    }
 
     /* ✅✅ STRICT INVENTORY UPDATE
        - Validates real stock and decrements stock/sold, same as
@@ -1013,11 +1015,10 @@ router.put("/:id", async (req, res) => {
       const isOffline = current.saleChannel === "offline";
       // ✅ Online অর্ডারে name/phone/address বাধ্যতামূলক (খালি পাঠালে আগেরটাই থাকে)।
       // Offline অর্ডারে ঐচ্ছিক — তাই খালি পাঠালে সত্যিই খালি করে দেওয়া হয়।
-      // Wholesale-এ name/phone বাধ্যতামূলক, শুধু address ঐচ্ছিক।
+      // Wholesale-এ name খালি থাকলে ডিফল্ট "Wholesale <orderNumber>" বসে; phone/address ঐচ্ছিক।
       const pick = (field) => {
         const incoming = req.body.billing[field];
-        const optional =
-          isOffline || (currentIsWholesale && field === "address");
+        const optional = isOffline || currentIsWholesale;
         if (optional) {
           return incoming === undefined
             ? current.billing?.[field]
@@ -1025,8 +1026,13 @@ router.put("/:id", async (req, res) => {
         }
         return incoming?.trim() ? incoming : current.billing?.[field];
       };
+      let pickedName = pick("name");
+      // 🏭 Wholesale-এ নাম মুছে দিলে ডিফল্ট নাম ফিরে আসে
+      if (currentIsWholesale && !String(pickedName || "").trim()) {
+        pickedName = `Wholesale ${current.orderNumber}`;
+      }
       updateData.billing = {
-        name: pick("name"),
+        name: pickedName,
         phone: pick("phone"),
         address: pick("address"),
         note: pick("note"),

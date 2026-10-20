@@ -221,6 +221,9 @@ export default function DashboardPage() {
   const shopUrl = getShopPublicUrl(planInfo?.shop);
 
   const [orders, setOrders] = useState([]);
+  // 🏭 Wholesale বাকি তালিকা: সব দেখুন / সার্চ
+  const [showAllDue, setShowAllDue] = useState(false);
+  const [dueSearch, setDueSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -487,11 +490,13 @@ export default function DashboardPage() {
       due += d;
       if (d > 0) {
         dueOrders += 1;
-        const key = o.billing?.phone || o.billing?.name || "unknown";
+        // নাম/ফোন দুটোই না থাকলে (পুরনো অর্ডার) ডিফল্ট "Wholesale <নম্বর>" নামে আলাদা সারি
+        const fallbackName = `Wholesale ${o.orderNumber ?? ""}`.trim();
+        const key = o.billing?.phone || o.billing?.name || `__order_${o._id || o.orderNumber}`;
         if (!parties[key]) {
           parties[key] = {
             key,
-            name: o.billing?.name || "—",
+            name: o.billing?.name || fallbackName,
             phone: o.billing?.phone || "",
             due: 0,
             orders: 0,
@@ -502,12 +507,25 @@ export default function DashboardPage() {
       }
     });
 
-    const topParties = Object.values(parties)
-      .sort((a, b) => b.due - a.due)
-      .slice(0, 8);
+    // সবাইকে রাখা হয় (বেশি বাকি আগে) — কতজন দেখাবে সেটা UI ঠিক করে
+    const topParties = Object.values(parties).sort((a, b) => b.due - a.due);
 
     return { orders: all.length, paid, due, dueOrders, topParties };
   }, [orders]);
+
+  // 🏭 বাকি তালিকায় যাদের দেখাবে: সার্চ থাকলে ম্যাচ করা সবাই, নাহলে প্রথম ৫ (বা "সব দেখুন")
+  const visibleDueParties = useMemo(() => {
+    const q = dueSearch.trim().toLowerCase();
+    const all = wholesaleSummary.topParties;
+    if (q) {
+      return all.filter(
+        (p) =>
+          String(p.name).toLowerCase().includes(q) ||
+          String(p.phone).includes(q)
+      );
+    }
+    return showAllDue ? all : all.slice(0, 5);
+  }, [wholesaleSummary, dueSearch, showAllDue]);
 
   // ✅ Avg Order Value = delivered অর্ডারে কাস্টমার গড়ে প্রকৃত কত পেমেন্ট করেছে (delivery charge সহ)
   const deliveredOrders = useMemo(
@@ -826,9 +844,18 @@ export default function DashboardPage() {
                   ✓ কোনো বাকি নেই — সব পার্টি পরিশোধ করেছে
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div>
+                  {wholesaleSummary.topParties.length > 5 && (
+                    <input
+                      value={dueSearch}
+                      onChange={(e) => setDueSearch(e.target.value)}
+                      placeholder="পার্টির নাম / ফোন খুঁজুন..."
+                      className="mb-3 w-full sm:w-72 h-9 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 px-3 text-sm outline-none focus:ring-2 focus:ring-red-200"
+                    />
+                  )}
+                <div className="overflow-x-auto max-h-96 overflow-y-auto">
                   <table className="w-full text-sm">
-                    <thead>
+                    <thead className="sticky top-0 bg-white dark:bg-slate-900">
                       <tr className="text-left text-[11px] uppercase text-gray-500 dark:text-slate-400 border-b dark:border-slate-700">
                         <th className="py-2 pr-3">পার্টি</th>
                         <th className="py-2 pr-3">ফোন</th>
@@ -837,7 +864,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {wholesaleSummary.topParties.map((p) => (
+                      {visibleDueParties.map((p) => (
                         <tr
                           key={p.key}
                           className="border-b last:border-0 dark:border-slate-800 text-gray-900 dark:text-slate-100"
@@ -850,6 +877,18 @@ export default function DashboardPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+                  {!dueSearch.trim() && wholesaleSummary.topParties.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllDue((v) => !v)}
+                      className="mt-3 text-xs font-bold text-red-600 dark:text-red-400 hover:underline"
+                    >
+                      {showAllDue
+                        ? "▲ কম দেখুন"
+                        : `▼ সব ${wholesaleSummary.topParties.length} জন দেখুন`}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

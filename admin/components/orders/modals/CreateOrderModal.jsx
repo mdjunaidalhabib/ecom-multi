@@ -74,7 +74,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
   ============================ */
   const [saleChannel, setSaleChannel] = useState("online");
   const isOffline = saleChannel === "offline";
-  // 🏭 Wholesale (পাইকারি): নাম+ফোন বাধ্যতামূলক, ডেলিভারি ৳0, বাকি (due) ট্র্যাক হয়
+  // 🏭 Wholesale (পাইকারি): নাম+ফোন ঐচ্ছিক, ডেলিভারি ৳0, বাকি (due) ট্র্যাক হয়
   const isWholesale = saleChannel === "wholesale";
   // Offline ও Wholesale — দুটোতেই ডেলিভারি চার্জ নেই
   const noDelivery = isOffline || isWholesale;
@@ -329,10 +329,12 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
      Offline sale-এ billing info ঐচ্ছিক
   ============================ */
   const errors = {
-    name: !isOffline && !billing.name.trim(),
+    // Offline ও Wholesale-এ name/phone ঐচ্ছিক (phone দিলে ফরম্যাট ঠিক হতে হবে)
+    name: !isOffline && !isWholesale && !billing.name.trim(),
     phone:
-      !isOffline &&
-      (!billing.phone.trim() || !phoneRegex.test(billing.phone.trim())),
+      isOffline || isWholesale
+        ? !!billing.phone.trim() && !phoneRegex.test(billing.phone.trim())
+        : !billing.phone.trim() || !phoneRegex.test(billing.phone.trim()),
     // Wholesale-এ address ঐচ্ছিক (নাম+ফোন লাগে — কার কাছে বাকি সেটা জানতে)
     address: !isOffline && !isWholesale && !billing.address.trim(),
   };
@@ -378,9 +380,8 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
     if (!hasValidItem) return "অন্তত ১টি প্রোডাক্ট যোগ করুন";
     if (hasMissingVariant) return "⚠️ ভ্যারিয়েন্ট (Color) সিলেক্ট করুন";
     if (hasOutOfStockItem) return "⚠️ কিছু আইটেমে স্টক নেই";
-    if (!isOffline && errors.name)
-      return isWholesale ? "পার্টির নাম দিন" : "Customer Name দিন";
-    if (!isOffline && errors.phone) return "সঠিক Phone নম্বর দিন";
+    if (errors.name) return "Customer Name দিন";
+    if (errors.phone) return "সঠিক Phone নম্বর দিন";
     if (errors.address) return "Address দিন";
     return "Fill required fields...";
   })();
@@ -676,7 +677,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                   {isWholesale && (
                     <div className="flex items-start gap-2 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-3 py-2.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
                       <Package size={14} className="shrink-0 mt-0.5" />
-                      Wholesale sale — পার্টির নাম ও ফোন বাধ্যতামূলক, ডেলিভারি চার্জ ৳০। এখন যত টাকা পাবেন "Paid Now" এ লিখুন, বাকিটা due হিসেবে জমা থাকবে — পরে Orders লিস্ট থেকে আদায় করতে পারবেন।
+                      Wholesale sale — পার্টির নাম না দিলে নিজে থেকে Wholesale (অর্ডার নম্বর সহ) নাম বসবে (ফোন ঐচ্ছিক), ডেলিভারি চার্জ ৳০। এখন যত টাকা পাবেন "Paid Now" এ লিখুন, বাকিটা due হিসেবে জমা থাকবে — পরে Orders লিস্ট থেকে আদায় করতে পারবেন।
                     </div>
                   )}
                   {isOffline && (
@@ -698,18 +699,18 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
                           : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400"
                       }`}
                     >
-                      {isOffline ? "Optional" : isWholesale ? "Name + Phone" : "Required"}
+                      {isOffline ? "Optional" : isWholesale ? "Name auto" : "Required"}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
-                        Name {!isOffline && <span className="text-red-600 dark:text-red-400">*</span>}
+                        Name {!isOffline && !isWholesale && <span className="text-red-600 dark:text-red-400">*</span>}
                       </div>
                       <input
                         className={inputClass(touched.name && errors.name)}
-                        placeholder={isWholesale ? "Party / shop name" : "Customer name"}
+                        placeholder={isWholesale ? "Party / shop name (খালি থাকলে Wholesale <নম্বর>)" : "Customer name"}
                         value={billing.name}
                         onChange={(e) =>
                           setBilling((p) => ({ ...p, name: e.target.value }))
@@ -725,7 +726,7 @@ export default function CreateOrderModal({ open, onClose, onCreate, submitting =
 
                     <div className="space-y-1">
                       <div className="text-[11px] font-semibold text-gray-600 dark:text-slate-400">
-                        Phone {!isOffline && <span className="text-red-600 dark:text-red-400">*</span>}
+                        Phone {!isOffline && !isWholesale && <span className="text-red-600 dark:text-red-400">*</span>}
                       </div>
                       <input
                         className={inputClass(touched.phone && errors.phone)}
