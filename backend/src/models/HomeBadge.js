@@ -40,6 +40,12 @@ const homeBadgeSchema = new mongoose.Schema(
     },
 
     order: { type: Number, default: 0 },
+
+    // ✅ মোবাইল bottom navbar-এর "Gift" বাটনে ক্লিক করলে কোন badge-এর
+    // প্রোডাক্ট দেখাবে — প্রতি শপে সর্বোচ্চ ১টা badge-এ এটা true থাকবে।
+    // কোনোটায় true না থাকলে ডিফল্ট হিসেবে cartvanBox (Gift Box) ধরা হয়।
+    isGiftTarget: { type: Boolean, default: false },
+
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },

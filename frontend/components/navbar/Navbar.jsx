@@ -20,6 +20,13 @@ import WishlistIcon from "./WishlistIcon";
 import { useUser } from "../../context/UserContext";
 import useShopPath, { shopHref } from "../../hooks/useShopPath";
 
+// ✅ badge field → URL hash (HomeAllProduct.jsx-এর HASH_FILTER_MAP-এর সাথে মিল রাখতে হবে)
+const FILTER_HASH_MAP = {
+  cartvanBox: "cartvan-box",
+  freeDelivery: "free-delivery",
+  bestDiscount: "best-discount",
+};
+
 const sideMenu = {
   hidden: { x: "-100%" },
   visible: { x: 0 },
@@ -34,6 +41,8 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
+  // ✅ Gift বাটন কোন badge-এ যাবে — Admin > Home Badges থেকে সেট করা হয়
+  const [giftField, setGiftField] = useState("cartvanBox");
   const { me } = useUser();
 
   const router = useRouter();
@@ -60,6 +69,21 @@ export default function Navbar() {
   }, [API_URL]);
 
   useEffect(() => {
+    const fetchGiftTarget = async () => {
+      try {
+        const res = await fetch(`${API_URL}/homeBadges`);
+        const data = await res.json();
+        const list = Array.isArray(data?.badges) ? data.badges : [];
+        const target = list.find((b) => b.isGiftTarget && b.isActive !== false);
+        setGiftField(target?.field || "cartvanBox");
+      } catch {
+        setGiftField("cartvanBox");
+      }
+    };
+    fetchGiftTarget();
+  }, [API_URL]);
+
+  useEffect(() => {
     setImgError(false);
   }, [navbar?.brand?.logo]);
 
@@ -80,13 +104,14 @@ export default function Navbar() {
 
   const isActive = (path) => subPath === path;
 
-  const handleCartvanBox = () => {
+  const handleGiftClick = () => {
+    const field = FILTER_HASH_MAP[giftField] ? giftField : "cartvanBox";
     if (subPath === "/") {
       window.dispatchEvent(
-        new CustomEvent("offerFilterChange", { detail: "cartvanBox" }),
+        new CustomEvent("offerFilterChange", { detail: field }),
       );
     } else {
-      router.push(`${base}/#cartvan-box`);
+      router.push(`${base}/#${FILTER_HASH_MAP[field]}`);
     }
   };
 
@@ -304,7 +329,7 @@ export default function Navbar() {
 
           <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-50">
             <motion.button
-              onClick={handleCartvanBox}
+              onClick={handleGiftClick}
               animate={{ y: [0, -5, 0], scale: [1, 1.02, 1] }}
               transition={{
                 duration: 1.8,

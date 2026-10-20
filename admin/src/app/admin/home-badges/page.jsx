@@ -161,6 +161,29 @@ export default function HomeBadgesPage() {
     }
   };
 
+  // ✅ Mobile bottom navbar-এর Gift বাটন কোন badge-এ যাবে সেটা সেট করা
+  const setGiftTarget = async (badge) => {
+    try {
+      const res = await fetch(`/api/admin/homeBadges/${badge._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isGiftTarget: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed");
+      setBadges(data.badges || []);
+      showToast(`🎁 Gift বাটন এখন "${badge.name}"-এ যাবে`, "success");
+    } catch (err) {
+      showToast(`❌ ${err.message}`, "error");
+    }
+  };
+
+  // কোনোটায় flag না থাকলে ডিফল্ট cartvanBox
+  const giftTargetId = (
+    badges.find((b) => b.isGiftTarget) ||
+    badges.find((b) => b.field === "cartvanBox")
+  )?._id;
+
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -250,6 +273,33 @@ export default function HomeBadgesPage() {
           </button>
         )}
       </div>
+
+      {/* ✅ Gift বাটন টার্গেট সিলেক্টর */}
+      {badges.length > 0 && (
+        <div className="mb-6 bg-pink-50 dark:bg-pink-500/10 border border-pink-200 dark:border-pink-500/20 rounded-xl p-4">
+          <p className="text-sm font-bold text-pink-800 dark:text-pink-300">
+            🎁 মোবাইল নিচের বারের "Gift" বাটন কোথায় যাবে?
+          </p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 mb-3">
+            যেকোনো সময় বদলাতে পারবেন — সিলেক্ট করলেই সাথে সাথে সেভ হবে।
+          </p>
+          <select
+            value={giftTargetId || ""}
+            onChange={(e) => {
+              const b = badges.find((x) => x._id === e.target.value);
+              if (b) setGiftTarget(b);
+            }}
+            className="w-full border rounded-md p-2.5 sm:p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+          >
+            {badges.map((b) => (
+              <option key={b._id} value={b._id}>
+                {b.name}
+                {b.isActive ? "" : " (Hidden)"}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* ✅ Add Form */}
       {showAdd && (
@@ -362,6 +412,7 @@ export default function HomeBadgesPage() {
                     <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                       Field: {badge.field} • Order: {badge.order ?? 0} •{" "}
                       {badge.isActive ? "✅ Visible" : "🙈 Hidden"}
+                      {badge._id === giftTargetId && " • 🎁 Gift বাটন"}
                     </p>
                   </div>
 

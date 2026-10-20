@@ -1,0 +1,200 @@
+diff --git a/admin/src/app/admin/home-badges/page.jsx b/admin/src/app/admin/home-badges/page.jsx
+index 70c27ed..99eb5e2 100644
+--- a/admin/src/app/admin/home-badges/page.jsx
++++ b/admin/src/app/admin/home-badges/page.jsx
+@@ -161,6 +161,29 @@ export default function HomeBadgesPage() {
+     }
+   };
+ 
++  // ✅ Mobile bottom navbar-এর Gift বাটন কোন badge-এ যাবে সেটা সেট করা
++  const setGiftTarget = async (badge) => {
++    try {
++      const res = await fetch(`/api/admin/homeBadges/${badge._id}`, {
++        method: "PUT",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({ isGiftTarget: true }),
++      });
++      const data = await res.json();
++      if (!res.ok) throw new Error(data?.message || "Failed");
++      setBadges(data.badges || []);
++      showToast(`🎁 Gift বাটন এখন "${badge.name}"-এ যাবে`, "success");
++    } catch (err) {
++      showToast(`❌ ${err.message}`, "error");
++    }
++  };
++
++  // কোনোটায় flag না থাকলে ডিফল্ট cartvanBox
++  const giftTargetId = (
++    badges.find((b) => b.isGiftTarget) ||
++    badges.find((b) => b.field === "cartvanBox")
++  )?._id;
++
+   const confirmDelete = async () => {
+     if (!deleteTarget) return;
+     setDeleting(true);
+@@ -251,6 +274,33 @@ export default function HomeBadgesPage() {
+         )}
+       </div>
+ 
++      {/* ✅ Gift বাটন টার্গেট সিলেক্টর */}
++      {badges.length > 0 && (
++        <div className="mb-6 bg-pink-50 dark:bg-pink-500/10 border border-pink-200 dark:border-pink-500/20 rounded-xl p-4">
++          <p className="text-sm font-bold text-pink-800 dark:text-pink-300">
++            🎁 মোবাইল নিচের বারের "Gift" বাটন কোথায় যাবে?
++          </p>
++          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 mb-3">
++            যেকোনো সময় বদলাতে পারবেন — সিলেক্ট করলেই সাথে সাথে সেভ হবে।
++          </p>
++          <select
++            value={giftTargetId || ""}
++            onChange={(e) => {
++              const b = badges.find((x) => x._id === e.target.value);
++              if (b) setGiftTarget(b);
++            }}
++            className="w-full border rounded-md p-2.5 sm:p-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
++          >
++            {badges.map((b) => (
++              <option key={b._id} value={b._id}>
++                {b.name}
++                {b.isActive ? "" : " (Hidden)"}
++              </option>
++            ))}
++          </select>
++        </div>
++      )}
++
+       {/* ✅ Add Form */}
+       {showAdd && (
+         <div className="mb-6 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-xl p-4 space-y-3">
+@@ -362,6 +412,7 @@ export default function HomeBadgesPage() {
+                     <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
+                       Field: {badge.field} • Order: {badge.order ?? 0} •{" "}
+                       {badge.isActive ? "✅ Visible" : "🙈 Hidden"}
++                      {badge._id === giftTargetId && " • 🎁 Gift বাটন"}
+                     </p>
+                   </div>
+ 
+diff --git a/backend/src/models/HomeBadge.js b/backend/src/models/HomeBadge.js
+index 9eb0edf..46a33ef 100644
+--- a/backend/src/models/HomeBadge.js
++++ b/backend/src/models/HomeBadge.js
+@@ -40,6 +40,12 @@ const homeBadgeSchema = new mongoose.Schema(
+     },
+ 
+     order: { type: Number, default: 0 },
++
++    // ✅ মোবাইল bottom navbar-এর "Gift" বাটনে ক্লিক করলে কোন badge-এর
++    // প্রোডাক্ট দেখাবে — প্রতি শপে সর্বোচ্চ ১টা badge-এ এটা true থাকবে।
++    // কোনোটায় true না থাকলে ডিফল্ট হিসেবে cartvanBox (Gift Box) ধরা হয়।
++    isGiftTarget: { type: Boolean, default: false },
++
+     isActive: { type: Boolean, default: true },
+   },
+   { timestamps: true },
+diff --git a/backend/src/routes/admin/homeBadge.admin.js b/backend/src/routes/admin/homeBadge.admin.js
+index 689a475..ad1878c 100644
+--- a/backend/src/routes/admin/homeBadge.admin.js
++++ b/backend/src/routes/admin/homeBadge.admin.js
+@@ -105,7 +105,7 @@ router.put("/:id", async (req, res) => {
+     const badge = await HomeBadge.findById(req.params.id);
+     if (!badge) return res.status(404).json({ message: "Badge not found" });
+ 
+-    const { name, icon, order, isActive } = req.body;
++    const { name, icon, order, isActive, isGiftTarget } = req.body;
+ 
+     if (name !== undefined) {
+       if (!String(name).trim()) {
+@@ -118,6 +118,17 @@ router.put("/:id", async (req, res) => {
+     if (order !== undefined) badge.order = Number(order) || 0;
+     if (isActive !== undefined) badge.isActive = !!isActive;
+ 
++    // ✅ Gift বাটনের টার্গেট — একটা সেট করলে বাকিগুলো অটো false হয়ে যাবে
++    if (isGiftTarget !== undefined) {
++      badge.isGiftTarget = !!isGiftTarget;
++      if (badge.isGiftTarget) {
++        await HomeBadge.updateMany(
++          { _id: { $ne: badge._id }, isGiftTarget: true },
++          { $set: { isGiftTarget: false } },
++        );
++      }
++    }
++
+     await badge.save();
+ 
+     const badges = await HomeBadge.find().sort({ order: 1, createdAt: 1 });
+diff --git a/frontend/components/navbar/Navbar.jsx b/frontend/components/navbar/Navbar.jsx
+index 30c59a5..a228f3a 100644
+--- a/frontend/components/navbar/Navbar.jsx
++++ b/frontend/components/navbar/Navbar.jsx
+@@ -20,6 +20,13 @@ import WishlistIcon from "./WishlistIcon";
+ import { useUser } from "../../context/UserContext";
+ import useShopPath, { shopHref } from "../../hooks/useShopPath";
+ 
++// ✅ badge field → URL hash (HomeAllProduct.jsx-এর HASH_FILTER_MAP-এর সাথে মিল রাখতে হবে)
++const FILTER_HASH_MAP = {
++  cartvanBox: "cartvan-box",
++  freeDelivery: "free-delivery",
++  bestDiscount: "best-discount",
++};
++
+ const sideMenu = {
+   hidden: { x: "-100%" },
+   visible: { x: 0 },
+@@ -34,6 +41,8 @@ export default function Navbar() {
+   const [menuOpen, setMenuOpen] = useState(false);
+   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+   const [imgError, setImgError] = useState(false);
++  // ✅ Gift বাটন কোন badge-এ যাবে — Admin > Home Badges থেকে সেট করা হয়
++  const [giftField, setGiftField] = useState("cartvanBox");
+   const { me } = useUser();
+ 
+   const router = useRouter();
+@@ -59,6 +68,21 @@ export default function Navbar() {
+     fetchNavbar();
+   }, [API_URL]);
+ 
++  useEffect(() => {
++    const fetchGiftTarget = async () => {
++      try {
++        const res = await fetch(`${API_URL}/homeBadges`);
++        const data = await res.json();
++        const list = Array.isArray(data?.badges) ? data.badges : [];
++        const target = list.find((b) => b.isGiftTarget && b.isActive !== false);
++        setGiftField(target?.field || "cartvanBox");
++      } catch {
++        setGiftField("cartvanBox");
++      }
++    };
++    fetchGiftTarget();
++  }, [API_URL]);
++
+   useEffect(() => {
+     setImgError(false);
+   }, [navbar?.brand?.logo]);
+@@ -80,13 +104,14 @@ export default function Navbar() {
+ 
+   const isActive = (path) => subPath === path;
+ 
+-  const handleCartvanBox = () => {
++  const handleGiftClick = () => {
++    const field = FILTER_HASH_MAP[giftField] ? giftField : "cartvanBox";
+     if (subPath === "/") {
+       window.dispatchEvent(
+-        new CustomEvent("offerFilterChange", { detail: "cartvanBox" }),
++        new CustomEvent("offerFilterChange", { detail: field }),
+       );
+     } else {
+-      router.push(`${base}/#cartvan-box`);
++      router.push(`${base}/#${FILTER_HASH_MAP[field]}`);
+     }
+   };
+ 
+@@ -304,7 +329,7 @@ export default function Navbar() {
+ 
+           <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-50">
+             <motion.button
+-              onClick={handleCartvanBox}
++              onClick={handleGiftClick}
+               animate={{ y: [0, -5, 0], scale: [1, 1.02, 1] }}
+               transition={{
+                 duration: 1.8,

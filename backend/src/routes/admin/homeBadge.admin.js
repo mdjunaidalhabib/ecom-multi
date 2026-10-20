@@ -105,7 +105,7 @@ router.put("/:id", async (req, res) => {
     const badge = await HomeBadge.findById(req.params.id);
     if (!badge) return res.status(404).json({ message: "Badge not found" });
 
-    const { name, icon, order, isActive } = req.body;
+    const { name, icon, order, isActive, isGiftTarget } = req.body;
 
     if (name !== undefined) {
       if (!String(name).trim()) {
@@ -117,6 +117,17 @@ router.put("/:id", async (req, res) => {
     if (icon !== undefined) badge.icon = icon;
     if (order !== undefined) badge.order = Number(order) || 0;
     if (isActive !== undefined) badge.isActive = !!isActive;
+
+    // ✅ Gift বাটনের টার্গেট — একটা সেট করলে বাকিগুলো অটো false হয়ে যাবে
+    if (isGiftTarget !== undefined) {
+      badge.isGiftTarget = !!isGiftTarget;
+      if (badge.isGiftTarget) {
+        await HomeBadge.updateMany(
+          { _id: { $ne: badge._id }, isGiftTarget: true },
+          { $set: { isGiftTarget: false } },
+        );
+      }
+    }
 
     await badge.save();
 
