@@ -10,7 +10,11 @@ import { useMyPlanInfo } from "../../../../hooks/useShopFeatures";
 // ✅ কাস্টম ডোমেইন থাকলে সরাসরি সেই ডোমেইনে, নাহলে platform-এর নিজস্ব
 // slug-based path (/shop/<slug>) দিয়ে শপের পাবলিক URL বানায় — একই প্যাটার্ন
 // super-admin/components/Shops.jsx এর getShopPublicUrl-এ ব্যবহৃত হয়।
-const SHOP_BASE_URL = process.env.NEXT_PUBLIC_SHOP_BASE_URL || "";
+const RAW_SHOP_BASE_URL = (process.env.NEXT_PUBLIC_SHOP_BASE_URL || "").trim();
+// env এ https:// ছাড়া শুধু "ecms.hikmahit.com" দিলেও যেন relative link না হয়
+const SHOP_BASE_URL = RAW_SHOP_BASE_URL
+  ? (/^https?:\/\//i.test(RAW_SHOP_BASE_URL) ? RAW_SHOP_BASE_URL : `https://${RAW_SHOP_BASE_URL}`).replace(/\/+$/, "")
+  : "";
 function getShopPublicUrl(shop) {
   if (!shop?.slug) return "";
   return shop.domain ? `https://${shop.domain}` : `${SHOP_BASE_URL}/shop/${shop.slug}`;

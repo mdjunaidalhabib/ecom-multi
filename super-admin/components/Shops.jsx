@@ -67,7 +67,11 @@ function getDomainStatusInfo(shop) {
 
 // ✅ কাস্টম ডোমেইন থাকলে সরাসরি সেই ডোমেইনে, নাহলে platform-এর নিজস্ব
 // slug-based path (/shop/<slug>) দিয়ে শপটা খোলার লিংক বানায়।
-const SHOP_BASE_URL = process.env.NEXT_PUBLIC_SHOP_BASE_URL || "";
+const RAW_SHOP_BASE_URL = (process.env.NEXT_PUBLIC_SHOP_BASE_URL || "").trim();
+// env এ https:// ছাড়া শুধু "ecms.hikmahit.com" দিলেও যেন relative link না হয়
+const SHOP_BASE_URL = RAW_SHOP_BASE_URL
+  ? (/^https?:\/\//i.test(RAW_SHOP_BASE_URL) ? RAW_SHOP_BASE_URL : `https://${RAW_SHOP_BASE_URL}`).replace(/\/+$/, "")
+  : "";
 function getShopPublicUrl(shop) {
   return shop.domain ? `https://${shop.domain}` : `${SHOP_BASE_URL}/shop/${shop.slug}`;
 }
