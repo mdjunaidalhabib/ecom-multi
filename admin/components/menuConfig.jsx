@@ -31,6 +31,7 @@ import {
   MailPlus,
   MailCheck,
   GraduationCap,
+  Activity,
 } from "lucide-react";
 
 // ✅ প্রতিটা আইটেমে `section` — Sidebar/mobile drawer এ এই কী অনুযায়ী গ্রুপ
@@ -171,6 +172,12 @@ export const settingsGroups = [
     tone: "amber",
   },
   {
+    key: "marketing",
+    label: "Marketing & Tracking",
+    hint: "অ্যাড ট্র্যাকিং ও অ্যানালিটিক্স",
+    tone: "sky",
+  },
+  {
     key: "billing",
     label: "Billing & Documents",
     hint: "প্ল্যান ও ইনভয়েস",
@@ -294,6 +301,14 @@ export const settingsChildren = [
     href: "/admin/mail-report",
     group: "communication",
     desc: "পাঠানো মেইলের রিপোর্ট",
+  }),
+
+  settingsItem(Activity, {
+    label: "Tracking (GTM)",
+    href: "/admin/tracking",
+    feature: "landingPages",
+    group: "marketing",
+    desc: "ল্যান্ডিং পেজে Google Tag Manager যুক্ত করুন",
   }),
 
   settingsItem(CreditCard, {

@@ -61,4 +61,16 @@ export const settingsTones = {
       "hover:border-rose-300 hover:shadow-rose-500/10 dark:hover:border-rose-500/40",
     cardTileHover: "group-hover:bg-rose-600 group-hover:text-white",
   },
+  sky: {
+    dot: "bg-sky-500",
+    tile: "bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400",
+    tileActive:
+      "bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30",
+    rowActive: "bg-sky-50/80 dark:bg-sky-500/10",
+    bar: "bg-sky-500",
+    text: "text-sky-600 dark:text-sky-400",
+    cardHover:
+      "hover:border-sky-300 hover:shadow-sky-500/10 dark:hover:border-sky-500/40",
+    cardTileHover: "group-hover:bg-sky-600 group-hover:text-white",
+  },
 };

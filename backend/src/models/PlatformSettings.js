@@ -25,6 +25,13 @@ const platformSettingsSchema = new mongoose.Schema(
       updatedAt: { type: Date, default: null },
     },
 
+    // ✅ ECMS প্ল্যাটফর্মের নিজস্ব ল্যান্ডিং পেজের (ecms.hikmahit.com) Google Tag
+    // Manager container ID — শুধু super-admin সেট করে (Super Admin → Tracking)।
+    // শপের ল্যান্ডিং পেজের GTM আলাদা, সেটা Shop.tracking.gtmId এ থাকে।
+    tracking: {
+      gtmId: { type: String, trim: true, default: "" },
+    },
+
     // ⚠️ আগে এখানে super-admin এডিটযোগ্য প্ল্যাটফর্ম-ওয়াইড ডিফল্ট ব্রাউজার
     // ট্যাব টাইটেল/ফেভিকন (branding.title/favicon) ছিল, SiteBranding
     // (শপ-লেভেল override) এর পাশাপাশি — দুই জায়গা থেকে সেট করা যেত এই

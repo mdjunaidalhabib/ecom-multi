@@ -149,6 +149,13 @@ const shopSchema = new mongoose.Schema(
 
     contactEmail: { type: String, default: "" },
     contactPhone: { type: String, default: "" },
+
+    // ✅ Tracking — শপ-মালিক নিজের admin panel (Settings → Tracking) থেকে নিজের
+    // Google Tag Manager container ID (GTM-XXXXXXX) বসায়। এটা শুধু এই শপের
+    // ল্যান্ডিং পেজে (/lp/...) লোড হয়। খালি মানে GTM বন্ধ।
+    tracking: {
+      gtmId: { type: String, default: "", trim: true },
+    },
   },
   { timestamps: true },
 );

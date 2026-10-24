@@ -40,6 +40,7 @@ import landingPageAdminRoutes from "./landingPage.admin.routes.js";
 import invoiceTemplateAdminRoutes from "./invoiceTemplate.admin.routes.js";
 import invoiceTemplateDefaultRoutes from "./invoiceTemplateDefault.superadmin.routes.js";
 import tutorialsAdminRoutes from "./tutorials.admin.routes.js";
+import { shopTrackingRoutes, platformTrackingRoutes } from "./tracking.admin.routes.js";
 
 import { protect, requirePermission } from "../../middlewares/adminAuthMiddleware.js";
 import { requireShopContext } from "../../tenancy/adminShopContext.js";
@@ -78,6 +79,10 @@ router.use("/invoice-template-default", invoiceTemplateDefaultRoutes);
 // শপের admin/staff দেখে। /plans এর মতোই কোনো "active shop" লাগে না, তাই
 // global requireShopContext এর আগে বসানো (নিজস্ব protect আছে routes ফাইলে)।
 router.use("/tutorials", tutorialsAdminRoutes);
+
+// ✅ ECMS প্ল্যাটফর্ম ল্যান্ডিং পেজের GTM ID — platform-wide, কোনো "active shop"
+// লাগে না, শুধু super-admin (protect+superAdminOnly routes ফাইলেই আছে)
+router.use("/platform-tracking", platformTrackingRoutes);
 
 // ✅ এখান থেকে নিচের সব admin route এর জন্য valid admin session +
 // active shop context বাধ্যতামূলক (আগে অনেক রুটে কোনো auth check-ই ছিল না —
@@ -119,6 +124,8 @@ router.use("/support", requirePermission("settings"), supportAdminRoutes);
 router.use("/refund-policy", requirePermission("settings"), refundPolicyAdminRoutes);
 router.use("/faq", requirePermission("settings"), faqAdminRoutes);
 router.use("/mail-report", requirePermission("settings"), mailReportAdminRoutes);
+// ✅ শপ-মালিকের নিজের GTM ID (Settings → Tracking)
+router.use("/tracking", requirePermission("settings"), shopTrackingRoutes);
 router.use("/landing-pages", requirePermission("landingPages"), landingPageAdminRoutes);
 // ✅ নিজস্ব requirePermission("invoiceDesign") আছে ফাইলের ভেতরে, কিন্তু শুধু
 // /mine* রুটে (এডিট) — /resolved (ডাউনলোড) যেকোনো লগইন করা admin/staff-এর

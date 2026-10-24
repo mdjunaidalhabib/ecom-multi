@@ -1,4 +1,5 @@
 import PlatformLanding from "../../components/platform/PlatformLanding";
+import GoogleTagManager from "../../components/tracking/GoogleTagManager";
 import { serverFetch } from "../../lib/serverApi";
 
 // Platform's own domain (PLATFORM_DOMAIN in .env) — see
@@ -22,14 +23,28 @@ async function getPlans() {
   }
 }
 
+// ✅ ECMS ল্যান্ডিং পেজের GTM ID — Super Admin → Tracking থেকে সেট হয়।
+// ব্যর্থ হলে খালি ID (GTM লোড হয় না), পেজ কখনো ভাঙে না।
+async function getPlatformGtmId() {
+  try {
+    const data = await serverFetch("/platform-tracking", { revalidate: 60 });
+    return typeof data?.gtmId === "string" ? data.gtmId : "";
+  } catch {
+    return "";
+  }
+}
+
 export default async function HomePage() {
-  const plans = await getPlans();
+  const [plans, gtmId] = await Promise.all([getPlans(), getPlatformGtmId()]);
   return (
-    <PlatformLanding
-      plans={plans}
-      adminUrl={process.env.SHOP_ADMIN_URL}
-      whatsappNumber={process.env.SALES_WHATSAPP_NUMBER}
-      hikmahSiteUrl={process.env.HIKMAH_SITE_URL}
-    />
+    <>
+      <GoogleTagManager gtmId={gtmId} />
+      <PlatformLanding
+        plans={plans}
+        adminUrl={process.env.SHOP_ADMIN_URL}
+        whatsappNumber={process.env.SALES_WHATSAPP_NUMBER}
+        hikmahSiteUrl={process.env.HIKMAH_SITE_URL}
+      />
+    </>
   );
 }

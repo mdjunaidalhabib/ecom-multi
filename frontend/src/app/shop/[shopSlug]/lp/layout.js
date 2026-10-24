@@ -1,4 +1,5 @@
 import { Store } from "lucide-react";
+import GoogleTagManager from "../../../../../components/tracking/GoogleTagManager";
 import { getShopInfo } from "../../../../../lib/serverApi";
 
 // Minimal shell for single-product ad landing pages — just the shop's
@@ -11,6 +12,8 @@ export default async function LandingLayout({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      {/* ✅ শপ-মালিকের নিজের GTM (Admin → Settings → Tracking) — শুধু ল্যান্ডিং পেজে */}
+      <GoogleTagManager gtmId={shop?.tracking?.gtmId} />
       <header className="border-b border-gray-100 px-4 py-3 flex items-center gap-2.5">
         {shop?.branding?.logo ? (
           <img

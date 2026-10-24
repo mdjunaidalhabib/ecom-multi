@@ -95,6 +95,8 @@ export const getShopInfo = async (req, res) => {
       theme: themeConfig,
       fullStorefront,
       primaryLandingPageSlug,
+      // ✅ শপ-মালিকের নিজের GTM container ID (খালি হলে GTM লোড হয় না)
+      tracking: { gtmId: shop.tracking?.gtmId || "" },
     });
   } catch (err) {
     console.error("❌ getShopInfo error:", err);

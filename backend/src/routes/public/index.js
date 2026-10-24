@@ -28,6 +28,7 @@ import landingPageRoutes from "./landingPage.routes.js";
 import invoiceExportRoutes from "./invoiceExport.routes.js";
 import plansRoutes from "./plans.routes.js";
 import integrationRoutes from "./integration.routes.js";
+import platformTrackingPublicRoutes from "./platformTracking.routes.js";
 import { resolveShopByDomain } from "../../tenancy/publicShopResolver.js";
 
 const router = express.Router();
@@ -49,6 +50,10 @@ router.use("/invoices", invoiceExportRoutes);
 // ✅ প্ল্যাটফর্মের নিজস্ব plan catalog — কোনো শপের ডেটা না, তাই শপ-resolver এর
 // আগে বসানো (ECMS ল্যান্ডিং পেজ ও Hikmah IT সার্ভার শপ-হেডার ছাড়াই কল করে)
 router.use("/plans", plansRoutes);
+
+// ✅ ECMS প্ল্যাটফর্ম ল্যান্ডিং পেজের GTM ID (public, শুধু ID) — plans এর মতোই
+// শপ-হেডার ছাড়া কল হয়, তাই শপ-resolver এর আগে বসানো
+router.use("/platform-tracking", platformTrackingPublicRoutes);
 
 // ✅ Hikmah IT → ECMS অটো-প্রভিশনিং (x-integration-key দিয়ে সুরক্ষিত, শপ-resolver এর আগে)
 router.use("/integration", integrationRoutes);
