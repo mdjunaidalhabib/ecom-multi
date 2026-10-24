@@ -8,25 +8,49 @@ import { listActivePlans } from "../../src/models/Plan.js";
 
 const BN = (n) => Number(n || 0).toLocaleString("bn-BD");
 
-function buildHighlights(plan) {
-  const f = plan.features || {};
+// ✅ প্ল্যান কার্ডে যে ফিচারগুলো দেখানো হয় (ক্রম ঠিক এভাবেই)। প্ল্যানে ফিচার চালু
+// থাকলে ✓, বন্ধ থাকলে কাটা (✗) অবস্থায় দেখায় — তাই ক্রেতা এক নজরে তুলনা করতে পারে।
+// ECMS ল্যান্ডিং ও Hikmah IT সাইট দুজনেই এই লেবেল ব্যবহার করে, কোথাও আলাদা করে
+// লিখতে হয় না।
+const FEATURE_CATALOG = [
+  { key: "fullStorefront", label: "সম্পূর্ণ স্টোরফ্রন্ট" },
+  { key: "analytics", label: "ভিজিটর অ্যানালিটিক্স" },
+  { key: "promo", label: "প্রোমো ও কুপন কোড" },
+  { key: "payment", label: "পেমেন্ট ইন্টিগ্রেশন" },
+  { key: "customDomain", label: "কাস্টম ডোমেইন" },
+  { key: "landingPages", label: "ল্যান্ডিং পেজ বিল্ডার" },
+  { key: "invoiceCustomization", label: "ইনভয়েস কাস্টমাইজেশন" },
+];
+
+// প্রোডাক্ট/অর্ডার/অ্যাডমিন — সবসময় "আছে" ধরনের লিমিট লাইন। maxProducts = 0 মানে
+// আনলিমিটেড; অর্ডারের কোনো লিমিট কোনো প্ল্যানেই নেই।
+function buildLimitItems(plan) {
   const l = plan.limits || {};
-  const out = [];
-  out.push(`${BN(l.maxProducts)}টি পর্যন্ত প্রোডাক্ট`);
-  out.push(`${BN(l.maxAdmins)} জন অ্যাডমিন`);
-  if (f.fullStorefront) out.push("সম্পূর্ণ স্টোরফ্রন্ট");
-  if (f.analytics && f.promo) out.push("অ্যানালিটিক্স ও প্রোমো কোড");
-  else if (f.analytics) out.push("অ্যানালিটিক্স");
-  else if (f.promo) out.push("প্রোমো কোড");
-  if (f.payment) out.push("পেমেন্ট ইন্টিগ্রেশন");
-  if (f.customDomain) out.push("কাস্টম ডোমেইন");
-  if (f.landingPages) out.push("ল্যান্ডিং পেজ বিল্ডার");
-  if (f.invoiceCustomization) out.push("ইনভয়েস কাস্টমাইজেশন");
-  return out;
+  return [
+    {
+      key: "maxProducts",
+      label: l.maxProducts > 0 ? `${BN(l.maxProducts)}টি পর্যন্ত প্রোডাক্ট` : "আনলিমিটেড প্রোডাক্ট",
+      included: true,
+    },
+    { key: "orders", label: "আনলিমিটেড অর্ডার", included: true },
+    { key: "maxAdmins", label: `${BN(l.maxAdmins)} জন অ্যাডমিন`, included: true },
+  ];
+}
+
+// চালু ফিচার আগে, বন্ধ ফিচার পরে — প্রতিটি দলের ভেতরে FEATURE_CATALOG-এর ক্রম বজায় থাকে।
+function buildFeatureList(plan) {
+  const f = plan.features || {};
+  const toggles = FEATURE_CATALOG.map(({ key, label }) => ({ key, label, included: !!f[key] }));
+  return [
+    ...buildLimitItems(plan),
+    ...toggles.filter((item) => item.included),
+    ...toggles.filter((item) => !item.included),
+  ];
 }
 
 function toPublicPlan(plan) {
   const p = plan.toObject ? plan.toObject() : plan;
+  const featureList = buildFeatureList(p);
   return {
     key: p.key,
     name: p.name,
@@ -39,7 +63,12 @@ function toPublicPlan(plan) {
     ctaType: p.ctaType || "buy",
     features: p.features || {},
     limits: p.limits || {},
-    highlights: buildHighlights(p),
+    // ✅ নতুন: প্রতিটি ফিচার + চালু/বন্ধ অবস্থা (UI এটা দিয়েই ✓/✗ আঁকে)
+    featureList,
+    // আগের কনজিউমারদের জন্য (পুরোনো Hikmah/ল্যান্ডিং বিল্ড) — শুধু চালু ফিচারের লেবেল
+    highlights: featureList.filter((item) => item.included).map((item) => item.label),
+    // বন্ধ ফিচারের লেবেল — কাটা অবস্থায় দেখানোর জন্য
+    notIncluded: featureList.filter((item) => !item.included).map((item) => item.label),
   };
 }
 

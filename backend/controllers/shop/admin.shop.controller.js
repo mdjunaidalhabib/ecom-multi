@@ -199,7 +199,11 @@ export const createShop = async (req, res) => {
       return res.status(400).json({ message: err.message });
     }
 
-    let resolvedPlan = "free";
+    // ✅ Free প্ল্যান নেই — প্ল্যান না দিলে isDefault প্ল্যান (না থাকলে প্রথম প্ল্যান) ব্যবহার হবে
+    const defaultPlanDoc =
+      (await Plan.findOne({ isDefault: true }).select("key")) ||
+      (await Plan.findOne({}).sort({ order: 1 }).select("key"));
+    let resolvedPlan = defaultPlanDoc?.key || "starter";
     if (plan) {
       const planDoc = await Plan.findOne({ key: plan }).select("key");
       if (planDoc) resolvedPlan = planDoc.key;
@@ -449,7 +453,11 @@ export const updateShop = async (req, res) => {
       }
     }
     if (maxProducts !== undefined) {
-      shop.limits.maxProducts = Number(maxProducts) || shop.limits.maxProducts;
+      // 0 = আনলিমিটেড, তাই 0 ও গ্রহণযোগ্য
+      const parsedMax = Number(maxProducts);
+      if (maxProducts !== "" && maxProducts !== null && Number.isFinite(parsedMax) && parsedMax >= 0) {
+        shop.limits.maxProducts = Math.floor(parsedMax);
+      }
     }
     if (maxAdmins !== undefined) {
       shop.limits.maxAdmins = Number(maxAdmins) || shop.limits.maxAdmins;
@@ -471,7 +479,7 @@ export const updateShop = async (req, res) => {
       skipTenantScope: true,
     });
     const overLimitWarning =
-      currentProductCount > shop.limits.maxProducts
+      shop.limits.maxProducts > 0 && currentProductCount > shop.limits.maxProducts
         ? `⚠️ এই শপে বর্তমানে ${currentProductCount}টি প্রোডাক্ট আছে, কিন্তু নতুন প্ল্যানে সর্বোচ্চ ${shop.limits.maxProducts}টি অনুমোদিত। পুরনো প্রোডাক্টগুলো অক্ষত থাকবে, কিন্তু নতুন প্রোডাক্ট যোগ করা যাবে না যতক্ষণ না লিমিটের নিচে আনা হয়।`
         : null;
 

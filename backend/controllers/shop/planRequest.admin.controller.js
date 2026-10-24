@@ -53,7 +53,7 @@ export const createPlanRequest = async (req, res) => {
     const requestedFeatures = await getPlanFeatures(requestedPlan);
     const currentProductCount = await Product.countDocuments({ shopId: shop._id });
     const overLimitWarning =
-      currentProductCount > requestedFeatures.maxProducts
+      requestedFeatures.maxProducts > 0 && currentProductCount > requestedFeatures.maxProducts
         ? `⚠️ আপনার শপে বর্তমানে ${currentProductCount}টি প্রোডাক্ট আছে, কিন্তু "${requestedPlan}" প্ল্যানে সর্বোচ্চ ${requestedFeatures.maxProducts}টি অনুমোদিত। অনুমোদনের পর পুরনো প্রোডাক্ট অক্ষত থাকবে, কিন্তু নতুন প্রোডাক্ট যোগ করা যাবে না যতক্ষণ না লিমিটের নিচে আনা হয়।`
         : null;
 

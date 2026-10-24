@@ -116,10 +116,10 @@ const shopSchema = new mongoose.Schema(
     // লিস্টের বিপরীতে।
     plan: {
       type: String,
-      default: "free",
+      default: "starter",
     },
     limits: {
-      maxProducts: { type: Number, default: 200 },
+      maxProducts: { type: Number, default: 0 }, // 0 = আনলিমিটেড
       maxAdmins: { type: Number, default: 2 },
     },
 

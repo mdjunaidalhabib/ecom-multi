@@ -141,7 +141,7 @@ export async function provisionShop(input = {}) {
 
   const days = plan.billingDays > 0 ? plan.billingDays : null;
   const limits = {
-    maxProducts: plan.limits?.maxProducts ?? 200,
+    maxProducts: plan.limits?.maxProducts ?? 0, // 0 = আনলিমিটেড
     maxAdmins: plan.limits?.maxAdmins ?? 2,
   };
 

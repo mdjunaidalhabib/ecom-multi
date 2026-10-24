@@ -67,6 +67,13 @@ const LIMIT_FEATURES = [
   { key: "maxProducts", label: "সর্বোচ্চ Products" },
   { key: "maxAdmins", label: "সর্বোচ্চ Admin/Staff" },
 ];
+// ✅ maxProducts = 0 মানে আনলিমিটেড (সব প্ল্যানে অর্ডারও আনলিমিটেড)
+const formatLimit = (key, value) => {
+  if (value === undefined || value === null) return "—";
+  if (key === "maxProducts" && Number(value) === 0) return "আনলিমিটেড";
+  return value;
+};
+
 const STATUS_META = {
   pending: ["পর্যালোচনাধীন", "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20", Clock],
   approved: ["অনুমোদিত", "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20", CheckCircle2],
@@ -375,10 +382,14 @@ export default function Plan() {
                   {feature.label}
                 </span>
                 <span className="text-sm font-black text-gray-900 dark:text-slate-100">
-                  {planInfo?.features?.[feature.key] ?? "—"}
+                  {formatLimit(feature.key, planInfo?.features?.[feature.key])}
                 </span>
               </div>
             ))}
+            <div className="flex items-center justify-between rounded-xl border border-gray-100 dark:border-slate-700/60 bg-gray-50 dark:bg-slate-800 px-3 py-2.5">
+              <span className="text-sm font-bold text-gray-700 dark:text-slate-300">অর্ডার</span>
+              <span className="text-sm font-black text-gray-900 dark:text-slate-100">আনলিমিটেড</span>
+            </div>
           </div>
 
           {/* ✅ স্টোরফ্রন্ট থিম — শুধুমাত্র super-admin থেকে নিয়ন্ত্রিত (প্ল্যান
@@ -463,10 +474,14 @@ export default function Plan() {
                       <div key={feature.key} className="flex items-center justify-between gap-2 text-xs">
                         <span className="text-gray-600 dark:text-slate-400">{feature.label}</span>
                         <span className="font-bold text-gray-900 dark:text-slate-100">
-                          {plan.limits?.[feature.key] ?? "—"}
+                          {formatLimit(feature.key, plan.limits?.[feature.key])}
                         </span>
                       </div>
                     ))}
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="text-gray-600 dark:text-slate-400">অর্ডার</span>
+                      <span className="font-bold text-gray-900 dark:text-slate-100">আনলিমিটেড</span>
+                    </div>
                     <div className="flex items-center justify-between gap-2 text-xs">
                       <span className="text-gray-600 dark:text-slate-400">ডিফল্ট থিম</span>
                       <span className="font-bold text-gray-900 dark:text-slate-100">

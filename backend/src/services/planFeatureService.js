@@ -10,7 +10,7 @@ const FALLBACK_FEATURES = {
   landingPages: false,
   fullStorefront: true,
   invoiceCustomization: false,
-  maxProducts: 200,
+  maxProducts: 0, // 0 = আনলিমিটেড
   maxAdmins: 2,
 };
 

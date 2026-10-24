@@ -70,7 +70,7 @@ export const reviewPlanRequest = async (req, res) => {
       const currentProductCount = await Product.countDocuments({ shopId: shop._id }).setOptions({
         skipTenantScope: true,
       });
-      if (currentProductCount > shop.limits.maxProducts) {
+      if (shop.limits.maxProducts > 0 && currentProductCount > shop.limits.maxProducts) {
         overLimitWarning = `⚠️ এই শপে বর্তমানে ${currentProductCount}টি প্রোডাক্ট আছে, কিন্তু নতুন প্ল্যানে সর্বোচ্চ ${shop.limits.maxProducts}টি অনুমোদিত। পুরনো প্রোডাক্টগুলো অক্ষত থাকবে, কিন্তু নতুন প্রোডাক্ট যোগ করা যাবে না যতক্ষণ না লিমিটের নিচে আনা হয়।`;
       }
 

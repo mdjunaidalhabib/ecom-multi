@@ -148,7 +148,7 @@ export const createPlan = async (req, res) => {
       isVisible: isVisible !== false,
       ...parsedPricing,
       features: { fullStorefront: true, ...parseFeatures(features) },
-      limits: { maxProducts: 50, maxAdmins: 1, ...parsedLimits },
+      limits: { maxProducts: 0, maxAdmins: 1, ...parsedLimits },
     });
 
     return res.status(201).json(plan);

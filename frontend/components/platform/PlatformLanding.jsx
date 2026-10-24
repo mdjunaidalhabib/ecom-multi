@@ -5,6 +5,8 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
+  Briefcase,
+  Building2,
   Check,
   ChevronDown,
   ClipboardList,
@@ -17,14 +19,18 @@ import {
   Package,
   Palette,
   Phone,
+  Rocket,
   ShieldCheck,
   ShoppingBag,
   ShoppingCart,
+  SlidersHorizontal,
   Smartphone,
   Sparkles,
+  Store,
   Tag,
   Truck,
   Wallet,
+  X,
   Zap,
 } from "lucide-react";
 import AdminCTA from "./AdminCTA";
@@ -59,37 +65,81 @@ const STEPS = [
   },
 ];
 
+// ✅ সব ফিচার চালু আছে এমন প্ল্যানের লেবেল (backend/controllers/shop/public.plans.controller.js-এর
+// FEATURE_CATALOG-এর সাথে মেলানো)
+const ALL_FEATURE_LABELS = [
+  "সম্পূর্ণ স্টোরফ্রন্ট",
+  "ভিজিটর অ্যানালিটিক্স",
+  "প্রোমো ও কুপন কোড",
+  "পেমেন্ট ইন্টিগ্রেশন",
+  "কাস্টম ডোমেইন",
+  "ল্যান্ডিং পেজ বিল্ডার",
+  "ইনভয়েস কাস্টমাইজেশন",
+];
+
+// ✅ প্ল্যানের আইকন — নামের প্রথম অক্ষর নয়, প্ল্যানের ধরন বোঝায় এমন আইকন। সুপার-অ্যাডমিনে
+// নতুন প্ল্যান (অজানা key) বানালে তার ক্রম অনুযায়ী PLAN_ICON_CYCLE থেকে বসে।
+const PLAN_ICONS = {
+  starter: Rocket,
+  business: Briefcase,
+  custom: SlidersHorizontal,
+  reseller: Store,
+  "reseller-pro": Building2,
+};
+const PLAN_ICON_CYCLE = [Rocket, Briefcase, SlidersHorizontal, Store, Building2, Layers];
+
+// ✅ API না এলে এই ফলব্যাক দেখায় (ডিফল্ট seed-এর সাথে মেলানো)। প্রতিটি প্ল্যানে
+// চালু ফিচার highlights-এ, আর বন্ধ ফিচার notIncluded-এ — notIncluded কাটা অবস্থায় দেখায়।
 const PLANS = [
   {
-    name: "Free",
-    tagline: "নতুন শপ শুরু করার জন্য",
-    highlights: ["৫০টি পর্যন্ত প্রোডাক্ট", "১ জন অ্যাডমিন", "সম্পূর্ণ স্টোরফ্রন্ট"],
-    accent: "teal",
-  },
-  {
+    iconKey: "starter",
     name: "Starter",
     tagline: "বাড়ন্ত ব্যবসার জন্য",
-    highlights: ["২০০টি পর্যন্ত প্রোডাক্ট", "২ জন অ্যাডমিন", "অ্যানালিটিক্স ও প্রোমো কোড", "পেমেন্ট ইন্টিগ্রেশন"],
+    highlights: [
+      "আনলিমিটেড প্রোডাক্ট",
+      "আনলিমিটেড অর্ডার",
+      "২ জন অ্যাডমিন",
+      "সম্পূর্ণ স্টোরফ্রন্ট",
+      "ভিজিটর অ্যানালিটিক্স",
+      "প্রোমো ও কুপন কোড",
+      "পেমেন্ট ইন্টিগ্রেশন",
+    ],
+    notIncluded: ["কাস্টম ডোমেইন", "ল্যান্ডিং পেজ বিল্ডার", "ইনভয়েস কাস্টমাইজেশন"],
     accent: "emerald",
   },
   {
+    iconKey: "business",
     name: "Business",
     tagline: "পূর্ণাঙ্গ প্রফেশনাল ফিচারের জন্য",
-    highlights: ["১,০০০টি পর্যন্ত প্রোডাক্ট", "৫ জন অ্যাডমিন", "কাস্টম ডোমেইন", "ল্যান্ডিং পেজ ও ইনভয়েস কাস্টমাইজেশন"],
+    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "৫ জন অ্যাডমিন", ...ALL_FEATURE_LABELS],
+    notIncluded: [],
     popular: true,
     accent: "orange",
   },
   {
+    iconKey: "custom",
     name: "Custom",
     tagline: "চাহিদা অনুযায়ী সম্পূর্ণ কাস্টমাইজড সমাধান",
-    highlights: ["৫,০০০টি পর্যন্ত প্রোডাক্ট", "১০ জন অ্যাডমিন", "সব প্রিমিয়াম ফিচার", "প্রয়োজন অনুযায়ী কাস্টমাইজেশন"],
+    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "১০ জন অ্যাডমিন", ...ALL_FEATURE_LABELS],
+    notIncluded: [],
     accent: "amber",
   },
   {
+    iconKey: "reseller",
     name: "Reseller",
     tagline: "একাধিক ক্লায়েন্ট/শপ পরিচালনা ও রিসেল করার জন্য",
-    highlights: ["১০,০০০টি পর্যন্ত প্রোডাক্ট", "২০ জন অ্যাডমিন", "মাল্টিপল ক্লায়েন্ট পরিচালনা", "রিসেলিং সুবিধা"],
+    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "২০ জন অ্যাডমিন", ...ALL_FEATURE_LABELS],
+    notIncluded: [],
     accent: "rose",
+  },
+  {
+    iconKey: "reseller-pro",
+    name: "Reseller Pro",
+    tagline: "বড় রিসেলার ও এজেন্সির জন্য — বেশি স্টাফসহ",
+    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "৫০ জন অ্যাডমিন", ...ALL_FEATURE_LABELS],
+    notIncluded: [],
+    ctaType: "contact",
+    accent: "teal",
   },
 ];
 
@@ -112,7 +162,9 @@ function mapApiPlans(apiPlans) {
     key: p.key,
     name: p.name,
     tagline: p.tagline,
+    iconKey: p.key,
     highlights: p.highlights || [],
+    notIncluded: p.notIncluded || [],
     popular: !!p.isPopular,
     accent: ACCENT_CYCLE[i % ACCENT_CYCLE.length],
     price: p.price,
@@ -796,6 +848,7 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
           <div className="mt-12 flex flex-wrap justify-center gap-5">
             {displayPlans.map((plan, i) => {
               const a = ACCENTS[plan.accent];
+              const PlanIcon = PLAN_ICONS[plan.iconKey] || PLAN_ICON_CYCLE[i % PLAN_ICON_CYCLE.length];
               return (
                 <motion.div
                   key={plan.name}
@@ -816,8 +869,8 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
                       সবচেয়ে জনপ্রিয়
                     </span>
                   )}
-                  <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-black text-white shadow ${a.icon}`}>
-                    {plan.name.charAt(0)}
+                  <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-md ${a.icon}`}>
+                    <PlanIcon size={20} aria-hidden="true" />
                   </span>
                   <h3 className="mt-3 text-lg font-semibold text-gray-900">{plan.name}</h3>
                   <p className="mt-1 text-xs leading-relaxed text-gray-500">{plan.tagline}</p>
@@ -848,8 +901,15 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
                   <ul className="mt-5 flex-1 space-y-2.5">
                     {plan.highlights.map((h) => (
                       <li key={h} className="flex items-start gap-2 text-xs text-gray-600">
-                        <Check size={14} className="mt-0.5 shrink-0 text-emerald-500" />
+                        <Check size={14} className="mt-0.5 shrink-0 text-emerald-500" aria-hidden="true" />
                         {h}
+                      </li>
+                    ))}
+                    {(plan.notIncluded || []).map((h) => (
+                      <li key={h} className="flex items-start gap-2 text-xs text-gray-400">
+                        <X size={14} className="mt-0.5 shrink-0 text-gray-300" aria-hidden="true" />
+                        <span className="line-through decoration-gray-300">{h}</span>
+                        <span className="sr-only">(এই প্ল্যানে নেই)</span>
                       </li>
                     ))}
                   </ul>

@@ -1,0 +1,958 @@
+From 268d14a1b0e0a7b0954db72a77cc5b7ffc1a5986 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 24 Oct 2026 00:46:29 +0000
+Subject: [PATCH 1/2] feat(plans): remove Free plan, add Reseller Pro,
+ unlimited products & orders
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Seed catalog is now Starter (default), Business, Custom, Reseller and the
+  new Reseller Pro (50 admins, "contact" CTA). The Free plan is gone.
+- maxProducts = 0 means unlimited. Product creation, downgrade warnings,
+  plan-request warnings and the super-admin over-limit badge all honour it.
+  Orders never had a limit, so nothing is enforced there; the UIs now state
+  "unlimited orders" explicitly.
+- New shops fall back to the default plan (isDefault) instead of a hard-coded
+  "free"; Shop schema default is now "starter".
+- Admin and super-admin plan screens render 0 products as "আনলিমিটেড".
+- Add migrations/removeFreePlanAndUnlimited.js (idempotent): moves free shops
+  to TARGET_PLAN (default starter), deletes the free plan, zeroes maxProducts
+  on every plan and shop, creates reseller-pro and re-orders plans.
+---
+ admin/components/Plan.jsx                     |  19 ++-
+ .../controllers/product/product.controller.js |   7 +-
+ .../controllers/shop/admin.shop.controller.js |  14 +-
+ .../shop/planRequest.admin.controller.js      |   2 +-
+ .../shop/planRequest.superadmin.controller.js |   2 +-
+ .../shop/plans.admin.controller.js            |   2 +-
+ .../shop/public.plans.controller.js           |   4 +-
+ .../migrations/removeFreePlanAndUnlimited.js  | 140 ++++++++++++++++++
+ backend/src/models/Plan.js                    |  91 +++++-------
+ backend/src/models/Shop.js                    |   4 +-
+ backend/src/services/planFeatureService.js    |   2 +-
+ backend/src/services/shopProvisionService.js  |   2 +-
+ .../components/platform/PlatformLanding.jsx   |  21 +--
+ super-admin/components/Plans.jsx              |  11 +-
+ super-admin/components/Shops.jsx              |  13 +-
+ 15 files changed, 245 insertions(+), 89 deletions(-)
+ create mode 100644 backend/migrations/removeFreePlanAndUnlimited.js
+
+diff --git a/admin/components/Plan.jsx b/admin/components/Plan.jsx
+index e800c9e..5b851d3 100644
+--- a/admin/components/Plan.jsx
++++ b/admin/components/Plan.jsx
+@@ -67,6 +67,13 @@ const LIMIT_FEATURES = [
+   { key: "maxProducts", label: "সর্বোচ্চ Products" },
+   { key: "maxAdmins", label: "সর্বোচ্চ Admin/Staff" },
+ ];
++// ✅ maxProducts = 0 মানে আনলিমিটেড (সব প্ল্যানে অর্ডারও আনলিমিটেড)
++const formatLimit = (key, value) => {
++  if (value === undefined || value === null) return "—";
++  if (key === "maxProducts" && Number(value) === 0) return "আনলিমিটেড";
++  return value;
++};
++
+ const STATUS_META = {
+   pending: ["পর্যালোচনাধীন", "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20", Clock],
+   approved: ["অনুমোদিত", "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20", CheckCircle2],
+@@ -375,10 +382,14 @@ export default function Plan() {
+                   {feature.label}
+                 </span>
+                 <span className="text-sm font-black text-gray-900 dark:text-slate-100">
+-                  {planInfo?.features?.[feature.key] ?? "—"}
++                  {formatLimit(feature.key, planInfo?.features?.[feature.key])}
+                 </span>
+               </div>
+             ))}
++            <div className="flex items-center justify-between rounded-xl border border-gray-100 dark:border-slate-700/60 bg-gray-50 dark:bg-slate-800 px-3 py-2.5">
++              <span className="text-sm font-bold text-gray-700 dark:text-slate-300">অর্ডার</span>
++              <span className="text-sm font-black text-gray-900 dark:text-slate-100">আনলিমিটেড</span>
++            </div>
+           </div>
+ 
+           {/* ✅ স্টোরফ্রন্ট থিম — শুধুমাত্র super-admin থেকে নিয়ন্ত্রিত (প্ল্যান
+@@ -463,10 +474,14 @@ export default function Plan() {
+                       <div key={feature.key} className="flex items-center justify-between gap-2 text-xs">
+                         <span className="text-gray-600 dark:text-slate-400">{feature.label}</span>
+                         <span className="font-bold text-gray-900 dark:text-slate-100">
+-                          {plan.limits?.[feature.key] ?? "—"}
++                          {formatLimit(feature.key, plan.limits?.[feature.key])}
+                         </span>
+                       </div>
+                     ))}
++                    <div className="flex items-center justify-between gap-2 text-xs">
++                      <span className="text-gray-600 dark:text-slate-400">অর্ডার</span>
++                      <span className="font-bold text-gray-900 dark:text-slate-100">আনলিমিটেড</span>
++                    </div>
+                     <div className="flex items-center justify-between gap-2 text-xs">
+                       <span className="text-gray-600 dark:text-slate-400">ডিফল্ট থিম</span>
+                       <span className="font-bold text-gray-900 dark:text-slate-100">
+diff --git a/backend/controllers/product/product.controller.js b/backend/controllers/product/product.controller.js
+index d04fa3b..06722a1 100644
+--- a/backend/controllers/product/product.controller.js
++++ b/backend/controllers/product/product.controller.js
+@@ -298,9 +298,10 @@ export const createProduct = async (req, res) => {
+ 
+     // ✅ প্ল্যান-ভিত্তিক প্রোডাক্ট লিমিট — Shop.limits.maxProducts
+     // (Product tenant-scoped বলে countDocuments() এমনিতেই এই শপের মধ্যে সীমাবদ্ধ)
+-    const maxProducts = shop?.limits?.maxProducts ?? 200;
+-    const currentProductCount = await Product.countDocuments();
+-    if (currentProductCount >= maxProducts) {
++    // 0 (বা না থাকলে) = আনলিমিটেড — কোনো প্ল্যানেই এখন প্রোডাক্ট লিমিট নেই
++    const maxProducts = shop?.limits?.maxProducts ?? 0;
++    const currentProductCount = maxProducts > 0 ? await Product.countDocuments() : 0;
++    if (maxProducts > 0 && currentProductCount >= maxProducts) {
+       cleanupReqFiles(req);
+       return res.status(403).json({
+         error: `এই প্ল্যানে সর্বোচ্চ ${maxProducts}টি প্রোডাক্ট যোগ করা যাবে। প্ল্যান আপগ্রেড করুন।`,
+diff --git a/backend/controllers/shop/admin.shop.controller.js b/backend/controllers/shop/admin.shop.controller.js
+index 29b8e51..9302713 100644
+--- a/backend/controllers/shop/admin.shop.controller.js
++++ b/backend/controllers/shop/admin.shop.controller.js
+@@ -199,7 +199,11 @@ export const createShop = async (req, res) => {
+       return res.status(400).json({ message: err.message });
+     }
+ 
+-    let resolvedPlan = "free";
++    // ✅ Free প্ল্যান নেই — প্ল্যান না দিলে isDefault প্ল্যান (না থাকলে প্রথম প্ল্যান) ব্যবহার হবে
++    const defaultPlanDoc =
++      (await Plan.findOne({ isDefault: true }).select("key")) ||
++      (await Plan.findOne({}).sort({ order: 1 }).select("key"));
++    let resolvedPlan = defaultPlanDoc?.key || "starter";
+     if (plan) {
+       const planDoc = await Plan.findOne({ key: plan }).select("key");
+       if (planDoc) resolvedPlan = planDoc.key;
+@@ -449,7 +453,11 @@ export const updateShop = async (req, res) => {
+       }
+     }
+     if (maxProducts !== undefined) {
+-      shop.limits.maxProducts = Number(maxProducts) || shop.limits.maxProducts;
++      // 0 = আনলিমিটেড, তাই 0 ও গ্রহণযোগ্য
++      const parsedMax = Number(maxProducts);
++      if (maxProducts !== "" && maxProducts !== null && Number.isFinite(parsedMax) && parsedMax >= 0) {
++        shop.limits.maxProducts = Math.floor(parsedMax);
++      }
+     }
+     if (maxAdmins !== undefined) {
+       shop.limits.maxAdmins = Number(maxAdmins) || shop.limits.maxAdmins;
+@@ -471,7 +479,7 @@ export const updateShop = async (req, res) => {
+       skipTenantScope: true,
+     });
+     const overLimitWarning =
+-      currentProductCount > shop.limits.maxProducts
++      shop.limits.maxProducts > 0 && currentProductCount > shop.limits.maxProducts
+         ? `⚠️ এই শপে বর্তমানে ${currentProductCount}টি প্রোডাক্ট আছে, কিন্তু নতুন প্ল্যানে সর্বোচ্চ ${shop.limits.maxProducts}টি অনুমোদিত। পুরনো প্রোডাক্টগুলো অক্ষত থাকবে, কিন্তু নতুন প্রোডাক্ট যোগ করা যাবে না যতক্ষণ না লিমিটের নিচে আনা হয়।`
+         : null;
+ 
+diff --git a/backend/controllers/shop/planRequest.admin.controller.js b/backend/controllers/shop/planRequest.admin.controller.js
+index 069ca65..b180eb7 100644
+--- a/backend/controllers/shop/planRequest.admin.controller.js
++++ b/backend/controllers/shop/planRequest.admin.controller.js
+@@ -53,7 +53,7 @@ export const createPlanRequest = async (req, res) => {
+     const requestedFeatures = await getPlanFeatures(requestedPlan);
+     const currentProductCount = await Product.countDocuments({ shopId: shop._id });
+     const overLimitWarning =
+-      currentProductCount > requestedFeatures.maxProducts
++      requestedFeatures.maxProducts > 0 && currentProductCount > requestedFeatures.maxProducts
+         ? `⚠️ আপনার শপে বর্তমানে ${currentProductCount}টি প্রোডাক্ট আছে, কিন্তু "${requestedPlan}" প্ল্যানে সর্বোচ্চ ${requestedFeatures.maxProducts}টি অনুমোদিত। অনুমোদনের পর পুরনো প্রোডাক্ট অক্ষত থাকবে, কিন্তু নতুন প্রোডাক্ট যোগ করা যাবে না যতক্ষণ না লিমিটের নিচে আনা হয়।`
+         : null;
+ 
+diff --git a/backend/controllers/shop/planRequest.superadmin.controller.js b/backend/controllers/shop/planRequest.superadmin.controller.js
+index c239056..421a819 100644
+--- a/backend/controllers/shop/planRequest.superadmin.controller.js
++++ b/backend/controllers/shop/planRequest.superadmin.controller.js
+@@ -70,7 +70,7 @@ export const reviewPlanRequest = async (req, res) => {
+       const currentProductCount = await Product.countDocuments({ shopId: shop._id }).setOptions({
+         skipTenantScope: true,
+       });
+-      if (currentProductCount > shop.limits.maxProducts) {
++      if (shop.limits.maxProducts > 0 && currentProductCount > shop.limits.maxProducts) {
+         overLimitWarning = `⚠️ এই শপে বর্তমানে ${currentProductCount}টি প্রোডাক্ট আছে, কিন্তু নতুন প্ল্যানে সর্বোচ্চ ${shop.limits.maxProducts}টি অনুমোদিত। পুরনো প্রোডাক্টগুলো অক্ষত থাকবে, কিন্তু নতুন প্রোডাক্ট যোগ করা যাবে না যতক্ষণ না লিমিটের নিচে আনা হয়।`;
+       }
+ 
+diff --git a/backend/controllers/shop/plans.admin.controller.js b/backend/controllers/shop/plans.admin.controller.js
+index ece9684..357a56e 100644
+--- a/backend/controllers/shop/plans.admin.controller.js
++++ b/backend/controllers/shop/plans.admin.controller.js
+@@ -148,7 +148,7 @@ export const createPlan = async (req, res) => {
+       isVisible: isVisible !== false,
+       ...parsedPricing,
+       features: { fullStorefront: true, ...parseFeatures(features) },
+-      limits: { maxProducts: 50, maxAdmins: 1, ...parsedLimits },
++      limits: { maxProducts: 0, maxAdmins: 1, ...parsedLimits },
+     });
+ 
+     return res.status(201).json(plan);
+diff --git a/backend/controllers/shop/public.plans.controller.js b/backend/controllers/shop/public.plans.controller.js
+index 15e6c52..21d25d6 100644
+--- a/backend/controllers/shop/public.plans.controller.js
++++ b/backend/controllers/shop/public.plans.controller.js
+@@ -12,7 +12,9 @@ function buildHighlights(plan) {
+   const f = plan.features || {};
+   const l = plan.limits || {};
+   const out = [];
+-  out.push(`${BN(l.maxProducts)}টি পর্যন্ত প্রোডাক্ট`);
++  // maxProducts 0 = আনলিমিটেড; অর্ডারের কোনো লিমিট কোনো প্ল্যানেই নেই
++  out.push(l.maxProducts > 0 ? `${BN(l.maxProducts)}টি পর্যন্ত প্রোডাক্ট` : "আনলিমিটেড প্রোডাক্ট");
++  out.push("আনলিমিটেড অর্ডার");
+   out.push(`${BN(l.maxAdmins)} জন অ্যাডমিন`);
+   if (f.fullStorefront) out.push("সম্পূর্ণ স্টোরফ্রন্ট");
+   if (f.analytics && f.promo) out.push("অ্যানালিটিক্স ও প্রোমো কোড");
+diff --git a/backend/migrations/removeFreePlanAndUnlimited.js b/backend/migrations/removeFreePlanAndUnlimited.js
+new file mode 100644
+index 0000000..939cc42
+--- /dev/null
++++ b/backend/migrations/removeFreePlanAndUnlimited.js
+@@ -0,0 +1,140 @@
++/**
++ * ✅ Migration: Free প্ল্যান বাদ + সব প্ল্যানে আনলিমিটেড প্রোডাক্ট + নতুন "Reseller Pro" প্ল্যান
++ *
++ * এই স্ক্রিপ্ট কী করে:
++ *  1. "free" প্ল্যানে থাকা সব শপকে TARGET_PLAN-এ (ডিফল্ট: "starter") সরিয়ে নেয়
++ *     এবং সেই শপের limits নতুন প্ল্যানের মান অনুযায়ী আপডেট করে
++ *  2. "free" প্ল্যান ডিলিট করে (কোনো শপ বাকি না থাকলেই)
++ *  3. সব প্ল্যানের limits.maxProducts = 0 (= আনলিমিটেড) করে
++ *  4. সব শপের limits.maxProducts = 0 করে (আগে সেভ হওয়া 50/200/১০০০... মুছে যায়)
++ *  5. "reseller-pro" প্ল্যান তৈরি করে (না থাকলে)
++ *  6. isDefault = TARGET_PLAN, আর প্ল্যানের order আবার সাজায়
++ *
++ * চালানোর নিয়ম (backend/ ফোল্ডার থেকে):
++ *   node migrations/removeFreePlanAndUnlimited.js
++ *   TARGET_PLAN=business node migrations/removeFreePlanAndUnlimited.js   # অন্য প্ল্যানে সরাতে চাইলে
++ *
++ * ⚠️ নিরাপদে বারবার চালানো যায় (idempotent)।
++ * ⚠️ চালানোর আগে ডাটাবেসের ব্যাকআপ নিয়ে নিন।
++ * ℹ️ অর্ডারের কোনো লিমিট কোডে ছিলই না, তাই অর্ডারের জন্য ডেটা বদলানো লাগে না।
++ */
++
++import dotenv from "dotenv";
++import mongoose from "mongoose";
++
++import connectDB from "../src/lib/db.js";
++import Plan from "../src/models/Plan.js";
++import Shop from "../src/models/Shop.js";
++
++dotenv.config();
++
++const TARGET_PLAN = (process.env.TARGET_PLAN || "starter").trim().toLowerCase();
++
++const ALL_FEATURES_ON = {
++  customDomain: true,
++  analytics: true,
++  promo: true,
++  payment: true,
++  landingPages: true,
++  fullStorefront: true,
++  invoiceCustomization: true,
++};
++
++const RESELLER_PRO = {
++  key: "reseller-pro",
++  name: "Reseller Pro",
++  tagline: "বড় রিসেলার ও এজেন্সির জন্য — বেশি স্টাফসহ",
++  theme: "classic",
++  ctaType: "contact",
++  features: { ...ALL_FEATURES_ON },
++  limits: { maxProducts: 0, maxAdmins: 50 },
++};
++
++// নতুন ক্রম — যে key এখানে নেই (সুপার-অ্যাডমিনে নিজে বানানো প্ল্যান) সেগুলো শেষে থাকবে
++const ORDER = ["starter", "business", "custom", "reseller", "reseller-pro"];
++
++async function run() {
++  await connectDB();
++  console.log("========== FREE-PLAN REMOVAL MIGRATION START ==========");
++
++  const target = await Plan.findOne({ key: TARGET_PLAN });
++  if (!target) {
++    throw new Error(
++      `"${TARGET_PLAN}" প্ল্যান ডাটাবেসে নেই — আগে সেটা তৈরি করুন বা TARGET_PLAN সেট করুন।`,
++    );
++  }
++
++  // 1️⃣ + 2️⃣ free → TARGET_PLAN, তারপর free ডিলিট
++  const freePlan = await Plan.findOne({ key: "free" });
++  const freeShopCount = await Shop.countDocuments({ plan: "free" });
++
++  if (freeShopCount > 0) {
++    const result = await Shop.updateMany(
++      { plan: "free" },
++      {
++        $set: {
++          plan: TARGET_PLAN,
++          "limits.maxProducts": 0,
++          "limits.maxAdmins": target.limits?.maxAdmins ?? 2,
++        },
++      },
++    );
++    const modified = result.modifiedCount ?? result.nModified ?? 0;
++    console.log(`✅ ${modified}টি শপ "free" থেকে "${TARGET_PLAN}" প্ল্যানে সরানো হলো।`);
++  } else {
++    console.log('🟡 "free" প্ল্যানে কোনো শপ নেই।');
++  }
++
++  const stillOnFree = await Shop.countDocuments({ plan: "free" });
++  if (freePlan && stillOnFree === 0) {
++    await Plan.collection.deleteOne({ key: "free" });
++    console.log('✅ "free" প্ল্যান ডিলিট করা হলো।');
++  } else if (freePlan) {
++    console.log(`⚠️ এখনো ${stillOnFree}টি শপ "free"-তে আছে — প্ল্যান ডিলিট করা হয়নি।`);
++  } else {
++    console.log('🟡 "free" প্ল্যান আগেই নেই — স্কিপ।');
++  }
++
++  // 3️⃣ সব প্ল্যানে আনলিমিটেড প্রোডাক্ট
++  const planRes = await Plan.updateMany({}, { $set: { "limits.maxProducts": 0 } });
++  console.log(
++    `✅ ${planRes.modifiedCount ?? planRes.nModified ?? 0}টি প্ল্যানে maxProducts = 0 (আনলিমিটেড) সেট হলো।`,
++  );
++
++  // 4️⃣ সব শপে আনলিমিটেড প্রোডাক্ট
++  const shopRes = await Shop.updateMany({}, { $set: { "limits.maxProducts": 0 } });
++  console.log(
++    `✅ ${shopRes.modifiedCount ?? shopRes.nModified ?? 0}টি শপে maxProducts = 0 (আনলিমিটেড) সেট হলো।`,
++  );
++
++  // 5️⃣ reseller-pro
++  if (await Plan.findOne({ key: RESELLER_PRO.key })) {
++    console.log('🟡 "reseller-pro" আগে থেকেই আছে — স্কিপ।');
++  } else {
++    await Plan.create({ ...RESELLER_PRO, order: ORDER.indexOf(RESELLER_PRO.key) });
++    console.log('✅ "reseller-pro" প্ল্যান তৈরি হলো।');
++  }
++
++  // 6️⃣ ডিফল্ট প্ল্যান ও ক্রম
++  await Plan.updateMany({}, { $set: { isDefault: false } });
++  await Plan.updateOne({ key: TARGET_PLAN }, { $set: { isDefault: true } });
++  console.log(`✅ ডিফল্ট প্ল্যান: "${TARGET_PLAN}"`);
++
++  const all = await Plan.find({}).sort({ order: 1, createdAt: 1 });
++  let extra = ORDER.length;
++  for (const p of all) {
++    const idx = ORDER.indexOf(p.key);
++    await Plan.updateOne({ _id: p._id }, { $set: { order: idx >= 0 ? idx : extra++ } });
++  }
++  console.log("✅ প্ল্যানের ক্রম আপডেট হলো।");
++
++  console.log("========== MIGRATION DONE ✅ ==========");
++  await mongoose.disconnect();
++  process.exit(0);
++}
++
++run().catch(async (err) => {
++  console.error("❌ Migration ব্যর্থ হয়েছে:", err);
++  await mongoose.disconnect();
++  process.exit(1);
++});
+diff --git a/backend/src/models/Plan.js b/backend/src/models/Plan.js
+index 4639a4a..f2483d0 100644
+--- a/backend/src/models/Plan.js
++++ b/backend/src/models/Plan.js
+@@ -58,7 +58,8 @@ const planSchema = new mongoose.Schema(
+     },
+ 
+     limits: {
+-      maxProducts: { type: Number, default: 50 },
++      // ✅ 0 = আনলিমিটেড প্রোডাক্ট (সব প্ল্যানেই এখন আনলিমিটেড)
++      maxProducts: { type: Number, default: 0, min: 0 },
+       maxAdmins: { type: Number, default: 1 },
+     },
+   },
+@@ -70,32 +71,26 @@ planSchema.index({ order: 1 });
+ const Plan = mongoose.models.Plan || mongoose.model("Plan", planSchema);
+ export default Plan;
+ 
+-// ✅ প্রথমবার কল হওয়ার সময় collection খালি থাকলে আজকের
+-// free/starter/business/custom/reseller ডিফল্ট মান দিয়ে seed করে।
++// ✅ প্রথমবার কল হওয়ার সময় collection খালি থাকলে এই ডিফল্ট প্ল্যানগুলো দিয়ে seed করে।
++// Free প্ল্যান আর নেই। সব প্ল্যানে প্রোডাক্ট আনলিমিটেড (maxProducts: 0 = আনলিমিটেড)
++// এবং অর্ডারের কোনো লিমিট নেই।
++const ALL_FEATURES_ON = {
++  customDomain: true,
++  analytics: true,
++  promo: true,
++  payment: true,
++  landingPages: true,
++  fullStorefront: true,
++  invoiceCustomization: true,
++};
++
+ const SEED_PLANS = [
+-  {
+-    key: "free",
+-    name: "Free",
+-    tagline: "নতুন শপ শুরু করার জন্য",
+-    order: 0,
+-    isDefault: true,
+-    theme: "classic",
+-    features: {
+-      customDomain: false,
+-      analytics: false,
+-      promo: false,
+-      payment: false,
+-      landingPages: false,
+-      fullStorefront: true,
+-      invoiceCustomization: false,
+-    },
+-    limits: { maxProducts: 50, maxAdmins: 1 },
+-  },
+   {
+     key: "starter",
+     name: "Starter",
+     tagline: "বাড়ন্ত ব্যবসার জন্য",
+-    order: 1,
++    order: 0,
++    isDefault: true,
+     theme: "classic",
+     features: {
+       customDomain: false,
+@@ -106,58 +101,44 @@ const SEED_PLANS = [
+       fullStorefront: true,
+       invoiceCustomization: false,
+     },
+-    limits: { maxProducts: 200, maxAdmins: 2 },
++    limits: { maxProducts: 0, maxAdmins: 2 },
+   },
+   {
+     key: "business",
+     name: "Business",
+     tagline: "পূর্ণাঙ্গ প্রফেশনাল ফিচারের জন্য",
+-    order: 2,
++    order: 1,
+     theme: "classic",
+-    features: {
+-      customDomain: true,
+-      analytics: true,
+-      promo: true,
+-      payment: true,
+-      landingPages: true,
+-      fullStorefront: true,
+-      invoiceCustomization: true,
+-    },
+-    limits: { maxProducts: 1000, maxAdmins: 5 },
++    features: { ...ALL_FEATURES_ON },
++    limits: { maxProducts: 0, maxAdmins: 5 },
+   },
+   {
+     key: "custom",
+     name: "Custom",
+     tagline: "আপনার ব্যবসার চাহিদা অনুযায়ী সম্পূর্ণ কাস্টমাইজড সমাধান",
+-    order: 3,
++    order: 2,
+     theme: "classic",
+-    features: {
+-      customDomain: true,
+-      analytics: true,
+-      promo: true,
+-      payment: true,
+-      landingPages: true,
+-      fullStorefront: true,
+-      invoiceCustomization: true,
+-    },
+-    limits: { maxProducts: 5000, maxAdmins: 10 },
++    features: { ...ALL_FEATURES_ON },
++    limits: { maxProducts: 0, maxAdmins: 10 },
+   },
+   {
+     key: "reseller",
+     name: "Reseller",
+     tagline: "একাধিক ক্লায়েন্ট/শপ পরিচালনা ও রিসেল করার জন্য",
++    order: 3,
++    theme: "classic",
++    features: { ...ALL_FEATURES_ON },
++    limits: { maxProducts: 0, maxAdmins: 20 },
++  },
++  {
++    key: "reseller-pro",
++    name: "Reseller Pro",
++    tagline: "বড় রিসেলার ও এজেন্সির জন্য — বেশি স্টাফসহ",
+     order: 4,
+     theme: "classic",
+-    features: {
+-      customDomain: true,
+-      analytics: true,
+-      promo: true,
+-      payment: true,
+-      landingPages: true,
+-      fullStorefront: true,
+-      invoiceCustomization: true,
+-    },
+-    limits: { maxProducts: 10000, maxAdmins: 20 },
++    ctaType: "contact",
++    features: { ...ALL_FEATURES_ON },
++    limits: { maxProducts: 0, maxAdmins: 50 },
+   },
+ ];
+ 
+diff --git a/backend/src/models/Shop.js b/backend/src/models/Shop.js
+index 6a39061..045e8a0 100644
+--- a/backend/src/models/Shop.js
++++ b/backend/src/models/Shop.js
+@@ -116,10 +116,10 @@ const shopSchema = new mongoose.Schema(
+     // লিস্টের বিপরীতে।
+     plan: {
+       type: String,
+-      default: "free",
++      default: "starter",
+     },
+     limits: {
+-      maxProducts: { type: Number, default: 200 },
++      maxProducts: { type: Number, default: 0 }, // 0 = আনলিমিটেড
+       maxAdmins: { type: Number, default: 2 },
+     },
+ 
+diff --git a/backend/src/services/planFeatureService.js b/backend/src/services/planFeatureService.js
+index 40d41dc..ba0bb77 100644
+--- a/backend/src/services/planFeatureService.js
++++ b/backend/src/services/planFeatureService.js
+@@ -10,7 +10,7 @@ const FALLBACK_FEATURES = {
+   landingPages: false,
+   fullStorefront: true,
+   invoiceCustomization: false,
+-  maxProducts: 200,
++  maxProducts: 0, // 0 = আনলিমিটেড
+   maxAdmins: 2,
+ };
+ 
+diff --git a/backend/src/services/shopProvisionService.js b/backend/src/services/shopProvisionService.js
+index de86a41..85d604e 100644
+--- a/backend/src/services/shopProvisionService.js
++++ b/backend/src/services/shopProvisionService.js
+@@ -141,7 +141,7 @@ export async function provisionShop(input = {}) {
+ 
+   const days = plan.billingDays > 0 ? plan.billingDays : null;
+   const limits = {
+-    maxProducts: plan.limits?.maxProducts ?? 200,
++    maxProducts: plan.limits?.maxProducts ?? 0, // 0 = আনলিমিটেড
+     maxAdmins: plan.limits?.maxAdmins ?? 2,
+   };
+ 
+diff --git a/frontend/components/platform/PlatformLanding.jsx b/frontend/components/platform/PlatformLanding.jsx
+index f4d1252..c36db90 100644
+--- a/frontend/components/platform/PlatformLanding.jsx
++++ b/frontend/components/platform/PlatformLanding.jsx
+@@ -60,37 +60,38 @@ const STEPS = [
+ ];
+ 
+ const PLANS = [
+-  {
+-    name: "Free",
+-    tagline: "নতুন শপ শুরু করার জন্য",
+-    highlights: ["৫০টি পর্যন্ত প্রোডাক্ট", "১ জন অ্যাডমিন", "সম্পূর্ণ স্টোরফ্রন্ট"],
+-    accent: "teal",
+-  },
+   {
+     name: "Starter",
+     tagline: "বাড়ন্ত ব্যবসার জন্য",
+-    highlights: ["২০০টি পর্যন্ত প্রোডাক্ট", "২ জন অ্যাডমিন", "অ্যানালিটিক্স ও প্রোমো কোড", "পেমেন্ট ইন্টিগ্রেশন"],
++    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "২ জন অ্যাডমিন", "অ্যানালিটিক্স ও প্রোমো কোড", "পেমেন্ট ইন্টিগ্রেশন"],
+     accent: "emerald",
+   },
+   {
+     name: "Business",
+     tagline: "পূর্ণাঙ্গ প্রফেশনাল ফিচারের জন্য",
+-    highlights: ["১,০০০টি পর্যন্ত প্রোডাক্ট", "৫ জন অ্যাডমিন", "কাস্টম ডোমেইন", "ল্যান্ডিং পেজ ও ইনভয়েস কাস্টমাইজেশন"],
++    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "৫ জন অ্যাডমিন", "কাস্টম ডোমেইন", "ল্যান্ডিং পেজ ও ইনভয়েস কাস্টমাইজেশন"],
+     popular: true,
+     accent: "orange",
+   },
+   {
+     name: "Custom",
+     tagline: "চাহিদা অনুযায়ী সম্পূর্ণ কাস্টমাইজড সমাধান",
+-    highlights: ["৫,০০০টি পর্যন্ত প্রোডাক্ট", "১০ জন অ্যাডমিন", "সব প্রিমিয়াম ফিচার", "প্রয়োজন অনুযায়ী কাস্টমাইজেশন"],
++    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "১০ জন অ্যাডমিন", "সব প্রিমিয়াম ফিচার", "প্রয়োজন অনুযায়ী কাস্টমাইজেশন"],
+     accent: "amber",
+   },
+   {
+     name: "Reseller",
+     tagline: "একাধিক ক্লায়েন্ট/শপ পরিচালনা ও রিসেল করার জন্য",
+-    highlights: ["১০,০০০টি পর্যন্ত প্রোডাক্ট", "২০ জন অ্যাডমিন", "মাল্টিপল ক্লায়েন্ট পরিচালনা", "রিসেলিং সুবিধা"],
++    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "২০ জন অ্যাডমিন", "মাল্টিপল ক্লায়েন্ট পরিচালনা", "রিসেলিং সুবিধা"],
+     accent: "rose",
+   },
++  {
++    name: "Reseller Pro",
++    tagline: "বড় রিসেলার ও এজেন্সির জন্য — বেশি স্টাফসহ",
++    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "৫০ জন অ্যাডমিন", "মাল্টিপল ক্লায়েন্ট পরিচালনা", "রিসেলিং সুবিধা"],
++    ctaType: "contact",
++    accent: "teal",
++  },
+ ];
+ 
+ const ACCENT_CYCLE = ["teal", "emerald", "orange", "amber", "rose"];
+diff --git a/super-admin/components/Plans.jsx b/super-admin/components/Plans.jsx
+index 0ccbe92..2adc72d 100644
+--- a/super-admin/components/Plans.jsx
++++ b/super-admin/components/Plans.jsx
+@@ -123,7 +123,7 @@ const emptyForm = () => ({
+   landingPages: false,
+   fullStorefront: true,
+   invoiceCustomization: false,
+-  maxProducts: 50,
++  maxProducts: 0, // 0 = আনলিমিটেড
+   maxAdmins: 1,
+ });
+ 
+@@ -538,10 +538,16 @@ export default function Plans() {
+                     <div key={feature.key} className="flex items-center justify-between gap-2 text-sm">
+                       <span className="text-gray-700 dark:text-slate-300">{feature.label}</span>
+                       <span className="font-bold text-gray-900 dark:text-slate-100">
+-                        {plan.limits?.[feature.key] ?? "—"}
++                        {feature.key === "maxProducts" && Number(plan.limits?.[feature.key]) === 0
++                          ? "আনলিমিটেড"
++                          : plan.limits?.[feature.key] ?? "—"}
+                       </span>
+                     </div>
+                   ))}
++                  <div className="flex items-center justify-between gap-2 text-sm">
++                    <span className="text-gray-700 dark:text-slate-300">অর্ডার</span>
++                    <span className="font-bold text-gray-900 dark:text-slate-100">আনলিমিটেড</span>
++                  </div>
+                 </div>
+ 
+                 <div className="mx-5 my-4 border-t border-gray-100 dark:border-slate-800" />
+@@ -735,6 +741,7 @@ export default function Plans() {
+                   <div key={feature.key}>
+                     <label className="text-sm font-medium text-gray-700 dark:text-slate-300">
+                       {feature.label}
++                      {feature.key === "maxProducts" ? " (০ = আনলিমিটেড)" : ""}
+                     </label>
+                     <input
+                       type="number"
+diff --git a/super-admin/components/Shops.jsx b/super-admin/components/Shops.jsx
+index 455491b..dc90ca7 100644
+--- a/super-admin/components/Shops.jsx
++++ b/super-admin/components/Shops.jsx
+@@ -112,7 +112,7 @@ export default function Shops() {
+     domain: "",
+     contactEmail: "",
+     contactPhone: "",
+-    plan: "free",
++    plan: "starter",
+     theme: "",
+     subscriptionStartDate: "",
+     durationPreset: "",
+@@ -250,7 +250,7 @@ export default function Shops() {
+       domain: "",
+       contactEmail: "",
+       contactPhone: "",
+-      plan: "free",
++      plan: "starter",
+       theme: "",
+       subscriptionStartDate: toDateInputValue(new Date()),
+       durationPreset: "",
+@@ -271,7 +271,7 @@ export default function Shops() {
+       domain: shop.domain || "",
+       contactEmail: shop.contactEmail || "",
+       contactPhone: shop.contactPhone || "",
+-      plan: shop.plan || "free",
++      plan: shop.plan || "starter",
+       theme: shop.branding?.theme || "",
+       subscriptionStartDate: toDateInputValue(shop.subscriptionStartDate || shop.createdAt),
+       ...daysToDurationPreset(shop.subscriptionDays),
+@@ -739,7 +739,8 @@ export default function Shops() {
+                 {(() => {
+                   const productCount = shop.stats?.products ?? 0;
+                   const maxProducts = shop.limits?.maxProducts;
+-                  const isOverLimit = maxProducts != null && productCount > maxProducts;
++                  // maxProducts 0 = আনলিমিটেড, তাই তখন কখনোই over-limit নয়
++                  const isOverLimit = maxProducts > 0 && productCount > maxProducts;
+                   return isOverLimit ? (
+                     <div
+                       className="flex items-center gap-1.5 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-400"
+@@ -756,7 +757,7 @@ export default function Shops() {
+                     <Package size={14} className="text-gray-500 dark:text-slate-400" />
+                     <b
+                       className={
+-                        shop.limits?.maxProducts != null &&
++                        shop.limits?.maxProducts > 0 &&
+                         (shop.stats?.products ?? 0) > shop.limits.maxProducts
+                           ? "text-amber-600 dark:text-amber-400"
+                           : "text-gray-900 dark:text-slate-100"
+@@ -765,7 +766,7 @@ export default function Shops() {
+                       {shop.stats?.products ?? 0}
+                       {shop.limits?.maxProducts != null && (
+                         <span className="font-normal text-gray-400 dark:text-slate-500">
+-                          /{shop.limits.maxProducts}
++                          /{shop.limits.maxProducts > 0 ? shop.limits.maxProducts : "∞"}
+                         </span>
+                       )}
+                     </b>
+-- 
+2.43.0
+
+
+From 6351d839f6c49dd9a1bceba16a70b35a24eb8207 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 24 Oct 2026 00:46:29 +0000
+Subject: [PATCH 2/2] feat(landing): show excluded plan features
+ struck-through; replace letter icons
+
+- Public plans API now returns featureList ({key,label,included}), plus
+  notIncluded labels. Included features come first, excluded ones last.
+  highlights is kept (included only) for older consumers.
+- ECMS landing plan cards render included features with a check and excluded
+  ones greyed with a cross and strike-through (with sr-only text for screen
+  readers), so plans can be compared at a glance.
+- Plan badges use lucide icons (Rocket, Briefcase, SlidersHorizontal, Store,
+  Building2) instead of the first letter of the plan name; unknown plan keys
+  fall back to a rotating icon set.
+- Offline fallback plan list updated to match the seed catalog.
+---
+ .../shop/public.plans.controller.js           | 61 ++++++++++-----
+ .../components/platform/PlatformLanding.jsx   | 75 +++++++++++++++++--
+ 2 files changed, 111 insertions(+), 25 deletions(-)
+
+diff --git a/backend/controllers/shop/public.plans.controller.js b/backend/controllers/shop/public.plans.controller.js
+index 21d25d6..4427ee3 100644
+--- a/backend/controllers/shop/public.plans.controller.js
++++ b/backend/controllers/shop/public.plans.controller.js
+@@ -8,27 +8,49 @@ import { listActivePlans } from "../../src/models/Plan.js";
+ 
+ const BN = (n) => Number(n || 0).toLocaleString("bn-BD");
+ 
+-function buildHighlights(plan) {
+-  const f = plan.features || {};
++// ✅ প্ল্যান কার্ডে যে ফিচারগুলো দেখানো হয় (ক্রম ঠিক এভাবেই)। প্ল্যানে ফিচার চালু
++// থাকলে ✓, বন্ধ থাকলে কাটা (✗) অবস্থায় দেখায় — তাই ক্রেতা এক নজরে তুলনা করতে পারে।
++// ECMS ল্যান্ডিং ও Hikmah IT সাইট দুজনেই এই লেবেল ব্যবহার করে, কোথাও আলাদা করে
++// লিখতে হয় না।
++const FEATURE_CATALOG = [
++  { key: "fullStorefront", label: "সম্পূর্ণ স্টোরফ্রন্ট" },
++  { key: "analytics", label: "ভিজিটর অ্যানালিটিক্স" },
++  { key: "promo", label: "প্রোমো ও কুপন কোড" },
++  { key: "payment", label: "পেমেন্ট ইন্টিগ্রেশন" },
++  { key: "customDomain", label: "কাস্টম ডোমেইন" },
++  { key: "landingPages", label: "ল্যান্ডিং পেজ বিল্ডার" },
++  { key: "invoiceCustomization", label: "ইনভয়েস কাস্টমাইজেশন" },
++];
++
++// প্রোডাক্ট/অর্ডার/অ্যাডমিন — সবসময় "আছে" ধরনের লিমিট লাইন। maxProducts = 0 মানে
++// আনলিমিটেড; অর্ডারের কোনো লিমিট কোনো প্ল্যানেই নেই।
++function buildLimitItems(plan) {
+   const l = plan.limits || {};
+-  const out = [];
+-  // maxProducts 0 = আনলিমিটেড; অর্ডারের কোনো লিমিট কোনো প্ল্যানেই নেই
+-  out.push(l.maxProducts > 0 ? `${BN(l.maxProducts)}টি পর্যন্ত প্রোডাক্ট` : "আনলিমিটেড প্রোডাক্ট");
+-  out.push("আনলিমিটেড অর্ডার");
+-  out.push(`${BN(l.maxAdmins)} জন অ্যাডমিন`);
+-  if (f.fullStorefront) out.push("সম্পূর্ণ স্টোরফ্রন্ট");
+-  if (f.analytics && f.promo) out.push("অ্যানালিটিক্স ও প্রোমো কোড");
+-  else if (f.analytics) out.push("অ্যানালিটিক্স");
+-  else if (f.promo) out.push("প্রোমো কোড");
+-  if (f.payment) out.push("পেমেন্ট ইন্টিগ্রেশন");
+-  if (f.customDomain) out.push("কাস্টম ডোমেইন");
+-  if (f.landingPages) out.push("ল্যান্ডিং পেজ বিল্ডার");
+-  if (f.invoiceCustomization) out.push("ইনভয়েস কাস্টমাইজেশন");
+-  return out;
++  return [
++    {
++      key: "maxProducts",
++      label: l.maxProducts > 0 ? `${BN(l.maxProducts)}টি পর্যন্ত প্রোডাক্ট` : "আনলিমিটেড প্রোডাক্ট",
++      included: true,
++    },
++    { key: "orders", label: "আনলিমিটেড অর্ডার", included: true },
++    { key: "maxAdmins", label: `${BN(l.maxAdmins)} জন অ্যাডমিন`, included: true },
++  ];
++}
++
++// চালু ফিচার আগে, বন্ধ ফিচার পরে — প্রতিটি দলের ভেতরে FEATURE_CATALOG-এর ক্রম বজায় থাকে।
++function buildFeatureList(plan) {
++  const f = plan.features || {};
++  const toggles = FEATURE_CATALOG.map(({ key, label }) => ({ key, label, included: !!f[key] }));
++  return [
++    ...buildLimitItems(plan),
++    ...toggles.filter((item) => item.included),
++    ...toggles.filter((item) => !item.included),
++  ];
+ }
+ 
+ function toPublicPlan(plan) {
+   const p = plan.toObject ? plan.toObject() : plan;
++  const featureList = buildFeatureList(p);
+   return {
+     key: p.key,
+     name: p.name,
+@@ -41,7 +63,12 @@ function toPublicPlan(plan) {
+     ctaType: p.ctaType || "buy",
+     features: p.features || {},
+     limits: p.limits || {},
+-    highlights: buildHighlights(p),
++    // ✅ নতুন: প্রতিটি ফিচার + চালু/বন্ধ অবস্থা (UI এটা দিয়েই ✓/✗ আঁকে)
++    featureList,
++    // আগের কনজিউমারদের জন্য (পুরোনো Hikmah/ল্যান্ডিং বিল্ড) — শুধু চালু ফিচারের লেবেল
++    highlights: featureList.filter((item) => item.included).map((item) => item.label),
++    // বন্ধ ফিচারের লেবেল — কাটা অবস্থায় দেখানোর জন্য
++    notIncluded: featureList.filter((item) => !item.included).map((item) => item.label),
+   };
+ }
+ 
+diff --git a/frontend/components/platform/PlatformLanding.jsx b/frontend/components/platform/PlatformLanding.jsx
+index c36db90..4e89eda 100644
+--- a/frontend/components/platform/PlatformLanding.jsx
++++ b/frontend/components/platform/PlatformLanding.jsx
+@@ -5,6 +5,8 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+ import {
+   ArrowRight,
+   BarChart3,
++  Briefcase,
++  Building2,
+   Check,
+   ChevronDown,
+   ClipboardList,
+@@ -17,14 +19,18 @@ import {
+   Package,
+   Palette,
+   Phone,
++  Rocket,
+   ShieldCheck,
+   ShoppingBag,
+   ShoppingCart,
++  SlidersHorizontal,
+   Smartphone,
+   Sparkles,
++  Store,
+   Tag,
+   Truck,
+   Wallet,
++  X,
+   Zap,
+ } from "lucide-react";
+ import AdminCTA from "./AdminCTA";
+@@ -59,36 +65,79 @@ const STEPS = [
+   },
+ ];
+ 
++// ✅ সব ফিচার চালু আছে এমন প্ল্যানের লেবেল (backend/controllers/shop/public.plans.controller.js-এর
++// FEATURE_CATALOG-এর সাথে মেলানো)
++const ALL_FEATURE_LABELS = [
++  "সম্পূর্ণ স্টোরফ্রন্ট",
++  "ভিজিটর অ্যানালিটিক্স",
++  "প্রোমো ও কুপন কোড",
++  "পেমেন্ট ইন্টিগ্রেশন",
++  "কাস্টম ডোমেইন",
++  "ল্যান্ডিং পেজ বিল্ডার",
++  "ইনভয়েস কাস্টমাইজেশন",
++];
++
++// ✅ প্ল্যানের আইকন — নামের প্রথম অক্ষর নয়, প্ল্যানের ধরন বোঝায় এমন আইকন। সুপার-অ্যাডমিনে
++// নতুন প্ল্যান (অজানা key) বানালে তার ক্রম অনুযায়ী PLAN_ICON_CYCLE থেকে বসে।
++const PLAN_ICONS = {
++  starter: Rocket,
++  business: Briefcase,
++  custom: SlidersHorizontal,
++  reseller: Store,
++  "reseller-pro": Building2,
++};
++const PLAN_ICON_CYCLE = [Rocket, Briefcase, SlidersHorizontal, Store, Building2, Layers];
++
++// ✅ API না এলে এই ফলব্যাক দেখায় (ডিফল্ট seed-এর সাথে মেলানো)। প্রতিটি প্ল্যানে
++// চালু ফিচার highlights-এ, আর বন্ধ ফিচার notIncluded-এ — notIncluded কাটা অবস্থায় দেখায়।
+ const PLANS = [
+   {
++    iconKey: "starter",
+     name: "Starter",
+     tagline: "বাড়ন্ত ব্যবসার জন্য",
+-    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "২ জন অ্যাডমিন", "অ্যানালিটিক্স ও প্রোমো কোড", "পেমেন্ট ইন্টিগ্রেশন"],
++    highlights: [
++      "আনলিমিটেড প্রোডাক্ট",
++      "আনলিমিটেড অর্ডার",
++      "২ জন অ্যাডমিন",
++      "সম্পূর্ণ স্টোরফ্রন্ট",
++      "ভিজিটর অ্যানালিটিক্স",
++      "প্রোমো ও কুপন কোড",
++      "পেমেন্ট ইন্টিগ্রেশন",
++    ],
++    notIncluded: ["কাস্টম ডোমেইন", "ল্যান্ডিং পেজ বিল্ডার", "ইনভয়েস কাস্টমাইজেশন"],
+     accent: "emerald",
+   },
+   {
++    iconKey: "business",
+     name: "Business",
+     tagline: "পূর্ণাঙ্গ প্রফেশনাল ফিচারের জন্য",
+-    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "৫ জন অ্যাডমিন", "কাস্টম ডোমেইন", "ল্যান্ডিং পেজ ও ইনভয়েস কাস্টমাইজেশন"],
++    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "৫ জন অ্যাডমিন", ...ALL_FEATURE_LABELS],
++    notIncluded: [],
+     popular: true,
+     accent: "orange",
+   },
+   {
++    iconKey: "custom",
+     name: "Custom",
+     tagline: "চাহিদা অনুযায়ী সম্পূর্ণ কাস্টমাইজড সমাধান",
+-    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "১০ জন অ্যাডমিন", "সব প্রিমিয়াম ফিচার", "প্রয়োজন অনুযায়ী কাস্টমাইজেশন"],
++    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "১০ জন অ্যাডমিন", ...ALL_FEATURE_LABELS],
++    notIncluded: [],
+     accent: "amber",
+   },
+   {
++    iconKey: "reseller",
+     name: "Reseller",
+     tagline: "একাধিক ক্লায়েন্ট/শপ পরিচালনা ও রিসেল করার জন্য",
+-    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "২০ জন অ্যাডমিন", "মাল্টিপল ক্লায়েন্ট পরিচালনা", "রিসেলিং সুবিধা"],
++    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "২০ জন অ্যাডমিন", ...ALL_FEATURE_LABELS],
++    notIncluded: [],
+     accent: "rose",
+   },
+   {
++    iconKey: "reseller-pro",
+     name: "Reseller Pro",
+     tagline: "বড় রিসেলার ও এজেন্সির জন্য — বেশি স্টাফসহ",
+-    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "৫০ জন অ্যাডমিন", "মাল্টিপল ক্লায়েন্ট পরিচালনা", "রিসেলিং সুবিধা"],
++    highlights: ["আনলিমিটেড প্রোডাক্ট", "আনলিমিটেড অর্ডার", "৫০ জন অ্যাডমিন", ...ALL_FEATURE_LABELS],
++    notIncluded: [],
+     ctaType: "contact",
+     accent: "teal",
+   },
+@@ -113,7 +162,9 @@ function mapApiPlans(apiPlans) {
+     key: p.key,
+     name: p.name,
+     tagline: p.tagline,
++    iconKey: p.key,
+     highlights: p.highlights || [],
++    notIncluded: p.notIncluded || [],
+     popular: !!p.isPopular,
+     accent: ACCENT_CYCLE[i % ACCENT_CYCLE.length],
+     price: p.price,
+@@ -797,6 +848,7 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
+           <div className="mt-12 flex flex-wrap justify-center gap-5">
+             {displayPlans.map((plan, i) => {
+               const a = ACCENTS[plan.accent];
++              const PlanIcon = PLAN_ICONS[plan.iconKey] || PLAN_ICON_CYCLE[i % PLAN_ICON_CYCLE.length];
+               return (
+                 <motion.div
+                   key={plan.name}
+@@ -817,8 +869,8 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
+                       সবচেয়ে জনপ্রিয়
+                     </span>
+                   )}
+-                  <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-black text-white shadow ${a.icon}`}>
+-                    {plan.name.charAt(0)}
++                  <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-md ${a.icon}`}>
++                    <PlanIcon size={20} aria-hidden="true" />
+                   </span>
+                   <h3 className="mt-3 text-lg font-semibold text-gray-900">{plan.name}</h3>
+                   <p className="mt-1 text-xs leading-relaxed text-gray-500">{plan.tagline}</p>
+@@ -849,10 +901,17 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
+                   <ul className="mt-5 flex-1 space-y-2.5">
+                     {plan.highlights.map((h) => (
+                       <li key={h} className="flex items-start gap-2 text-xs text-gray-600">
+-                        <Check size={14} className="mt-0.5 shrink-0 text-emerald-500" />
++                        <Check size={14} className="mt-0.5 shrink-0 text-emerald-500" aria-hidden="true" />
+                         {h}
+                       </li>
+                     ))}
++                    {(plan.notIncluded || []).map((h) => (
++                      <li key={h} className="flex items-start gap-2 text-xs text-gray-400">
++                        <X size={14} className="mt-0.5 shrink-0 text-gray-300" aria-hidden="true" />
++                        <span className="line-through decoration-gray-300">{h}</span>
++                        <span className="sr-only">(এই প্ল্যানে নেই)</span>
++                      </li>
++                    ))}
+                   </ul>
+ 
+                   {(() => {
+-- 
+2.43.0
+

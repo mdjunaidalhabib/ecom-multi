@@ -298,9 +298,10 @@ export const createProduct = async (req, res) => {
 
     // ✅ প্ল্যান-ভিত্তিক প্রোডাক্ট লিমিট — Shop.limits.maxProducts
     // (Product tenant-scoped বলে countDocuments() এমনিতেই এই শপের মধ্যে সীমাবদ্ধ)
-    const maxProducts = shop?.limits?.maxProducts ?? 200;
-    const currentProductCount = await Product.countDocuments();
-    if (currentProductCount >= maxProducts) {
+    // 0 (বা না থাকলে) = আনলিমিটেড — কোনো প্ল্যানেই এখন প্রোডাক্ট লিমিট নেই
+    const maxProducts = shop?.limits?.maxProducts ?? 0;
+    const currentProductCount = maxProducts > 0 ? await Product.countDocuments() : 0;
+    if (maxProducts > 0 && currentProductCount >= maxProducts) {
       cleanupReqFiles(req);
       return res.status(403).json({
         error: `এই প্ল্যানে সর্বোচ্চ ${maxProducts}টি প্রোডাক্ট যোগ করা যাবে। প্ল্যান আপগ্রেড করুন।`,

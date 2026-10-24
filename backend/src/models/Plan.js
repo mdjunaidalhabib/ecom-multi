@@ -58,7 +58,8 @@ const planSchema = new mongoose.Schema(
     },
 
     limits: {
-      maxProducts: { type: Number, default: 50 },
+      // ✅ 0 = আনলিমিটেড প্রোডাক্ট (সব প্ল্যানেই এখন আনলিমিটেড)
+      maxProducts: { type: Number, default: 0, min: 0 },
       maxAdmins: { type: Number, default: 1 },
     },
   },
@@ -70,35 +71,29 @@ planSchema.index({ order: 1 });
 const Plan = mongoose.models.Plan || mongoose.model("Plan", planSchema);
 export default Plan;
 
-// ✅ প্রথমবার কল হওয়ার সময় collection খালি থাকলে আজকের
-// free/starter/business/custom/reseller ডিফল্ট মান দিয়ে seed করে।
+// ✅ প্রথমবার কল হওয়ার সময় collection খালি থাকলে এই ডিফল্ট প্ল্যানগুলো দিয়ে seed করে।
+// Free প্ল্যান আর নেই। সব প্ল্যানে প্রোডাক্ট আনলিমিটেড (maxProducts: 0 = আনলিমিটেড)
+// এবং অর্ডারের কোনো লিমিট নেই।
+const ALL_FEATURES_ON = {
+  customDomain: true,
+  analytics: true,
+  promo: true,
+  payment: true,
+  landingPages: true,
+  fullStorefront: true,
+  invoiceCustomization: true,
+};
+
 const SEED_PLANS = [
   {
-    key: "free",
-    name: "Free",
-    tagline: "নতুন শপ শুরু করার জন্য",
+    key: "starter",
+    name: "Starter",
+    tagline: "বাড়ন্ত ব্যবসার জন্য",
     order: 0,
     isDefault: true,
     theme: "classic",
     features: {
       customDomain: false,
-      analytics: false,
-      promo: false,
-      payment: false,
-      landingPages: false,
-      fullStorefront: true,
-      invoiceCustomization: false,
-    },
-    limits: { maxProducts: 50, maxAdmins: 1 },
-  },
-  {
-    key: "starter",
-    name: "Starter",
-    tagline: "বাড়ন্ত ব্যবসার জন্য",
-    order: 1,
-    theme: "classic",
-    features: {
-      customDomain: false,
       analytics: true,
       promo: true,
       payment: true,
@@ -106,58 +101,44 @@ const SEED_PLANS = [
       fullStorefront: true,
       invoiceCustomization: false,
     },
-    limits: { maxProducts: 200, maxAdmins: 2 },
+    limits: { maxProducts: 0, maxAdmins: 2 },
   },
   {
     key: "business",
     name: "Business",
     tagline: "পূর্ণাঙ্গ প্রফেশনাল ফিচারের জন্য",
-    order: 2,
+    order: 1,
     theme: "classic",
-    features: {
-      customDomain: true,
-      analytics: true,
-      promo: true,
-      payment: true,
-      landingPages: true,
-      fullStorefront: true,
-      invoiceCustomization: true,
-    },
-    limits: { maxProducts: 1000, maxAdmins: 5 },
+    features: { ...ALL_FEATURES_ON },
+    limits: { maxProducts: 0, maxAdmins: 5 },
   },
   {
     key: "custom",
     name: "Custom",
     tagline: "আপনার ব্যবসার চাহিদা অনুযায়ী সম্পূর্ণ কাস্টমাইজড সমাধান",
-    order: 3,
+    order: 2,
     theme: "classic",
-    features: {
-      customDomain: true,
-      analytics: true,
-      promo: true,
-      payment: true,
-      landingPages: true,
-      fullStorefront: true,
-      invoiceCustomization: true,
-    },
-    limits: { maxProducts: 5000, maxAdmins: 10 },
+    features: { ...ALL_FEATURES_ON },
+    limits: { maxProducts: 0, maxAdmins: 10 },
   },
   {
     key: "reseller",
     name: "Reseller",
     tagline: "একাধিক ক্লায়েন্ট/শপ পরিচালনা ও রিসেল করার জন্য",
+    order: 3,
+    theme: "classic",
+    features: { ...ALL_FEATURES_ON },
+    limits: { maxProducts: 0, maxAdmins: 20 },
+  },
+  {
+    key: "reseller-pro",
+    name: "Reseller Pro",
+    tagline: "বড় রিসেলার ও এজেন্সির জন্য — বেশি স্টাফসহ",
     order: 4,
     theme: "classic",
-    features: {
-      customDomain: true,
-      analytics: true,
-      promo: true,
-      payment: true,
-      landingPages: true,
-      fullStorefront: true,
-      invoiceCustomization: true,
-    },
-    limits: { maxProducts: 10000, maxAdmins: 20 },
+    ctaType: "contact",
+    features: { ...ALL_FEATURES_ON },
+    limits: { maxProducts: 0, maxAdmins: 50 },
   },
 ];
 

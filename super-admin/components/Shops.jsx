@@ -112,7 +112,7 @@ export default function Shops() {
     domain: "",
     contactEmail: "",
     contactPhone: "",
-    plan: "free",
+    plan: "starter",
     theme: "",
     subscriptionStartDate: "",
     durationPreset: "",
@@ -250,7 +250,7 @@ export default function Shops() {
       domain: "",
       contactEmail: "",
       contactPhone: "",
-      plan: "free",
+      plan: "starter",
       theme: "",
       subscriptionStartDate: toDateInputValue(new Date()),
       durationPreset: "",
@@ -271,7 +271,7 @@ export default function Shops() {
       domain: shop.domain || "",
       contactEmail: shop.contactEmail || "",
       contactPhone: shop.contactPhone || "",
-      plan: shop.plan || "free",
+      plan: shop.plan || "starter",
       theme: shop.branding?.theme || "",
       subscriptionStartDate: toDateInputValue(shop.subscriptionStartDate || shop.createdAt),
       ...daysToDurationPreset(shop.subscriptionDays),
@@ -739,7 +739,8 @@ export default function Shops() {
                 {(() => {
                   const productCount = shop.stats?.products ?? 0;
                   const maxProducts = shop.limits?.maxProducts;
-                  const isOverLimit = maxProducts != null && productCount > maxProducts;
+                  // maxProducts 0 = আনলিমিটেড, তাই তখন কখনোই over-limit নয়
+                  const isOverLimit = maxProducts > 0 && productCount > maxProducts;
                   return isOverLimit ? (
                     <div
                       className="flex items-center gap-1.5 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-400"
@@ -756,7 +757,7 @@ export default function Shops() {
                     <Package size={14} className="text-gray-500 dark:text-slate-400" />
                     <b
                       className={
-                        shop.limits?.maxProducts != null &&
+                        shop.limits?.maxProducts > 0 &&
                         (shop.stats?.products ?? 0) > shop.limits.maxProducts
                           ? "text-amber-600 dark:text-amber-400"
                           : "text-gray-900 dark:text-slate-100"
@@ -765,7 +766,7 @@ export default function Shops() {
                       {shop.stats?.products ?? 0}
                       {shop.limits?.maxProducts != null && (
                         <span className="font-normal text-gray-400 dark:text-slate-500">
-                          /{shop.limits.maxProducts}
+                          /{shop.limits.maxProducts > 0 ? shop.limits.maxProducts : "∞"}
                         </span>
                       )}
                     </b>

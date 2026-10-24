@@ -123,7 +123,7 @@ const emptyForm = () => ({
   landingPages: false,
   fullStorefront: true,
   invoiceCustomization: false,
-  maxProducts: 50,
+  maxProducts: 0, // 0 = আনলিমিটেড
   maxAdmins: 1,
 });
 
@@ -538,10 +538,16 @@ export default function Plans() {
                     <div key={feature.key} className="flex items-center justify-between gap-2 text-sm">
                       <span className="text-gray-700 dark:text-slate-300">{feature.label}</span>
                       <span className="font-bold text-gray-900 dark:text-slate-100">
-                        {plan.limits?.[feature.key] ?? "—"}
+                        {feature.key === "maxProducts" && Number(plan.limits?.[feature.key]) === 0
+                          ? "আনলিমিটেড"
+                          : plan.limits?.[feature.key] ?? "—"}
                       </span>
                     </div>
                   ))}
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-gray-700 dark:text-slate-300">অর্ডার</span>
+                    <span className="font-bold text-gray-900 dark:text-slate-100">আনলিমিটেড</span>
+                  </div>
                 </div>
 
                 <div className="mx-5 my-4 border-t border-gray-100 dark:border-slate-800" />
@@ -735,6 +741,7 @@ export default function Plans() {
                   <div key={feature.key}>
                     <label className="text-sm font-medium text-gray-700 dark:text-slate-300">
                       {feature.label}
+                      {feature.key === "maxProducts" ? " (০ = আনলিমিটেড)" : ""}
                     </label>
                     <input
                       type="number"
