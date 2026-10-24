@@ -103,9 +103,12 @@ const TOGGLE_FEATURES = [
   { key: "invoiceCustomization", label: "Invoice Customization (কাস্টম ইনভয়েস ডিজাইন)" },
 ];
 const LIMIT_FEATURES = [
-  { key: "maxProducts", label: "সর্বোচ্চ Products" },
-  { key: "maxAdmins", label: "সর্বোচ্চ Admin/Staff" },
+  { key: "maxProducts", label: "Products" },
+  { key: "maxAdmins", label: "Admin/Staff" },
 ];
+// ✅ প্ল্যান কার্ডে ক্রম: Products → অর্ডার → Admin/Staff (Admin/Staff সবার শেষে)
+const PRODUCT_LIMITS = LIMIT_FEATURES.filter((f) => f.key !== "maxAdmins");
+const ADMIN_LIMITS = LIMIT_FEATURES.filter((f) => f.key === "maxAdmins");
 const emptyForm = () => ({
   name: "",
   tagline: "",
@@ -534,7 +537,7 @@ export default function Plans() {
                     );
                   })}
 
-                  {LIMIT_FEATURES.map((feature) => (
+                  {PRODUCT_LIMITS.map((feature) => (
                     <div key={feature.key} className="flex items-center justify-between gap-2 text-sm">
                       <span className="text-gray-700 dark:text-slate-300">{feature.label}</span>
                       <span className="font-bold text-gray-900 dark:text-slate-100">
@@ -548,6 +551,16 @@ export default function Plans() {
                     <span className="text-gray-700 dark:text-slate-300">অর্ডার</span>
                     <span className="font-bold text-gray-900 dark:text-slate-100">আনলিমিটেড</span>
                   </div>
+                  {ADMIN_LIMITS.map((feature) => (
+                    <div key={feature.key} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="text-gray-700 dark:text-slate-300">{feature.label}</span>
+                      <span className="font-bold text-gray-900 dark:text-slate-100">
+                        {feature.key === "maxProducts" && Number(plan.limits?.[feature.key]) === 0
+                          ? "আনলিমিটেড"
+                          : plan.limits?.[feature.key] ?? "—"}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="mx-5 my-4 border-t border-gray-100 dark:border-slate-800" />

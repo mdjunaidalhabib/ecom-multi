@@ -64,9 +64,12 @@ const TOGGLE_FEATURES = [
   { key: "invoiceCustomization", label: "Invoice Design" },
 ];
 const LIMIT_FEATURES = [
-  { key: "maxProducts", label: "সর্বোচ্চ Products" },
-  { key: "maxAdmins", label: "সর্বোচ্চ Admin/Staff" },
+  { key: "maxProducts", label: "Products" },
+  { key: "maxAdmins", label: "Admin/Staff" },
 ];
+// ✅ দেখানোর ক্রম: Products → অর্ডার → Admin/Staff (Admin/Staff সবার শেষে)
+const PRODUCT_LIMITS = LIMIT_FEATURES.filter((f) => f.key !== "maxAdmins");
+const ADMIN_LIMITS = LIMIT_FEATURES.filter((f) => f.key === "maxAdmins");
 // ✅ maxProducts = 0 মানে আনলিমিটেড (সব প্ল্যানে অর্ডারও আনলিমিটেড)
 const formatLimit = (key, value) => {
   if (value === undefined || value === null) return "—";
@@ -373,7 +376,7 @@ export default function Plan() {
                 </div>
               );
             })}
-            {LIMIT_FEATURES.map((feature) => (
+            {PRODUCT_LIMITS.map((feature) => (
               <div
                 key={feature.key}
                 className="flex items-center justify-between rounded-xl border border-gray-100 dark:border-slate-700/60 bg-gray-50 dark:bg-slate-800 px-3 py-2.5"
@@ -390,6 +393,19 @@ export default function Plan() {
               <span className="text-sm font-bold text-gray-700 dark:text-slate-300">অর্ডার</span>
               <span className="text-sm font-black text-gray-900 dark:text-slate-100">আনলিমিটেড</span>
             </div>
+            {ADMIN_LIMITS.map((feature) => (
+              <div
+                key={feature.key}
+                className="flex items-center justify-between rounded-xl border border-gray-100 dark:border-slate-700/60 bg-gray-50 dark:bg-slate-800 px-3 py-2.5"
+              >
+                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">
+                  {feature.label}
+                </span>
+                <span className="text-sm font-black text-gray-900 dark:text-slate-100">
+                  {formatLimit(feature.key, planInfo?.features?.[feature.key])}
+                </span>
+              </div>
+            ))}
           </div>
 
           {/* ✅ স্টোরফ্রন্ট থিম — শুধুমাত্র super-admin থেকে নিয়ন্ত্রিত (প্ল্যান
@@ -470,7 +486,7 @@ export default function Plan() {
                         </div>
                       );
                     })}
-                    {LIMIT_FEATURES.map((feature) => (
+                    {PRODUCT_LIMITS.map((feature) => (
                       <div key={feature.key} className="flex items-center justify-between gap-2 text-xs">
                         <span className="text-gray-600 dark:text-slate-400">{feature.label}</span>
                         <span className="font-bold text-gray-900 dark:text-slate-100">
@@ -482,12 +498,14 @@ export default function Plan() {
                       <span className="text-gray-600 dark:text-slate-400">অর্ডার</span>
                       <span className="font-bold text-gray-900 dark:text-slate-100">আনলিমিটেড</span>
                     </div>
-                    <div className="flex items-center justify-between gap-2 text-xs">
-                      <span className="text-gray-600 dark:text-slate-400">ডিফল্ট থিম</span>
-                      <span className="font-bold text-gray-900 dark:text-slate-100">
-                        {themeLabel(plan.theme)}
-                      </span>
-                    </div>
+                    {ADMIN_LIMITS.map((feature) => (
+                      <div key={feature.key} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-gray-600 dark:text-slate-400">{feature.label}</span>
+                        <span className="font-bold text-gray-900 dark:text-slate-100">
+                          {formatLimit(feature.key, plan.limits?.[feature.key])}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               );
