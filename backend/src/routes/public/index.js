@@ -1,4 +1,5 @@
 import express from "express";
+import leadsRoutes from "./leads.routes.js";
 
 import authRoutes from "./auth.routes.js";
 import productRoutes from "./product.routes.js";
@@ -32,6 +33,7 @@ import platformTrackingPublicRoutes from "./platformTracking.routes.js";
 import { resolveShopByDomain } from "../../tenancy/publicShopResolver.js";
 
 const router = express.Router();
+router.use("/leads", leadsRoutes);
 
 // ✅ /auth নিজে থেকেই শপ resolve করে (Google OAuth state এর মধ্যে দিয়ে,
 // কারণ OAuth callback backend-এর নিজের ডোমেইনে আসে, কাস্টমারের শপ

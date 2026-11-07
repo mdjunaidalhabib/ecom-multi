@@ -1,4 +1,5 @@
 import express from "express";
+import leadsRoutes from "./leads.superadmin.routes.js";
 
 import adminAuthRoutes from "./admin.routes.js";
 import productAdminRoutes from "./product.admin.routes.js";
@@ -46,6 +47,7 @@ import { protect, requirePermission } from "../../middlewares/adminAuthMiddlewar
 import { requireShopContext } from "../../tenancy/adminShopContext.js";
 
 const router = express.Router();
+router.use("/leads", leadsRoutes);
 
 // ✅ /login, /logout, /verify, /me ইত্যাদি — নিজস্ব protect ব্যবহার করে,
 // শপ-কনটেক্সট লাগবে না, তাই global middleware এর আগেই বসানো

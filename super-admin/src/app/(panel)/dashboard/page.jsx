@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Building2, Package, ShoppingCart, ShieldCheck, Users } from "lucide-react";
+import LeadOverview from "../../../../components/LeadOverview";
 
 export default function SuperAdminDashboardPage() {
   const [shops, setShops] = useState([]);
@@ -85,6 +86,11 @@ export default function SuperAdminDashboardPage() {
           Manage Shops
         </Link>
       </div>
+
+      <section aria-labelledby="dashboard-leads-title" className="space-y-3">
+        <div className="flex items-center justify-between gap-3"><h2 id="dashboard-leads-title" className="text-lg font-semibold text-gray-900 dark:text-slate-100">Leads Overview</h2><Link href="/leads" className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">Manage Leads →</Link></div>
+        <LeadOverview />
+      </section>
 
       {loading ? (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

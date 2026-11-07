@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { captureLeadAttribution, leadPageHref } from "../../lib/leadGeneration";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import {
   ArrowRight,
@@ -579,22 +580,9 @@ function StepsPanel() {
   );
 }
 
-// ✅ WhatsApp-এ যাওয়া বাটনের টেক্সট (checkout লিংক না থাকলে এটাই মূল বাটন)
-function planWhatsappLabel(plan) {
-  if (plan.ctaType === "contact") return "সেলস টিমের সাথে কথা বলুন";
-  const isFree = plan.price === 0 || (plan.price === undefined && plan.name === "Free");
-  return isFree ? "বিনামূল্যে শুরু করুন" : "এখনই শুরু করুন";
-}
-
-function whatsappPlanLink(whatsappNumber, planName) {
-  if (!whatsappNumber) return "#";
-  const text = `আসসালামু আলাইকুম, আমি ECMS-এর ${planName} প্ল্যান সম্পর্কে বিস্তারিত জানতে চাই।`;
-  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
-}
-
 // ✅ পেইড (buy) প্ল্যান হলে Hikmah IT-র checkout লিংক, নইলে null।
 // Free প্ল্যান (price 0), contact প্ল্যান, হার্ডকোড ফলব্যাক প্ল্যান (key নেই)
-// এবং HIKMAH_SITE_URL সেট না থাকলে null — তখন বাটন WhatsApp-এ যায়।
+// এবং HIKMAH_SITE_URL সেট না থাকলে null — তখন বিস্তারিত CTA দিয়ে lead page-এ যায়।
 // ID ফরম্যাট "ecms_<key>" Hikmah সার্ভারের ecmsPlans.js-এর সাথে মিলতে হবে।
 function checkoutPlanLink(hikmahSiteUrl, plan) {
   if (!hikmahSiteUrl || !plan.key) return null;
@@ -650,6 +638,8 @@ function WhatsAppIcon(props) {
 export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUrl = "", plans: apiPlans = [] }) {
   const displayPlans = apiPlans.length ? mapApiPlans(apiPlans) : PLANS;
   const [openFaq, setOpenFaq] = useState(0);
+  const [leadAttribution, setLeadAttribution] = useState({});
+  useEffect(() => { setLeadAttribution(captureLeadAttribution()); }, []);
 
   return (
     <div
@@ -916,8 +906,8 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
 
                   {(() => {
                     const buyHref = checkoutPlanLink(hikmahSiteUrl, plan);
-                    const waHref = whatsappPlanLink(whatsappNumber, plan.name);
-                    const waExternal = whatsappNumber ? { target: "_blank", rel: "noopener noreferrer" } : {};
+                    const leadHref = leadPageHref(plan.iconKey || plan.name, leadAttribution);
+                    const leadButtonClass = "group inline-flex w-full items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2";
 
                     if (buyHref) {
                       return (
@@ -931,13 +921,12 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
                             <ArrowRight size={16} />
                           </a>
                           <a
-                            href={waHref}
-                            {...waExternal}
-                            data-cta="whatsapp"
-                            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-medium text-gray-500 transition-colors hover:text-[#128C4A]"
+                            href={leadHref}
+                            data-cta="lead"
+                            className={leadButtonClass}
                           >
-                            <WhatsAppIcon className="h-3.5 w-3.5" />
-                            প্ল্যান নিয়ে জানতে চান? মেসেজ করুন
+                            বিস্তারিত জানুন
+                            <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                           </a>
                         </div>
                       );
@@ -945,13 +934,12 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
 
                     return (
                       <a
-                        href={waHref}
-                        {...waExternal}
-                        data-cta="whatsapp"
-                        className="mt-6 inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#25D366] px-4 py-3 text-sm font-bold text-white shadow-md shadow-emerald-200 transition hover:bg-[#1ebe5b]"
+                        href={leadHref}
+                        data-cta="lead"
+                        className={`mt-6 ${leadButtonClass}`}
                       >
-                        <WhatsAppIcon className="h-4 w-4" />
-                        {planWhatsappLabel(plan)}
+                        বিস্তারিত জানুন
+                        <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                       </a>
                     );
                   })()}

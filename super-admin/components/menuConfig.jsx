@@ -51,6 +51,11 @@ export const superAdminNavItems = [
     href: "/trash",
   },
   {
+    icon: <Inbox size={18} />,
+    label: "Leads",
+    href: "/leads",
+  },
+  {
     icon: <User size={18} />,
     label: "Profile",
     href: "/profile",

@@ -35,6 +35,7 @@ const NAV_LINKS = [
   { id: "how-it-works", href: "/#how-it-works", label: "প্রক্রিয়া", desc: "কিভাবে কাজ করে", icon: Route },
   { id: "faq", href: "/#faq", label: "FAQ", desc: "সাধারণ জিজ্ঞাসা", icon: HelpCircle },
   { id: "contact", href: "/#contact", label: "যোগাযোগ", desc: "সরাসরি যোগাযোগ করুন", icon: MessageCircle },
+  { id: "consultation", href: "/contact", label: "ফ্রি পরামর্শ", desc: "আপনার ব্যবসার জন্য সঠিক সমাধান", icon: MessageCircle },
 ];
 
 // ✅ native window.scrollTo({behavior:"smooth"}) মোবাইলে (বিশেষত Facebook/
@@ -75,6 +76,7 @@ export default function PlatformHeader({ adminUrl }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const isLinkActive = (link) => link.id === "consultation" ? pathname === "/contact" : pathname === "/" && activeId === link.id;
 
   // ✅ ইতিমধ্যে হোমপেজে থাকা অবস্থায় (স্ক্রল করে নিচে নামা) Home/লোগোতে
   // ক্লিক করলে Link-এর নিজের কোনো নেভিগেশন হয় না (URL একই থাকে), তাই
@@ -97,6 +99,7 @@ export default function PlatformHeader({ adminUrl }) {
   // so on other pages (privacy-policy, terms-of-service) this simply finds
   // nothing and no link is ever highlighted.
   useEffect(() => {
+    if (pathname !== "/") return;
     const elements = NAV_LINKS.map((l) => document.getElementById(l.id)).filter(Boolean);
     if (elements.length === 0) return;
 
@@ -110,7 +113,7 @@ export default function PlatformHeader({ adminUrl }) {
     );
     elements.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -131,7 +134,7 @@ export default function PlatformHeader({ adminUrl }) {
   return (
     <header className="sticky top-0 z-40 border-b border-orange-100/70 bg-gradient-to-r from-teal-50/90 via-white/90 to-orange-50/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-        <MotionLink href="/" onClick={handleHomeClick} className="flex items-center gap-2.5" {...tapBounce}>
+        <MotionLink href="/" onClick={handleHomeClick} className="flex shrink-0 items-center gap-2.5" {...tapBounce}>
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-rose-500 shadow-md shadow-orange-200">
             <ShoppingCart size={16} className="text-white" />
           </div>
@@ -139,25 +142,26 @@ export default function PlatformHeader({ adminUrl }) {
             <p className="bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-base font-extrabold tracking-tight text-transparent">
               ECMS
             </p>
-            <p className="hidden bg-gradient-to-r from-teal-600 to-orange-500 bg-clip-text text-[11px] font-medium text-transparent lg:block">
+            <p className="hidden bg-gradient-to-r from-teal-600 to-orange-500 bg-clip-text text-[11px] font-medium text-transparent xl:block">
               E-Commerce Management System
             </p>
           </div>
         </MotionLink>
 
-        <nav className="hidden items-center gap-4 text-sm font-semibold text-gray-500 md:flex lg:gap-7">
+        <nav aria-label="প্রধান নেভিগেশন" className="hidden items-center gap-3 whitespace-nowrap text-sm font-semibold text-gray-500 lg:flex xl:gap-6">
           {NAV_LINKS.map((link) => (
             <MotionLink
               key={link.id}
               href={link.href}
+              aria-current={isLinkActive(link) ? (link.id === "consultation" ? "page" : "location") : undefined}
               onClick={link.id === "home" ? handleHomeClick : undefined}
               className={`relative transition-colors hover:text-gray-900 ${
-                activeId === link.id ? "text-gray-900" : ""
+                isLinkActive(link) ? "text-gray-900" : ""
               }`}
               {...tapBounce}
             >
               {link.label}
-              {activeId === link.id && (
+              {isLinkActive(link) && (
                 <motion.span
                   layoutId="platform-nav-active"
                   className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500"
@@ -167,7 +171,7 @@ export default function PlatformHeader({ adminUrl }) {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <AdminCTA
             adminUrl={adminUrl}
             className="hidden items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-200 transition-transform hover:scale-105 sm:inline-flex sm:text-sm"
@@ -181,7 +185,7 @@ export default function PlatformHeader({ adminUrl }) {
             onClick={() => setMobileOpen(true)}
             aria-label="মেনু খুলুন"
             aria-expanded={mobileOpen}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50 md:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50 lg:hidden"
           >
             <Menu size={18} />
           </button>
@@ -199,14 +203,14 @@ export default function PlatformHeader({ adminUrl }) {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.25 }}
                   onClick={() => setMobileOpen(false)}
-                  className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] md:hidden"
+                  className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] lg:hidden"
                 />
                 <motion.div
                   initial={{ x: "-100%" }}
                   animate={{ x: 0 }}
                   exit={{ x: "-100%" }}
                   transition={{ type: "spring", stiffness: 320, damping: 34 }}
-                  className="fixed inset-y-0 left-0 z-50 flex w-[78%] max-w-xs flex-col overflow-hidden border-r border-orange-100 bg-white shadow-2xl md:hidden"
+                  className="fixed inset-y-0 left-0 z-50 flex w-[78%] max-w-xs flex-col overflow-hidden border-r border-orange-100 bg-white shadow-2xl lg:hidden"
                 >
                   <div className="border-b border-orange-100/70 bg-gradient-to-r from-teal-50/90 via-white/90 to-orange-50/90 px-5 py-4">
                     <div className="flex items-center justify-between">
@@ -240,18 +244,20 @@ export default function PlatformHeader({ adminUrl }) {
                   </div>
 
                   <motion.nav
+                    aria-label="মোবাইল নেভিগেশন"
                     initial="hidden"
                     animate="visible"
                     variants={drawerListVariants}
-                    className="flex flex-col gap-2 px-3 py-4"
+                    className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 py-4"
                   >
                     {NAV_LINKS.map((link) => {
                       const Icon = link.icon;
-                      const isActive = activeId === link.id;
+                      const isActive = isLinkActive(link);
                       return (
                         <motion.div key={link.id} variants={drawerItemVariants}>
                           <MotionLink
                             href={link.href}
+                            aria-current={isActive ? (link.id === "consultation" ? "page" : "location") : undefined}
                             onClick={link.id === "home" ? handleHomeClick : () => setMobileOpen(false)}
                             className={`group flex items-center gap-3 rounded-2xl border px-3.5 py-3 transition-all ${
                               isActive

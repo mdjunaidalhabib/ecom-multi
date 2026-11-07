@@ -193,6 +193,13 @@ app.use(
   })
 );
 
+// Keep public lead payloads small without changing existing upload/API limits.
+app.use("/leads", express.json({ limit: "16kb" }));
+app.use("/leads", (err, req, res, next) => {
+  if (err?.type === "entity.too.large") return res.status(413).json({ message: "তথ্যের আকার অনেক বড়।" });
+  if (err?.type === "entity.parse.failed") return res.status(400).json({ message: "সঠিক JSON তথ্য পাঠান।" });
+  next(err);
+});
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
