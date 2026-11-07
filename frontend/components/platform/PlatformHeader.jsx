@@ -35,7 +35,7 @@ const NAV_LINKS = [
   { id: "how-it-works", href: "/#how-it-works", label: "প্রক্রিয়া", desc: "কিভাবে কাজ করে", icon: Route },
   { id: "faq", href: "/#faq", label: "FAQ", desc: "সাধারণ জিজ্ঞাসা", icon: HelpCircle },
   { id: "contact", href: "/#contact", label: "যোগাযোগ", desc: "সরাসরি যোগাযোগ করুন", icon: MessageCircle },
-  { id: "consultation", href: "/contact", label: "ফ্রি পরামর্শ", desc: "আপনার ব্যবসার জন্য সঠিক সমাধান", icon: MessageCircle },
+  { id: "lead-form", href: "/#lead-form", label: "ফ্রি পরামর্শ", desc: "আপনার ব্যবসার জন্য সঠিক সমাধান", icon: MessageCircle },
 ];
 
 // ✅ native window.scrollTo({behavior:"smooth"}) মোবাইলে (বিশেষত Facebook/
@@ -76,7 +76,7 @@ export default function PlatformHeader({ adminUrl }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [mounted, setMounted] = useState(false);
-  const isLinkActive = (link) => link.id === "consultation" ? pathname === "/contact" : pathname === "/" && activeId === link.id;
+  const isLinkActive = (link) => pathname === "/" && activeId === link.id;
 
   // ✅ ইতিমধ্যে হোমপেজে থাকা অবস্থায় (স্ক্রল করে নিচে নামা) Home/লোগোতে
   // ক্লিক করলে Link-এর নিজের কোনো নেভিগেশন হয় না (URL একই থাকে), তাই
@@ -153,7 +153,7 @@ export default function PlatformHeader({ adminUrl }) {
             <MotionLink
               key={link.id}
               href={link.href}
-              aria-current={isLinkActive(link) ? (link.id === "consultation" ? "page" : "location") : undefined}
+              aria-current={isLinkActive(link) ? "location" : undefined}
               onClick={link.id === "home" ? handleHomeClick : undefined}
               className={`relative transition-colors hover:text-gray-900 ${
                 isLinkActive(link) ? "text-gray-900" : ""
@@ -257,7 +257,7 @@ export default function PlatformHeader({ adminUrl }) {
                         <motion.div key={link.id} variants={drawerItemVariants}>
                           <MotionLink
                             href={link.href}
-                            aria-current={isActive ? (link.id === "consultation" ? "page" : "location") : undefined}
+                            aria-current={isActive ? "location" : undefined}
                             onClick={link.id === "home" ? handleHomeClick : () => setMobileOpen(false)}
                             className={`group flex items-center gap-3 rounded-2xl border px-3.5 py-3 transition-all ${
                               isActive

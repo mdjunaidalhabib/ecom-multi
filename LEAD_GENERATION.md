@@ -1,10 +1,12 @@
 # ECMS Lead Generation
 
-The Bengali lead form is on a dedicated campaign page at `/contact`. Every pricing
+The Bengali lead form is embedded on the landing page at `/#lead-form`. Every pricing
 card's former WhatsApp CTA is now a professional “বিস্তারিত জানুন” link that
-opens `/contact?plan=Business` (or the corresponding plan). The additional third
-button and the inline home-page form have been removed. Existing checkout,
-general WhatsApp/contact links, authentication and trial links remain in place. Reseller Pro maps to
+selects the corresponding plan and scrolls to the form without reloading or
+clearing typed fields. The hero's “ফ্রি পরামর্শ নিন” button and the last navbar
+item “ফ্রি পরামর্শ” also scroll to the form. There is no extra third pricing
+button. Existing checkout, general WhatsApp/contact links and authentication
+remain in place. Reseller Pro maps to
 the requested Reseller lead category; unrecognized custom catalog plans map to
 Custom.
 
@@ -28,15 +30,14 @@ Create payload: `name`, `phone`, `businessStatus` (`New Business` or
 
 The form remembers campaign attribution in sessionStorage for up to 24 hours.
 The home page also captures attribution and carries it into pricing-to-lead
-links, preserving UTM parameters and fbclid across the page navigation. Ads can
-link directly to `/contact` or `/contact?plan=Business&utm_source=facebook&utm_medium=paid_social&utm_campaign=business_launch`.
+links, preserving UTM parameters and fbclid. Ads can
+link directly to `/#lead-form` or `/?plan=Business&utm_source=facebook&utm_medium=paid_social&utm_campaign=business_launch#lead-form`.
 Plan selection is optional in the URL, required in the submitted form, and
-validated against the four supported categories. The campaign page reuses the
-existing platform GTM container and the shared platform navbar, including the
-“ফ্রি পরামর্শ” link on desktop and mobile with an active-page indicator. Home,
-pricing and other navigation links remain available from this page.
-The consultation link is the last navbar item. The contact page also reuses
-the full shared home-page footer (`PlatformFooter`).
+validated against the four supported categories. The form reuses the landing
+page's existing GTM container, navbar, footer and floating contact menu. The
+navbar's form link has scroll-spy highlighting on desktop and mobile. Existing
+`/contact` campaign links redirect to the landing form while retaining all query
+parameters, including plan, UTM fields and fbclid.
 The form uses compact responsive typography and a separate card header.
 Required markers are red. Client validation highlights empty/invalid fields,
 focuses the first invalid control, and shows a Bengali error toast. Editing a
@@ -180,11 +181,10 @@ files, and `git diff --check` passed. Existing warnings about the frontend
 middleware convention, baseline-browser-mapping data, and duplicate Shop
 schema indexes were observed; they did not fail these checks.
 
-After moving the form to `/contact`, the frontend production build and updated
-browser harness passed again. The browser check additionally confirmed that
-the home page has no form or extra third pricing CTA, checkout links remain,
-all four plan links preselect correctly, invalid plan URLs leave the selection
-empty, and both home-to-lead navigation and direct ad links retain attribution.
+The form is now back on the landing page. Browser coverage includes exactly one
+embedded form, navbar/hero anchors, plan selection without a reload or loss of
+typed fields, and redirects from older `/contact` campaign links with their
+plan and attribution preserved. Invalid plan URLs leave the selection empty.
 
 The compact Super Admin update passed its production build and browser checks
 for collapsed rows, expanded note editing, status updates, dashboard lead totals

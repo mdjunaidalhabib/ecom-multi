@@ -31,7 +31,7 @@ export function trackSuccessfulLead(eventId, plan) {
   } catch { /* GTM may be blocked by the browser. */ }
 }
 
-export default function LeadForm({ initialPlan = "" }) {
+export default function LeadForm({ initialPlan = "", selectedPlan }) {
   const [plan, setPlan] = useState(PLANS.includes(initialPlan) ? initialPlan : "");
   const [token, setToken] = useState("");
   const [ready, setReady] = useState(false);
@@ -47,6 +47,12 @@ export default function LeadForm({ initialPlan = "" }) {
   const clearFieldError = field => setFieldErrors(current => current[field] ? { ...current, [field]: "" } : current);
 
   useEffect(() => { attribution.current = captureLeadAttribution(); }, []);
+  useEffect(() => {
+    if (PLANS.includes(selectedPlan?.name)) {
+      setPlan(selectedPlan.name);
+      setFieldErrors(current => ({ ...current, interestedPlan: "" }));
+    }
+  }, [selectedPlan]);
   useEffect(() => {
     const controller = new AbortController();
     let timer;
@@ -109,12 +115,12 @@ export default function LeadForm({ initialPlan = "" }) {
   }
 
   return (
-    <section id="lead-form" aria-labelledby="lead-heading" className="bg-gradient-to-br from-orange-50/80 via-white to-teal-50/70 py-7 sm:py-12 lg:py-16">
+    <section id="lead-form" aria-labelledby="lead-heading" className="scroll-mt-24 bg-gradient-to-br from-orange-50/80 via-white to-teal-50/70 py-7 sm:py-12 lg:py-16">
       <Toaster toasterId="lead-form" position="top-right" containerStyle={{ top: 20, left: 16, right: 16 }} toastOptions={{ style: { maxWidth: "min(420px, calc(100vw - 32px))", fontFamily: "inherit", fontSize: "14px", lineHeight: "1.6", borderRadius: "14px" } }} />
       <div className="mx-auto grid max-w-5xl gap-6 px-4 sm:gap-8 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-12">
         <div className="min-w-0">
           <span className="inline-flex rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">আপনার ব্যবসার পরবর্তী ধাপ</span>
-          <h1 id="lead-heading" className="mt-3 max-w-md text-[22px] font-semibold leading-relaxed tracking-tight text-gray-900 sm:text-2xl lg:text-[28px]">সঠিক প্ল্যান বেছে নিতে<br className="hidden lg:block" /> আমরা আছি আপনার পাশে</h1>
+          <h2 id="lead-heading" className="mt-3 max-w-md text-[22px] font-semibold leading-relaxed tracking-tight text-gray-900 sm:text-2xl lg:text-[28px]">সঠিক প্ল্যান বেছে নিতে<br className="hidden lg:block" /> আমরা আছি আপনার পাশে</h2>
           <p className="mt-3 max-w-md text-sm leading-7 text-gray-500">নতুন ব্যবসা শুরু করছেন বা বর্তমান ব্যবসা অনলাইনে আনতে চান? আপনার তথ্য দিন। আমাদের টিম আপনার প্রয়োজন অনুযায়ী সঠিক সমাধান বেছে নিতে সাহায্য করবে।</p>
           <div className="mt-5 hidden space-y-3 lg:block">
             <div className="flex items-start gap-2.5 text-sm text-gray-600"><Phone className="mt-0.5 shrink-0 text-orange-500" size={17} /><span>ফোন বা WhatsApp-এ সরাসরি পরামর্শ</span></div>

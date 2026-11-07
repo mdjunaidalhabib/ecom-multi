@@ -92,8 +92,10 @@ try {
   await page.goto(`${frontend}/?utm_source=facebook&utm_campaign=local-test&fbclid=local-click`, { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "মেনু খুলুন" }).click();
   await page.getByRole("navigation", { name: "মোবাইল নেভিগেশন" }).getByRole("link", { name: "ফ্রি পরামর্শ" }).click();
+  await page.waitForURL(url => url.pathname === "/" && url.hash === "#lead-form");
   await page.locator("#lead-plan").waitFor();
-  assert.equal(new URL(page.url()).pathname, "/contact");
+  assert.equal(new URL(page.url()).pathname, "/");
+  assert.equal(new URL(page.url()).hash, "#lead-form");
   assert.equal(await page.locator("#lead-plan").inputValue(), "");
   await submit(page);
   await page.getByText("অনুগ্রহ করে লাল চিহ্নিত প্রয়োজনীয় তথ্যগুলো পূরণ করুন।", { exact: true }).waitFor();
@@ -119,30 +121,38 @@ try {
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "মেনু খুলুন" }).click();
-  assert.equal(await page.getByRole("navigation", { name: "মোবাইল নেভিগেশন" }).getByRole("link", { name: "ফ্রি পরামর্শ" }).getAttribute("aria-current"), "page");
+  assert.equal(await page.getByRole("navigation", { name: "মোবাইল নেভিগেশন" }).getByRole("link", { name: "ফ্রি পরামর্শ" }).getAttribute("href"), "/#lead-form");
   await page.getByRole("button", { name: "মেনু বন্ধ করুন" }).click();
   await page.goto(`${frontend}/?utm_source=facebook&utm_campaign=local-test&fbclid=local-click`, { waitUntil: "domcontentloaded" });
   assert.equal(await page.locator('[data-cta="lead"]').count(), 4);
-  assert.equal(await page.locator("#lead-form").count(), 0, "Home page must not contain the lead form");
+  assert.equal(await page.locator("#lead-form").count(), 1, "Home page contains exactly one lead form");
+  assert.equal(await page.getByRole("link", { name: "ফ্রি পরামর্শ নিন", exact: true }).getAttribute("href"), "#lead-form");
   assert.equal(await page.getByText("এই প্ল্যান সম্পর্কে জানতে চাই", { exact: true }).count(), 0);
   assert.equal(await page.locator('[data-cta="checkout"]').count(), 4, "Checkout CTA remains available");
   assert.equal(await page.locator('#plans a[data-cta]').count(), 8, "Exactly two CTAs per paid card");
   await page.waitForFunction(() => document.querySelector('[data-cta="lead"]').getAttribute("href").includes("utm_campaign=local-test"));
   const leadLinks = await page.locator('[data-cta="lead"]').evaluateAll(links => links.map(link => link.href));
   for (let index = 0; index < 4; index++) {
-    assert.equal(new URL(leadLinks[index]).pathname, "/contact");
+    assert.equal(new URL(leadLinks[index]).pathname, "/");
+    assert.equal(new URL(leadLinks[index]).hash, "#lead-form");
     assert.equal(new URL(leadLinks[index]).searchParams.get("plan"), ["Starter", "Business", "Custom", "Reseller"][index]);
   }
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "Mobile landing must not overflow");
+  await page.locator("#lead-name").fill("অসম্পূর্ণ তথ্য");
+  await page.evaluate(() => { window.sameLandingPage = true; });
   await page.locator('[data-cta="lead"]').last().click();
-  await page.locator("#lead-plan").waitFor();
-  assert.equal(new URL(page.url()).pathname, "/contact");
+  await page.waitForFunction(() => document.querySelector("#lead-plan").value === "Reseller");
+  assert.equal(await page.evaluate(() => window.sameLandingPage), true);
+  assert.equal(await page.locator("#lead-name").inputValue(), "অসম্পূর্ণ তথ্য");
+  assert.equal(new URL(page.url()).pathname, "/");
   assert.equal(await page.locator("#lead-plan").inputValue(), "Reseller");
   for (let index = 0; index < 3; index++) {
     await page.goto(leadLinks[index], { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(value => document.querySelector("#lead-plan")?.value === value, ["Starter", "Business", "Custom"][index]);
     assert.equal(await page.locator("#lead-plan").inputValue(), ["Starter", "Business", "Custom", "Reseller"][index]);
   }
   await page.goto(leadLinks[3], { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.querySelector("#lead-plan")?.value === "Reseller");
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "Mobile lead page must not overflow");
   await fill(page);
   failNextSave = true;
@@ -168,10 +178,14 @@ try {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`${frontend}/contact?plan=invalid`, { waitUntil: "domcontentloaded" });
   const desktopNav = page.getByRole("navigation", { name: "প্রধান নেভিগেশন" });
-  assert.equal(await desktopNav.getByRole("link", { name: "ফ্রি পরামর্শ" }).getAttribute("aria-current"), "page");
+  assert.equal(new URL(page.url()).pathname, "/", "Old contact URLs redirect to the landing page");
+  assert.equal(new URL(page.url()).hash, "#lead-form");
+  assert.equal(await desktopNav.getByRole("link", { name: "ফ্রি পরামর্শ" }).getAttribute("href"), "/#lead-form");
   assert.equal(await desktopNav.getByRole("link", { name: "প্ল্যান", exact: true }).getAttribute("href"), "/#plans");
   assert.equal(await page.locator("#lead-plan").inputValue(), "", "Invalid plan leaves the visitor free to choose");
   await page.goto(`${frontend}/contact?plan=Starter&utm_source=instagram&utm_campaign=direct-ad&fbclid=direct-click`, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.querySelector("#lead-plan")?.value === "Starter");
+  assert.equal(new URL(page.url()).searchParams.get("fbclid"), "direct-click");
   assert.equal(await page.locator("#lead-plan").inputValue(), "Starter");
   await page.evaluate(() => { delete window.fbq; });
   await fill(page, "দ্বিতীয় গ্রাহক");
@@ -224,7 +238,7 @@ try {
   assert.equal(await adminPage.locator("article").count(), 1);
   assert.ok((await adminPage.locator("article").innerText()).includes("দ্বিতীয় গ্রাহক"));
   assert.deepEqual(errors, []);
-  console.log("PASS: contact URL, shared desktop/mobile navbar and active link, separate campaign page, two pricing CTAs, checkout preserved, all plan links, mobile/desktop layout, landing-to-lead and direct-ad attribution, failure/retry, Pixel event ID, GTM fallback, auth redirects, search, status and notes.");
+  console.log("PASS: inline landing form, navbar/hero anchors, no-reload plan selection with draft preservation, legacy campaign redirects, checkout preserved, mobile/desktop layout, attribution, validation/toasts, failure/retry, Pixel event ID, GTM fallback, admin status/notes and dashboard filters.");
 } finally {
   await browser?.close();
   for (const child of processes) child.kill();

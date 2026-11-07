@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { captureLeadAttribution, leadPageHref } from "../../lib/leadGeneration";
+import { captureLeadAttribution, leadPageHref, leadPlanName } from "../../lib/leadGeneration";
+import LeadForm from "./LeadForm";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import {
   ArrowRight,
@@ -638,7 +639,18 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
   const displayPlans = apiPlans.length ? mapApiPlans(apiPlans) : PLANS;
   const [openFaq, setOpenFaq] = useState(0);
   const [leadAttribution, setLeadAttribution] = useState({});
-  useEffect(() => { setLeadAttribution(captureLeadAttribution()); }, []);
+  const [selectedLeadPlan, setSelectedLeadPlan] = useState(null);
+  useEffect(() => {
+    setLeadAttribution(captureLeadAttribution());
+    const plan = leadPlanName(new URLSearchParams(window.location.search).get("plan"));
+    if (plan) setSelectedLeadPlan({ name: plan });
+  }, []);
+  function selectLeadPlan(event, plan) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    setSelectedLeadPlan({ name: leadPlanName(plan.iconKey || plan.name) || "Custom" });
+    document.getElementById("lead-form")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
 
   return (
     <div
@@ -688,7 +700,7 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
-                href="/contact"
+                href="#lead-form"
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-orange-300/40 transition-transform hover:scale-105"
               >
                 ফ্রি পরামর্শ নিন
@@ -921,6 +933,7 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
                           </a>
                           <a
                             href={leadHref}
+                            onClick={event => selectLeadPlan(event, plan)}
                             data-cta="lead"
                             className={leadButtonClass}
                           >
@@ -934,6 +947,7 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
                     return (
                       <a
                         href={leadHref}
+                        onClick={event => selectLeadPlan(event, plan)}
                         data-cta="lead"
                         className={`mt-6 ${leadButtonClass}`}
                       >
@@ -948,6 +962,8 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
           </div>
         </div>
       </section>
+
+      <LeadForm selectedPlan={selectedLeadPlan} />
 
       {/* How it works */}
       <section id="how-it-works" className="border-t border-gray-100 bg-gradient-to-b from-teal-50/70 via-white to-orange-50/50 py-20 sm:py-24">

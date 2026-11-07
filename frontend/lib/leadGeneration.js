@@ -26,5 +26,5 @@ export function leadPageHref(plan, attribution = {}) {
   for (const key of ATTRIBUTION_KEYS) {
     if (typeof attribution[key] === "string") params.set(key, attribution[key]);
   }
-  return `/contact?${params}`;
+  return `/?${params}#lead-form`;
 }
