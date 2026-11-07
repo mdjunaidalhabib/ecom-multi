@@ -34,7 +34,6 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import AdminCTA from "./AdminCTA";
 import PlatformHeader from "./PlatformHeader";
 import PlatformFooter from "./PlatformFooter";
 import PlatformContactFab from "./PlatformContactFab";
@@ -688,13 +687,13 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <AdminCTA
-                adminUrl={adminUrl}
+              <a
+                href="/contact"
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-orange-300/40 transition-transform hover:scale-105"
               >
-                ফ্রি ট্রাই করুন
+                ফ্রি পরামর্শ নিন
                 <ArrowRight size={15} />
-              </AdminCTA>
+              </a>
               <a
                 href="#plans"
                 className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-6 py-3.5 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
