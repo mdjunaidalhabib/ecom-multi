@@ -44,6 +44,7 @@ api.use("/admin/leads", adminRoutes);
 api.get("/admin/me", (req, res) => res.json({ name: "Local Super Admin", role: "superadmin" }));
 api.get("/admin/shops", (req, res) => res.json([]));
 api.get("/platform-tracking", (req, res) => res.json({ gtmId: "" }));
+api.get("/platform-projects", (req, res) => res.json({ projectPageUrl: "https://example.test/projects" }));
 api.get("/plans", (req, res) => res.json(["Starter", "Business", "Custom", "Reseller"].map(name => ({ name, key: name.toLowerCase(), highlights: [], notIncluded: [], price: 1000, billingDays: 30 }))));
 api.use((req, res) => res.status(404).json({ message: "Local test route not found" }));
 const server = api.listen(0, "127.0.0.1");
@@ -126,7 +127,7 @@ try {
   await page.goto(`${frontend}/?utm_source=facebook&utm_campaign=local-test&fbclid=local-click`, { waitUntil: "domcontentloaded" });
   assert.equal(await page.locator('[data-cta="lead"]').count(), 4);
   assert.equal(await page.locator("#lead-form").count(), 1, "Home page contains exactly one lead form");
-  assert.equal(await page.getByRole("link", { name: "ফ্রি পরামর্শ নিন", exact: true }).getAttribute("href"), "#lead-form");
+  assert.equal(await page.getByRole("link", { name: "আমাদের প্রজেক্ট দেখুন", exact: true }).getAttribute("href"), "https://example.test/projects");
   assert.equal(await page.getByText("এই প্ল্যান সম্পর্কে জানতে চাই", { exact: true }).count(), 0);
   assert.equal(await page.locator('[data-cta="checkout"]').count(), 4, "Checkout CTA remains available");
   assert.equal(await page.locator('#plans a[data-cta]').count(), 8, "Exactly two CTAs per paid card");

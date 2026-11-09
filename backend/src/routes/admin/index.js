@@ -1,5 +1,6 @@
 import express from "express";
 import leadsRoutes from "./leads.superadmin.routes.js";
+import platformProjectsRoutes from "./platformProjects.admin.routes.js";
 
 import adminAuthRoutes from "./admin.routes.js";
 import productAdminRoutes from "./product.admin.routes.js";
@@ -85,6 +86,7 @@ router.use("/tutorials", tutorialsAdminRoutes);
 // ✅ ECMS প্ল্যাটফর্ম ল্যান্ডিং পেজের GTM ID — platform-wide, কোনো "active shop"
 // লাগে না, শুধু super-admin (protect+superAdminOnly routes ফাইলেই আছে)
 router.use("/platform-tracking", platformTrackingRoutes);
+router.use("/platform-projects", platformProjectsRoutes);
 
 // ✅ এখান থেকে নিচের সব admin route এর জন্য valid admin session +
 // active shop context বাধ্যতামূলক (আগে অনেক রুটে কোনো auth check-ই ছিল না —

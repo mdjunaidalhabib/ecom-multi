@@ -32,6 +32,8 @@ const platformSettingsSchema = new mongoose.Schema(
       gtmId: { type: String, trim: true, default: "" },
     },
 
+    projectPageUrl: { type: String, trim: true, maxlength: 2048, default: "" },
+
     // ⚠️ আগে এখানে super-admin এডিটযোগ্য প্ল্যাটফর্ম-ওয়াইড ডিফল্ট ব্রাউজার
     // ট্যাব টাইটেল/ফেভিকন (branding.title/favicon) ছিল, SiteBranding
     // (শপ-লেভেল override) এর পাশাপাশি — দুই জায়গা থেকে সেট করা যেত এই

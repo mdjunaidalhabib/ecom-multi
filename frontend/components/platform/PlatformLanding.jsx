@@ -635,7 +635,7 @@ function WhatsAppIcon(props) {
   );
 }
 
-export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUrl = "", plans: apiPlans = [] }) {
+export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUrl = "", plans: apiPlans = [], projectPageUrl = "" }) {
   const displayPlans = apiPlans.length ? mapApiPlans(apiPlans) : PLANS;
   const [openFaq, setOpenFaq] = useState(0);
   const [leadAttribution, setLeadAttribution] = useState({});
@@ -699,13 +699,15 @@ export default function PlatformLanding({ adminUrl, whatsappNumber, hikmahSiteUr
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <a
-                href="#lead-form"
+              {projectPageUrl && <a
+                href={projectPageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-orange-300/40 transition-transform hover:scale-105"
               >
-                ফ্রি পরামর্শ নিন
+                আমাদের প্রজেক্ট দেখুন
                 <ArrowRight size={15} />
-              </a>
+              </a>}
               <a
                 href="#plans"
                 className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-6 py-3.5 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"

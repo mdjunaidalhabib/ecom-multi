@@ -1,6 +1,7 @@
 import PlatformLanding from "../../components/platform/PlatformLanding";
 import GoogleTagManager from "../../components/tracking/GoogleTagManager";
 import { serverFetch } from "../../lib/serverApi";
+import { getProjectPageUrl } from "../../lib/platformProjects";
 
 // Platform's own domain (PLATFORM_DOMAIN in .env) — see
 // frontend/src/middleware.js, which leaves requests to this domain
@@ -35,12 +36,13 @@ async function getPlatformGtmId() {
 }
 
 export default async function HomePage() {
-  const [plans, gtmId] = await Promise.all([getPlans(), getPlatformGtmId()]);
+  const [plans, gtmId, projectPageUrl] = await Promise.all([getPlans(), getPlatformGtmId(), getProjectPageUrl()]);
   return (
     <>
       <GoogleTagManager gtmId={gtmId} />
       <PlatformLanding
         plans={plans}
+        projectPageUrl={projectPageUrl}
         adminUrl={process.env.SHOP_ADMIN_URL}
         whatsappNumber={process.env.SALES_WHATSAPP_NUMBER}
         hikmahSiteUrl={process.env.HIKMAH_SITE_URL}

@@ -8,6 +8,7 @@ import StorefrontChrome from "../../../../components/StorefrontChrome";
 import ShopSuspensionGuard from "../../../../components/ShopSuspensionGuard";
 import LoginNotice from "../../../../components/LoginNotice";
 import PlatformLanding from "../../../../components/platform/PlatformLanding";
+import { getProjectPageUrl } from "../../../../lib/platformProjects";
 import PlatformLegalPage from "../../../../components/platform/PlatformLegalPage";
 import { getShopInfo } from "../../../../lib/serverApi";
 import { getTheme } from "../../../../lib/themeRegistry";
@@ -235,6 +236,7 @@ export default async function ShopLayout({ children, params }) {
     if (shopSlug === DOMAIN_MODE_MARKER) {
       return (
         <PlatformLanding
+          projectPageUrl={await getProjectPageUrl()}
           adminUrl={process.env.SHOP_ADMIN_URL}
           whatsappNumber={process.env.SALES_WHATSAPP_NUMBER}
         />

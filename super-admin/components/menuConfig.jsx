@@ -6,6 +6,11 @@ import { CircleGauge, Store, Trash2, User, Layers, Inbox, FileText, Palette, Gra
 // তাই মেনুতেও শুধু প্রাসঙ্গিক platform-level আইটেমগুলোই দেখানো হয়
 export const superAdminNavItems = [
   {
+    icon: <Store size={18} />,
+    label: "ECMS Projects",
+    href: "/projects",
+  },
+  {
     icon: <CircleGauge size={18} />,
     label: "Dashboard",
     href: "/dashboard",
